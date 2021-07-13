@@ -1,0 +1,28 @@
+.Menu{
+  height: 50px;
+}
+.Menu, .Menu ul{
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  color: #696969 !important; 
+}
+
+.Logo{
+  margin: 0px 3rem;
+  cursor: pointer;
+  color: #696969 !important;
+}
+.Logo p:hover{
+  border-bottom: 1px solid #191970 !important;
+  
+}
+.Menu li{
+  margin-right: 2rem;
+  cursor: pointer;
+}
+
+.Menu li:hover{
+  color: #4169E1;
+  border-bottom: 1px solid #191970;
+}

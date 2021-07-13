@@ -1,0 +1,45 @@
+.Container{
+  margin:0px;
+  margin-left: 8rem;
+}
+.Divider{
+  border-top-color: #707070 !important;
+  font-size: 32px !important;
+}
+.Projetos{
+  margin-right: 2rem;
+  margin-top: 1rem;
+  padding: 2rem 2rem;
+  border-radius: 5%;
+  border:3px solid #686868;
+}
+.Projetos:hover{
+  transform: translateX(1px) rotate(3deg) translateY(2px);
+}
+.Conteudo hr{
+  position: relative;
+  width: 21.75rem;
+  right: 32px;
+  margin-top: 2rem;
+  background-color: #686868 !important;
+
+}
+.Conteudo h3{
+  margin-top: 2rem;
+  color:#6a6a6a !important;
+}
+.Conteudo p{
+  height: 130px;
+  color:#787878
+}
+.Conteudo h5{
+  color:#6a6a6a !important;
+  height: 50px;}
+
+.ConteudoLink{
+  float: right;
+}
+.ConteudoLink:hover{
+  color: #4169E1;
+  border-bottom: 1px solid #191970 !important;
+}

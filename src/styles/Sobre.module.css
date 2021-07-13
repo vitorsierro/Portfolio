@@ -1,0 +1,59 @@
+.Container{
+  display: flex;
+}
+
+.Divider{
+  border-top-color: #707070 !important;
+  font-size: 32px !important;
+}
+.Sobre{
+  width: 620px;
+  margin-left: 2rem;
+}
+.Sobre h1,.Sobre h2,.Sobre h4{
+  margin-top: 0rem !important;
+  margin-bottom: 0.5rem !important;
+  font-family: 'Roboto Mono', monospace;
+  color:#A9A9A9 !important;
+}
+.Sobre h1{
+  font-size: 100px !important;
+  font-family: 'Dancing Script', cursive;
+  margin-bottom: 0px !important;
+  color:#696969 !important;
+}
+.Sobre hr{
+  margin: 0.75rem -2rem !important;
+  width: 590px;
+}
+
+.Pessoal{
+  display: flex;
+  flex-direction: row;
+  
+}
+.Pessoal h4{
+  margin-top:auto;
+  margin-right: 2rem;
+}
+.Pessoal a{
+  color: #A9A9A9 !important;
+  border: none;
+}
+.Pessoal a:hover{
+  color: #4169E1;
+  border-bottom: 1px solid #191970;
+}
+
+.Icons{
+  margin-top:2rem;
+  margin-left: 2rem;
+}
+.Icons a{
+  margin-right: 3.5rem;
+}
+.FotoPerfil{
+  margin-left: 10rem;
+  margin-top: 1.5rem;
+  display: inline-grid;
+}

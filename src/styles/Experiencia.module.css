@@ -1,0 +1,22 @@
+.Divider{
+  border-top-color: #707070 !important;
+  font-size: 32px !important;
+}
+.Experiencia{
+  margin: 2rem 5rem;
+}
+.Experiencia div{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+.Experiencia hr{
+  width: 720px;
+  margin-left: initial;
+  background-color: #d3d3d3;
+}
+.Experiencia div h2, .ant-typography + h2.ant-typography{
+  margin-top:auto !important;
+  margin: 0px;
+  color: #696969 !important;
+}

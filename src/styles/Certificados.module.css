@@ -1,0 +1,44 @@
+.Container{
+  margin: 2rem 2rem;
+}
+.Divider{
+  border-top-color: #707070 !important;
+  font-size: 32px !important;
+}
+.ContainerCard{
+  border: 2px solid #686868;
+  border-radius: 5%;
+  margin: 2rem;
+  width: 100%;
+  max-width: 320px;
+  height: 620px;
+}
+.ContainerCard header{
+  margin: 2rem 2rem !important;
+}
+.ContainerCard img{
+  border-radius: 5%;
+}
+.ContainerCard h3{
+  text-align: left;
+}
+.ContainerCard h5{
+  padding: 0rem 2rem;
+  height: 6rem;
+}
+
+
+.ContainerCard main p{
+  font-size: 32px;
+  float: right;
+  margin-right: 1rem;
+  margin-bottom: 3px;
+  
+}
+.ContainerCard main p:hover{
+  color: #4169E1;
+  border-bottom: 1px solid #191970 !important;
+}
+.ContainerCard:hover{
+  transform: translateX(1px) rotate(3deg) translateY(2px);
+}
