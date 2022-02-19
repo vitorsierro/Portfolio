@@ -12,7 +12,7 @@ import styled from '../../styles/Sobre.module.css'
 const { Title } = Typography;
 
 export default function Sobre() {
-  const curriculum = "https://1drv.ms/b/s!Aoet_ZIDQNAOg68Zdmgha9i3HLxziQ?e=j1UJsu";
+  const curriculum = "https://1drv.ms/b/s!Aoet_ZIDQNAOg7A7LoqolNr61u9iHA";
   const fontStyle = "https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Roboto+Mono:ital@1&display=swap";
   return (
     <>
