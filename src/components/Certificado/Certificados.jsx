@@ -17,7 +17,7 @@ export default function Certificados() {
 		<>
 			<Divider id="certificados" orientation="left" className={styled.Divider}>Certificados</Divider>
 			<Row className={styled.Container}>
-				<Col class={styled.ContainerCard} style={{height: '520px !important'}}>
+				<Col className={styled.ContainerCard} style={{height: '520px !important'}}>
 					<header>
 						<Image src={scrum} width={250} height={250} quality={100} />
 						<Title level={3}>SCRUM FOUNDATION PROFESSIONAL CERTIFCATE(SFPC)</Title>
@@ -28,7 +28,7 @@ export default function Certificados() {
 						</a></Link>
 					</main>
 				</Col>
-				<Col class={styled.ContainerCard} style={{height: '520px !important'}}>
+				<Col className={styled.ContainerCard} style={{height: '520px !important'}}>
 					<header>
 						<Image src={devops} width={250} height={250} quality={100} />
 						<Title level={3}>DevOps Essentials Professional Certificate(DEPC)</Title>
@@ -42,7 +42,7 @@ export default function Certificados() {
 			</Row>
 			<Divider id="cursos" orientation="left" className={styled.Divider}>Cursos</Divider>
 			<Row className={styled.Container}>
-				<Col class={styled.ContainerCard}>
+				<Col className={styled.ContainerCard}>
 					<header>
 						<Image src={alura} width={250} height={250} quality={100} />
 						<Title level={3}>Formação Alura - React</Title>
@@ -54,7 +54,7 @@ export default function Certificados() {
 						</a></Link>
 					</main>
 				</Col>
-				<Col class={styled.ContainerCard}>
+				<Col className={styled.ContainerCard}>
 					<header>
 						<Image src={origamid} width={250} height={250} quality={100} />
 						<Title level={3}>CSS FLEXBOX, BOOTSTRAP 4, Adobe XD, JAVASCRIPT e JQUERy</Title>
@@ -66,7 +66,7 @@ export default function Certificados() {
 						</a></Link>
 					</main>
 				</Col>
-				<Col class={styled.ContainerCard}>
+				<Col className={styled.ContainerCard}>
 					<header>
 						<Image src={hcode} width={250} height={250} quality={100} />
 						<Title level={3}>PHP 7</Title>

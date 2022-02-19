@@ -18,8 +18,6 @@
 }
 .Conteudo hr{
   position: relative;
-  width: 21.75rem;
-  right: 32px;
   margin-top: 2rem;
   background-color: #686868 !important;
 
@@ -29,12 +27,13 @@
   color:#6a6a6a !important;
 }
 .Conteudo p{
-  height: 130px;
+  height: 10%;
   color:#787878
 }
 .Conteudo h5{
   color:#6a6a6a !important;
-  height: 50px;}
+  height: 8%;  
+}
 
 .ConteudoLink{
   float: right;
@@ -42,4 +41,19 @@
 .ConteudoLink:hover{
   color: #4169E1;
   border-bottom: 1px solid #191970 !important;
+}
+@media only screen and (max-width: 1200px) {
+  .Projetos{
+    flex: 0 0 40% !important;
+    max-width: 50% !important;
+  }
+
+}
+
+@media only screen and (max-width: 600px) {
+  .Projetos{
+    flex: 0 0 80% !important;
+    max-width: 100% !important;
+  }
+  
 }

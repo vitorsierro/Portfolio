@@ -1,5 +1,6 @@
 .Container{
-  margin: 2rem 2rem;
+  margin: 1% 18%;
+  flex-flow: row !important;
 }
 .Divider{
   border-top-color: #707070 !important;
@@ -41,4 +42,10 @@
 }
 .ContainerCard:hover{
   transform: translateX(1px) rotate(3deg) translateY(2px);
+}
+@media only screen and (max-width: 850px) {
+  .Container{
+    flex-flow: row wrap !important;
+  }
+  
 }

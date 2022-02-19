@@ -27,6 +27,24 @@ export default function Experiencia() {
         <Title level={5}>Atuei com Manutenção de computadores, faturamento de algumas unidades de saúde e ajudava os responsaveis de unidade com o departamento de ti.<br/>
         Utilizando as ferramentas do governo federal(ESUS, GIL, CADWEB)</Title>
       </div>
+      <div className={styled.Experiencia}>
+        <div>
+          <Title level={2}>Desenvolvedor Web JR</Title>
+          <Title level={2}>DE 05/20221 ATÉ 11/2021</Title>
+        </div>
+        <Title level={4} className={styled.ExperienciaH4}>KF Bank</Title>
+        <hr />
+        <Title level={5}>Atuei como Desenvolvedor web criando alguns prototipos em react com o framework next e trabalhando com wordpress para alguns projetos internos</Title>
+      </div>
+      <div className={styled.Experiencia}>
+        <div>
+          <Title level={2}>Entry Level Software Developer JR</Title>
+          <Title level={2}>DE 11/2021 ATÉ HOJE</Title>
+        </div>
+        <Title level={4} className={styled.ExperienciaH4}>Philips</Title>
+        <hr />
+        <Title level={5}>Atuei como desenvolvedor java criando endpoint para se comunicar com o sistema tasy no primeiro momento e atualmente com o sistema tasy na parte de contabilidade do sistema </Title>
+      </div>
     </div>
   )
 };

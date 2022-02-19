@@ -12,6 +12,7 @@ import formulario from '../../public/formulario-page.png'
 import tractian from '../../public/tractian-page.png'
 import dsvendas from '../../public/dsvendas-page.png'
 import coodesh from '../../public/coodesh-page.png'
+import kfbank from '../../public/kfbank.png'
 
 const { Title } = Typography;
 
@@ -63,7 +64,7 @@ export default function Projetos() {
             <div className={styled.Conteudo}>
               <hr />
               <Title level={3}>Moveit</Title>
-              <p className={styled.Conteudo}>col-6</p>
+              <p className={styled.Conteudo}>Site desenvolvido para aprender react e next com a função de desafios de 30 minutos para focar estilo pomodoro</p>
               <Title level={5}>#React.js #Next.js #Javascript </Title>
             </div></a></Link>
           <Link href="https://nlw-moveit-7nov1by65-vitorsierro.vercel.app/" ><a target='_blank'>
@@ -115,6 +116,18 @@ export default function Projetos() {
                 <p className={styled.Conteudo}>challenge da coodesh onde o objetivo era criar um site em react utilizando uma api de wiki para buscar receita entre outras coisa</p>
                 <Title level={5}>#Javascript #React.js #Ant_Design #API_Wiki</Title></div></a></Link>
           <Link href="https://github.com/vitorsierro/challenge_Coodesh" ><a target='_blank'>
+            <p className={styled.ConteudoLink}>Saiba mais sobre a estrutura</p></a></Link>
+        </Col>
+        <Col className={styled.Projetos} span={7}>
+          <Link href="https://kf-bank-prot.vercel.app/Users" >
+            <a target='_blank'>
+              <Image src={kfbank} placeholder="blur" />
+              <div className={styled.Conteudo}>
+                <hr />
+                <Title level={3}>KF Bank - Prototipo </Title>
+                <p className={styled.Conteudo}>Prototipo desenvolvido para a empresa kf bank com react js, next js e a lib de ant-design</p>
+                <Title level={5}>#Javascript #React.js #Ant_Design #Google charts</Title></div></a></Link>
+          <Link href="https://github.com/vitorsierro/kf_bank_prot" ><a target='_blank'>
             <p className={styled.ConteudoLink}>Saiba mais sobre a estrutura</p></a></Link>
         </Col>
 
