@@ -10,7 +10,7 @@
              "JAVASCRIPT",
              "JQUERY"
           ],
-          "link":""
+          "link":"https://github.com/vitorsierro/Nature"
        },
        {
           "titulo":"CARAVAN",
@@ -22,7 +22,7 @@
              "JAVASCRIPT",
              "JQUERY"
           ],
-          "link":""
+          "link":"https://github.com/vitorsierro/Caravan"
        },
        {
           "titulo":"MARINA",
@@ -34,7 +34,7 @@
              "JAVASCRIPT",
              "JQUERY"
           ],
-          "link":""
+          "link":"https://github.com/vitorsierro/marina-front-end"
        },
        {
           "titulo":"MOVEIT",
@@ -47,7 +47,7 @@
              "REACT.JS",
              "NEXT.JS"
           ],
-          "link":""
+          "link":"/"
        },
        {
           "titulo":"FORMULARIO REACT.JS",
@@ -61,7 +61,7 @@
              "MATERIAL IU",
              "API_VIACEP"
           ],
-          "link":""
+          "link":"https://github.com/vitorsierro/Formulario_React.js"
        },
        {
           "titulo":"TRACTIAN",
@@ -75,7 +75,7 @@
              "ANT_DESIGN",
              "HIGHCHARTS"
           ],
-          "link":""
+          "link":"https://github.com/vitorsierro/tractian"
        },
        {
           "titulo":"DEVSUPERIOR",
@@ -89,7 +89,7 @@
              "JAVA",
              "SPRING"
           ],
-          "link":""
+          "link":"https://github.com/vitorsierro/DevSuperior_Spring_React"
        },
        {
           "titulo":"COODESH CHALLENGE",
@@ -102,7 +102,7 @@
              "REACT.JS",
              "API_WIKI"
           ],
-          "link":""
+          "link":"https://github.com/vitorsierro/challenge_Coodesh"
        },
        {
           "titulo":"KFBANK PROTOTIPO",
@@ -116,7 +116,7 @@
              "ANT_DESIGN",
              "GOOGLE CHARTS"
           ],
-          "link":""
+          "link":"https://github.com/vitorsierro/kf_bank_prot"
        }
       ],
     "Experiencia_Profissional":[
@@ -134,7 +134,7 @@
              "SCRUM",
              "KANBAN"
           ],
-          "link":""
+          "link":"https://www.linkedin.com/company/philips/mycompany/verification/"
        },
        {
           "cargo":"DESENVOLVEDOR WEB JUNIOR",
@@ -147,7 +147,7 @@
              "JAVASCRIPT",
              "WORDPRESS"
           ],
-          "link":""
+          "link":"https://www.linkedin.com/company/kf-bank/?originalSubdomain=br"
        },
       {
           "cargo":"ESTAGÍARIO DE ENGENHARIA DE SOFTWARE",
@@ -164,7 +164,7 @@
              "KANBAN",
              "DEVOPS"
           ],
-          "link":""
+          "link":"https://www.linkedin.com/company/itau/?originalSubdomain=br"
        },
        {
           "cargo":"ESTAGÍARIO DE MANUTENÇÃO DE COMPUTADOR",
@@ -174,7 +174,7 @@
           "tecnologias":[
              
           ],
-          "link":""
+          "link":"https://www.guaruja.sp.gov.br/"
        }
    ],
     "CERTIFICACAO":[

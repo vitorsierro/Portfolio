@@ -17,9 +17,11 @@
   padding-bottom: 2rem;
 }
 .ContainerCard header{
-  margin: 2rem 8rem !important;
+  margin: 2rem 2rem !important;
+  text-align: -webkit-center;
 }
 .ContainerCard img{
+  margin:center;
   border-radius: 5%;
 }
 .ContainerCard h3{

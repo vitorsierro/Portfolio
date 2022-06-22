@@ -19,7 +19,7 @@ export default function Certificados() {
 			{certificados.map(({titulo,empresa,link,img},key) => (
 					<Col className={styled.ContainerCard} key={key} span={7}>
 						<header>
-							<Image src={img} width={250} height={250} quality={100} style={{margin:'center'}} />
+							<Image src={img} width={250} height={250} quality={100} />
 						</header>
 						<main>
 							<Title level={3}>{titulo}</Title>

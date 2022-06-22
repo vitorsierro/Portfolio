@@ -10,6 +10,9 @@
   width: 720px;
   margin-left: 14%;
 }
+.Line{
+  display: contents;
+}
 .Sobre h1,.Sobre h2,.Sobre h4{
   margin-top: 0rem !important;
   margin-bottom: 0.5rem !important;
@@ -48,8 +51,12 @@
 .Icons{
   margin-top:4rem;
   margin-bottom: 2rem;
-  text-align: center;
+  display: flex;
+  justify-content: center;
 
+}
+.Nome{
+  margin-left: -4rem;
 }
 .Icons a{
   margin-right: 3.5rem;

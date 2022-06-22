@@ -16,11 +16,11 @@ export default function Projetos() {
       <Row className={styled.Container}>
       {
         projetos.map(({titulo,empresa,link,img,conteudo,tags},key) => (
-            <Col className={styled.Projetos} span={7}>
+            <Col className={styled.Projetos} span={7} key={key}>
             <Link href={link} >
               <a target='_blank'>
                 <div className={styled.Image}>
-                  <Image src={img} desfoqueDataURL ="blur" width='250%' height='250%' />
+                  <Image src={img} desfoquedataurl="blur" width='250%' height='250%' />
                 </div>
                 <div className={styled.Conteudo}>
                   <hr />
@@ -28,7 +28,7 @@ export default function Projetos() {
                   <p>{conteudo}</p>
                   <p className={styled.Empresa}>{empresa}</p>
                   <div className={styled.Line}>
-                  {tags.map((tag) => (
+                  {tags.map((tag,key) => (
                       <Tag key={key} color='blue' className={styled.Tag}>{tag}</Tag>
                   ))}</div>
                 </div>
