@@ -8,10 +8,13 @@
 }
 .Projetos{
   margin-right: 2rem;
-  margin-top: 1rem;
+  margin-top: 2rem;
   padding: 2rem 2rem;
   border-radius: 5%;
   border:3px solid #686868;
+}
+.Image{
+  display: grid;
 }
 .Projetos:hover{
   transform: translateX(1px) rotate(3deg) translateY(2px);
@@ -34,13 +37,24 @@
   color:#6a6a6a !important;
   height: 8%;  
 }
-
+.Empresa{
+  text-align: unset !important;
+  margin-left: 2rem;
+  color: #191970 !important;
+}
 .ConteudoLink{
   float: right;
 }
 .ConteudoLink:hover{
   color: #4169E1;
   border-bottom: 1px solid #191970 !important;
+}
+.Line{
+  margin:2rem 0rem;
+}
+.Tag{
+  font-weight: 700;
+  font-size: 16px !important;
 }
 @media only screen and (max-width: 1200px) {
   .Projetos{

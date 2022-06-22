@@ -1,0 +1,275 @@
+{
+    "projetos":[
+       {
+          "titulo":"NATURE",
+          "img":"/Nature.png",
+          "conteudo":"Curso da origamid ao qual foi desenvolvido um site fictio onde aborda a natureza feita com desenvolvimento ao jquery",
+          "tags":[
+             "HTML",
+             "CSS",
+             "JAVASCRIPT",
+             "JQUERY"
+          ],
+          "link":""
+       },
+       {
+          "titulo":"CARAVAN",
+          "img":"/Caravan.png",
+          "conteudo":"Curso da origamid ao qual foi desenvolvido o site fictio onde aborda um site de turismo utilizando slide e explorando o jquery e o html5 e css3",
+          "tags":[
+             "HTML",
+             "CSS",
+             "JAVASCRIPT",
+             "JQUERY"
+          ],
+          "link":""
+       },
+       {
+          "titulo":"MARINA",
+          "img":"/Marina.png",
+          "conteudo":"Site criado com o fim de um projeto ao qual não foi para frente, desenvolvido para uma marina da região com api de previsão do tempo, previsão do mar e previsão de vento.",
+          "tags":[
+             "HTML",
+             "CSS",
+             "JAVASCRIPT",
+             "JQUERY"
+          ],
+          "link":""
+       },
+       {
+          "titulo":"MOVEIT",
+          "img":"/Moveit.png",
+          "conteudo":"Site desenvolvido para aprender react e next com a função de desafios de 30 minutos para focar estilo pomodoro",
+          "tags":[
+             "HTML",
+             "CSS",
+             "JAVASCRIPT",
+             "REACT.JS",
+             "NEXT.JS"
+          ],
+          "link":""
+       },
+       {
+          "titulo":"FORMULARIO REACT.JS",
+          "img":"/Formulario.png",
+          "conteudo":"Curso da origamid ao qual foi desenvolvido um site fictio onde aborda a natureza feita com desenvolvimento ao jquery",
+          "tags":[
+             "HTML",
+             "CSS",
+             "JAVASCRIPT",
+             "REACT.JS",
+             "MATERIAL IU",
+             "API_VIACEP"
+          ],
+          "link":""
+       },
+       {
+          "titulo":"TRACTIAN",
+          "img":"/Tractian.png",
+          "conteudo":"Projeto da tractian para vaga de react front-end onde tive que desenvolver algumas telas com gráficos e tabela utilizando ant-design e Highcharts",
+          "tags":[
+             "HTML",
+             "CSS",
+             "JAVASCRIPT",
+             "REACT.JS",
+             "ANT_DESIGN",
+             "HIGHCHARTS"
+          ],
+          "link":""
+       },
+       {
+          "titulo":"DEVSUPERIOR",
+          "img":"/DevSuperior.png",
+          "conteudo":"Curso da devsuperior utilizando spring e react para criar graficos ficticios",
+          "tags":[
+             "HTML",
+             "CSS",
+             "JAVASCRIPT",
+             "REACT.JS",
+             "JAVA",
+             "SPRING"
+          ],
+          "link":""
+       },
+       {
+          "titulo":"COODESH CHALLENGE",
+          "img":"/Coodesh.png",
+          "conteudo":"challenge da coodesh onde o objetivo era criar um site em react utilizando uma api de wiki para buscar receita entre outras coisa",
+          "tags":[
+             "HTML",
+             "CSS",
+             "JAVASCRIPT",
+             "REACT.JS",
+             "API_WIKI"
+          ],
+          "link":""
+       },
+       {
+          "titulo":"KFBANK PROTOTIPO",
+          "img":"/KFBANK.png",
+          "conteudo":"Prototipo desenvolvido para a empresa kf bank com react js, next js e a lib de ant-design",
+          "tags":[
+             "HTML",
+             "CSS",
+             "JAVASCRIPT",
+             "REACT.JS",
+             "ANT_DESIGN",
+             "GOOGLE CHARTS"
+          ],
+          "link":""
+       }
+      ],
+    "Experiencia_Profissional":[
+       {
+          "cargo":"ENTRY LEVEL SOFTWARE DEVELOPER JUNIOR",
+          "empresa":"PHILIPS",
+          "conteudo":"Atuei como desenvolvedor java criando endpoint para se comunicar com o sistema tasy no primeiro momento e atualmente com o sistema tasy na parte de contabilidade do sistema.",
+          "datas":"DE 11/2021 ATÉ HOJE",
+          "tecnologias":[
+             "JAVA SE 8",
+             "JAVA SWING",
+             "PLSQL",
+             "JAVASCRIPT",
+             "ANGULAR.JS",
+             "SCRUM",
+             "KANBAN"
+          ],
+          "link":""
+       },
+       {
+          "cargo":"DESENVOLVEDOR WEB JUNIOR",
+          "empresa":"KF BANK",
+          "conteudo":"Atuei como Desenvolvedor web criando alguns prototipos em react com o framework next e trabalhando com wordpress para alguns projetos internos.",
+          "datas":"DE 05/2021 ATÉ 11/2021",
+          "tecnologias":[
+             "REACT.JS",
+             "NEXT.JS",
+             "JAVASCRIPT",
+             "WORDPRESS"
+          ],
+          "link":""
+       },
+      {
+          "cargo":"ESTAGÍARIO DE ENGENHARIA DE SOFTWARE",
+          "empresa":"ITAÚ UNIBANCO",
+          "conteudo":"Atuei com Peoplesoft e Oracle DB \n Utilizando metodologias ageis e desenvolvimento voltado a teste",
+          "datas":"DE 03/2020 ATÉ 12/2020",
+          "tecnologias":[
+             "SQL ORACLE",
+             "PEOPLESOFT",
+             "PEOPLESOFT FLUID",
+             "HTML",
+             "CSS",
+             "SCRUM",
+             "KANBAN",
+             "DEVOPS"
+          ],
+          "link":""
+       },
+       {
+          "cargo":"ESTAGÍARIO DE MANUTENÇÃO DE COMPUTADOR",
+          "empresa":"PREFEITURA DE GUARUJA - SECRETARIA DE SAÚDE",
+          "conteudo":"Atuei com Manutenção de computadores, faturamento de algumas unidades de saúde e ajudava os responsaveis de unidade com o departamento de ti.\n Utilizando as ferramentas do governo federal(ESUS, GIL, CADWEB).",
+          "datas":"DE 03/2019 ATÉ 02/2020",
+          "tecnologias":[
+             
+          ],
+          "link":""
+       }
+   ],
+    "CERTIFICACAO":[
+       {
+          "titulo":"SCRUM FOUNDATION PROFESSIONAL CERTIFCATE(SFPC)",
+          "img":"/scrum_foundation.png",
+          "empresa":"CERTIPROF",
+          "link":"https://certiprof.com/pages/scrum-foundations-professional-certificate-sfpc-ptbr"
+       },
+       {
+          "titulo":"DEVOPS ESSENTIALS PROFESSIONAL CERTIFICATE(DEPC)",
+          "img":"/devops_essentials.png",
+          "empresa":"CERTIPROF",
+          "link":"https://certiprof.com/pages/devops-essentials-professional-certificate-depc"
+       }
+    ],
+    "CURSOS":[
+       {
+          "titulo":"FORMAÇÃO ALURA - REACT",
+          "conteudo":"Curso feito na alura ao qual foi desenvolvido minhas tecnicas em react.js, horas totais de: horas",
+          "empresa":"ALURA",
+          "img":"/formacao_react.jpg",
+          "link":"https://www.alura.com.br/formacao-react-js"
+       },
+       {
+          "titulo":"CSS FLEXBOX",
+          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em css flexbox, horas totais de: horas",
+          "empresa":"ORIGAMID",
+          "img":"/origamid.png",
+          "link":"https://www.origamid.com/curso/css-flexbox"
+       },
+       {
+          "titulo":"BOOTSTRAP 4",
+          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em bootstrap 4, horas totais de: horas",
+          "empresa":"ORIGAMID",
+          "img":"/origamid.png",
+          "link":"https://www.origamid.com/curso/bootstrap-4/"
+       },
+       {
+          "titulo":"ADOBE XD",
+          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em adobe xd, horas totais de: horas",
+          "empresa":"ORIGAMID",
+          "img":"/origamid.png",
+          "link":"https://www.origamid.com/curso/adobe-xd"
+       },
+       {
+          "titulo":"JAVASCRIPT",
+          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em javascript, horas totais de: horas",
+          "empresa":"ORIGAMID",
+          "img":"/origamid.png",
+          "link":"https://www.origamid.com/curso/javascript-completo-es6"
+       },
+       {
+          "titulo":"JQUERY",
+          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em jquery, horas totais de: horas",
+          "empresa":"ORIGAMID",
+          "img":"/origamid.png",
+          "link":"https://www.origamid.com/curso/javascript-e-jquery"
+       },
+       {
+          "titulo":"PHP 7",
+          "conteudo":"Cursos feito na udemy ao qual foi desenvolvido um ecommerce do zero com php 7. total de horas: horas",
+          "empresa":"HCODE",
+          "img":"/hcode.png",
+          "link":"https://www.udemy.com/course/curso-php-7-online/learn/lecture/15933562?start=0#overview"
+       }
+      ],
+    "DADOS_PESSOAIS":[
+       {
+         "nome":"VITOR SIERRO",
+         "cargo":"DESENVOLVEDOR FULLSTACK JR",
+         "endereco":"BLUMENAU * SANTA CATARINA * BRASIL",
+         "telefone":"(13)9 99690-6052",
+         "phone":"13996906052",
+         "email": "vitorsierro_@hotmail.com",
+         "foco":"Hoje meu foco está em pegar fluencia em ingles e desenvolver como fullstack com a stack de java + react.js. Também estou me desenvolvendo com devOps e teste em um futuro mais proximo",
+         "softSkill":"",
+         "sobre_mim":"Sou formado em ciência da computação, trabalho na área contabilidade dentro da Philips com o desenvolvimento web/Java, meu foço atualmente está em desenvolvimento full-stack com a stack de java + react.js, possuo experiência em pwa, Javascript, react.js, next.js html/css e java.",
+         "links":[
+            {
+               "link":"https://github.com/vitorsierro",
+               "img":"/github.png",
+               "alt":"Icon of the github"
+            },
+            {
+               "link":"https://www.linkedin.com/in/vitor-sierro/",
+               "img":"/linkedin.png",
+               "alt":"Icon of the linkedIn"
+            },
+            {
+               "link":"https://abrir.link/vitor-sierro",
+               "img":"/cv.png",
+               "alt":"Picture of the curriculum"
+            }
+         ],
+         "photo":"/fotoPerfil.jpg"
+         }]
+ }

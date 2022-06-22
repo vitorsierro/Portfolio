@@ -1,10 +1,12 @@
 .Container{
-  margin: 1% 18%;
-  flex-flow: row !important;
+  margin:0px;
+  margin-left: 8rem;
+  justify-content: center;
 }
 .Divider{
   border-top-color: #707070 !important;
   font-size: 32px !important;
+  margin-top: 2rem;
 }
 .ContainerCard{
   border: 2px solid #686868;
@@ -12,22 +14,26 @@
   margin: 2rem;
   width: 100%;
   max-width: 320px;
-  height: 620px;
+  padding-bottom: 2rem;
 }
 .ContainerCard header{
-  margin: 2rem 2rem !important;
+  margin: 2rem 8rem !important;
 }
 .ContainerCard img{
   border-radius: 5%;
 }
 .ContainerCard h3{
-  text-align: left;
+  text-align: center;
 }
 .ContainerCard h5{
   padding: 0rem 2rem;
   height: 6rem;
 }
-
+.Empresa{
+  text-align: unset !important;
+  margin-left: 2rem;
+  color: #191970 !important;
+}
 
 .ContainerCard main p{
   font-size: 32px;
