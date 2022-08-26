@@ -17,17 +17,16 @@
   margin-top: 0rem !important;
   margin-bottom: 0.5rem !important;
   font-family: 'Roboto Mono', monospace;
-  color:#A9A9A9 !important;
+  color:#797979 !important;
 }
 .Sobre h1{
   font-size: 100px !important;
   font-family: 'Dancing Script', cursive;
   margin-bottom: 0px !important;
-  color:#696969 !important;
+  color:#797979 !important;
 }
 .Sobre hr{
   margin: 0.75rem -2rem !important;
-  width: 590px;
 }
 
 .Pessoal{
@@ -40,7 +39,7 @@
   margin-right: 2rem;
 }
 .Pessoal a{
-  color: #A9A9A9 !important;
+  color: #797979 !important;
   border: none;
 }
 .Pessoal a:hover{

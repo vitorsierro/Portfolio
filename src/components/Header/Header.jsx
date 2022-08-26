@@ -11,7 +11,7 @@ export default function Header() {
         <Link href="/"><li>Home</li></Link>
         <Link href="#project"><li>Projetos</li></Link>
         <Link href="#experiency"><li>Experiência</li></Link>
-        <Link href="#habilidade"><li>Habilidades</li></Link>
+        <Link href="#cursos"><li>Habilidades</li></Link>
         <Link href="#certificados"><li>Certificados</li></Link>
         <Link href="#sobre"><li>Sobre</li></Link>
       </ul>

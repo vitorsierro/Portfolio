@@ -38,11 +38,7 @@ export default function Sobre() {
               ))}
               </div>
           </div>
-          <div className={styled.FotoPerfil}>
-            <Image src={photo} desfoquedataurl="blur" width={550} height={550} quality={100} priority="preload"
-            alt="Picture of the my" />
-          </div>
-        </div>
+         </div>
       ))}
     </div>
     </>

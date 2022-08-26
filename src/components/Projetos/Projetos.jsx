@@ -15,9 +15,9 @@ export default function Projetos() {
       <Divider id="project" orientation="left" className={styled.Divider}>Projetos</Divider>
       <Row className={styled.Container}>
       {
-        projetos.map(({titulo,empresa,link,img,conteudo,tags},key) => (
+        projetos.map(({titulo,empresa,link,link2,img,conteudo,tags},key) => (
             <Col className={styled.Projetos} span={7} key={key}>
-            <Link href={link} >
+            <Link href={link != "" ? link : link2} >
               <a target='_blank'>
                 <div className={styled.Image}>
                   <Image src={img} desfoquedataurl="blur" width='250%' height='250%' />
@@ -33,7 +33,7 @@ export default function Projetos() {
                   ))}</div>
                 </div>
               </a></Link>
-            <Link href="https://github.com/vitorsierro/Nature" ><a target='_blank'>
+            <Link href={link2}><a target='_blank'>
               <p className={styled.ConteudoLink}>Saiba mais sobre a estrutura</p></a></Link>
           </Col>
           ))

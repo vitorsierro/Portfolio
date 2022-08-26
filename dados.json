@@ -3,56 +3,46 @@
        {
           "titulo":"NATURE",
           "img":"/Nature.png",
-          "conteudo":"Curso da origamid ao qual foi desenvolvido um site fictio onde aborda a natureza feita com desenvolvimento ao jquery",
+          "conteudo":"Curso da origamid ao qual foi desenvolvido um site fictio onde aborda a natureza.",
           "tags":[
              "HTML",
              "CSS",
              "JAVASCRIPT",
              "JQUERY"
           ],
-          "link":"https://github.com/vitorsierro/Nature"
+          "link":"",
+          "link2":"https://github.com/vitorsierro/Nature"
        },
        {
           "titulo":"CARAVAN",
           "img":"/Caravan.png",
-          "conteudo":"Curso da origamid ao qual foi desenvolvido o site fictio onde aborda um site de turismo utilizando slide e explorando o jquery e o html5 e css3",
+          "conteudo":"Curso da origamid ao qual foi desenvolvido o site fictio onde aborda um site de turismo.",
           "tags":[
              "HTML",
              "CSS",
              "JAVASCRIPT",
              "JQUERY"
           ],
-          "link":"https://github.com/vitorsierro/Caravan"
+          "link":"",
+          "link2":"https://github.com/vitorsierro/Caravan"
        },
        {
           "titulo":"MARINA",
           "img":"/Marina.png",
-          "conteudo":"Site criado com o fim de um projeto ao qual não foi para frente, desenvolvido para uma marina da região com api de previsão do tempo, previsão do mar e previsão de vento.",
+          "conteudo":"Site criado para uma marina da região com api de previsão do tempo, previsão do mar e previsão de vento.",
           "tags":[
              "HTML",
              "CSS",
              "JAVASCRIPT",
              "JQUERY"
           ],
-          "link":"https://github.com/vitorsierro/marina-front-end"
-       },
-       {
-          "titulo":"MOVEIT",
-          "img":"/Moveit.png",
-          "conteudo":"Site desenvolvido para aprender react e next com a função de desafios de 30 minutos para focar estilo pomodoro",
-          "tags":[
-             "HTML",
-             "CSS",
-             "JAVASCRIPT",
-             "REACT.JS",
-             "NEXT.JS"
-          ],
-          "link":"/"
+          "link":"",
+          "link2":"https://github.com/vitorsierro/marina-front-end"
        },
        {
           "titulo":"FORMULARIO REACT.JS",
           "img":"/Formulario.png",
-          "conteudo":"Curso da origamid ao qual foi desenvolvido um site fictio onde aborda a natureza feita com desenvolvimento ao jquery",
+          "conteudo":"Site ao qual foi desenvolvido a parte tecnica de api e componentização do react.",
           "tags":[
              "HTML",
              "CSS",
@@ -61,12 +51,13 @@
              "MATERIAL IU",
              "API_VIACEP"
           ],
-          "link":"https://github.com/vitorsierro/Formulario_React.js"
+          "link":"https://formulario-react-js.vercel.app",
+          "link2":"https://github.com/vitorsierro/Formulario_React.js"
        },
        {
           "titulo":"TRACTIAN",
           "img":"/Tractian.png",
-          "conteudo":"Projeto da tractian para vaga de react front-end onde tive que desenvolver algumas telas com gráficos e tabela utilizando ant-design e Highcharts",
+          "conteudo":"Projeto da tractian para um desafio de react, onde tive que desenvolver algumas telas com gráficos e tabela utilizando ant-design e Highcharts.",
           "tags":[
              "HTML",
              "CSS",
@@ -75,12 +66,13 @@
              "ANT_DESIGN",
              "HIGHCHARTS"
           ],
-          "link":"https://github.com/vitorsierro/tractian"
+          "link":"https://tractian-ashen.vercel.app",
+          "link2":"https://github.com/vitorsierro/tractian"
        },
        {
           "titulo":"DEVSUPERIOR",
           "img":"/DevSuperior.png",
-          "conteudo":"Curso da devsuperior utilizando spring e react para criar graficos ficticios",
+          "conteudo":"Curso da devsuperior para o desenvolvimento de um backend em  java spring e react para criar graficos ficticios",
           "tags":[
              "HTML",
              "CSS",
@@ -89,12 +81,13 @@
              "JAVA",
              "SPRING"
           ],
-          "link":"https://github.com/vitorsierro/DevSuperior_Spring_React"
+          "link":"",
+          "link2":"https://github.com/vitorsierro/DevSuperior_Spring_React"
        },
        {
-          "titulo":"COODESH CHALLENGE",
+          "titulo":"DESAFIO COODESH",
           "img":"/Coodesh.png",
-          "conteudo":"challenge da coodesh onde o objetivo era criar um site em react utilizando uma api de wiki para buscar receita entre outras coisa",
+          "conteudo":"Desafio da coodesh onde o objetivo era criar um site em react utilizando uma api de wiki para buscar receita entre outras coisa",
           "tags":[
              "HTML",
              "CSS",
@@ -102,12 +95,13 @@
              "REACT.JS",
              "API_WIKI"
           ],
-          "link":"https://github.com/vitorsierro/challenge_Coodesh"
+          "link":"https://challenge-coodesh.vercel.app",
+          "link2":"https://github.com/vitorsierro/challenge_Coodesh"
        },
        {
           "titulo":"KFBANK PROTOTIPO",
           "img":"/KFBANK.png",
-          "conteudo":"Prototipo desenvolvido para a empresa kf bank com react js, next js e a lib de ant-design",
+          "conteudo":"Prototipo desenvolvido para a empresa kf bank para uso comercial com tela de login e animação em css",
           "tags":[
              "HTML",
              "CSS",
@@ -116,7 +110,8 @@
              "ANT_DESIGN",
              "GOOGLE CHARTS"
           ],
-          "link":"https://github.com/vitorsierro/kf_bank_prot"
+          "link":"https://kf-bank-prot.vercel.app",
+          "link2":"https://github.com/vitorsierro/kf_bank_prot"
        }
       ],
     "Experiencia_Profissional":[
@@ -250,9 +245,8 @@
          "telefone":"(13)9 99690-6052",
          "phone":"13996906052",
          "email": "vitorsierro_@hotmail.com",
-         "foco":"Hoje meu foco está em pegar fluencia em ingles e desenvolver como fullstack com a stack de java + react.js. Também estou me desenvolvendo com devOps e teste em um futuro mais proximo",
-         "softSkill":"",
-         "sobre_mim":"Sou formado em ciência da computação, trabalho na área contabilidade dentro da Philips com o desenvolvimento web/Java, meu foço atualmente está em desenvolvimento full-stack com a stack de java + react.js, possuo experiência em pwa, Javascript, react.js, next.js html/css e java.",
+         "sobre_mim":"Sou formado em ciências da computações , atuante na Phillips com desenvolvimento Web/Java, atualmente minha maior área de desenvolvimento é voltado a full-stack com stack javascript + react.js, possuo também experiências com Next.JS, html/css, JAVA e PWA",
+         "foco":"Além disso, estou desenvolvendo minha fluência em inglês e buscando conhecimento em áreas de grande valor a ser agregado como DevOps e Testes automatizados sem deixar de melhorar minhas habilidades como desenvolvedor full-stack",
          "links":[
             {
                "link":"https://github.com/vitorsierro",
@@ -269,7 +263,6 @@
                "img":"/cv.png",
                "alt":"Picture of the curriculum"
             }
-         ],
-         "photo":"/fotoPerfil.jpg"
+         ]
          }]
  }

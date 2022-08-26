@@ -32,7 +32,7 @@ export default function Certificados() {
 				))
 			}
 			</Row>
-			<Divider id="certificados" orientation="left" className={styled.Divider}>Certificados</Divider>
+			<Divider id="cursos" orientation="left" className={styled.Divider}>Cursos</Divider>
 			<Row className={styled.Container}>	
 			{cursos.map(({titulo,empresa,link,img,conteudo},key) => (
 
