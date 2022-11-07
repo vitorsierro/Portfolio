@@ -116,10 +116,26 @@
       ],
     "Experiencia_Profissional":[
        {
-          "cargo":"ENTRY LEVEL SOFTWARE DEVELOPER JUNIOR",
+         "cargo":"DESENVOLVEDOR FRONTEND PLENO",
+         "empresa":"ACCT",
+         "conteudo":"Atuo em um projeto jamstack com parte em vtex io, criando componentes novos e refatorando codigos legados em vtex io",
+         "datas":"DE 09/2022 ATÉ HOJE",
+         "tecnologias":[
+            "HTML 5",
+            "POST CSS",
+            "VTEX IO",
+            "FASTSTORE",
+            "GATSBY",
+            "SCRUM",
+            "KANBAN"
+         ],
+         "link":"https://www.linkedin.com/company/acctglobal/mycompany/verification/"
+      },
+      {
+          "cargo":"ENTRY LEVEL SOFTWARE DEVELOPER",
           "empresa":"PHILIPS",
-          "conteudo":"Atuei como desenvolvedor java criando endpoint para se comunicar com o sistema tasy no primeiro momento e atualmente com o sistema tasy na parte de contabilidade do sistema.",
-          "datas":"DE 11/2021 ATÉ HOJE",
+          "conteudo":"Atuei como desenvolvedor java criando endpoint para se comunicar com o sistema tasy no primeiro momento e com o sistema tasy na parte de contabilidade do sistema.",
+          "datas":"DE 11/2021 ATÉ 09/2022",
           "tecnologias":[
              "JAVA SE 8",
              "JAVA SWING",
@@ -259,7 +275,7 @@
                "alt":"Icon of the linkedIn"
             },
             {
-               "link":"https://abrir.link/vitor-sierro",
+               "link":"https://bityli.com/vitor-curriculo",
                "img":"/cv.png",
                "alt":"Picture of the curriculum"
             }
