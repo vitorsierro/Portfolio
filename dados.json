@@ -117,15 +117,18 @@
     "Experiencia_Profissional":[
        {
          "cargo":"DESENVOLVEDOR FRONTEND PLENO",
-         "empresa":"ACCT",
+         "empresa":"Quality digital",
          "conteudo":"Atuo em um projeto jamstack com parte em vtex io, criando componentes novos e refatorando codigos legados em vtex io",
          "datas":"DE 09/2022 ATÉ HOJE",
          "tecnologias":[
             "HTML 5",
             "POST CSS",
+            "REACT.JS",
+            "TYPESCRIPT",
+            "GATSBY",
+            "GRAPHQL",
             "VTEX IO",
             "FASTSTORE",
-            "GATSBY",
             "SCRUM",
             "KANBAN"
          ],
@@ -275,7 +278,7 @@
                "alt":"Icon of the linkedIn"
             },
             {
-               "link":"https://bityli.com/vitor-curriculo",
+               "link":"https://bit.ly/vitor-curriculo",
                "img":"/cv.png",
                "alt":"Picture of the curriculum"
             }
