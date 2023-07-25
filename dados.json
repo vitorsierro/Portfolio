@@ -208,49 +208,56 @@
     "CURSOS":[
        {
           "titulo":"FORMAÇÃO ALURA - REACT",
-          "conteudo":"Curso feito na alura ao qual foi desenvolvido minhas tecnicas em react.js, horas totais de: horas",
+          "conteudo":"Curso feito na alura ao qual foi desenvolvido minhas tecnicas em react.js",
           "empresa":"ALURA",
           "img":"/formacao_react.jpg",
           "link":"https://www.alura.com.br/formacao-react-js"
        },
+        {
+          "titulo":"FORMAÇÃO ALURA - ANGULAR",
+          "conteudo":"Curso feito na alura ao qual foi desenvolvido minhas tecnicas em angular.js",
+          "empresa":"ALURA",
+          "img":"/formacao_react.jpg",
+          "link":"https://www.alura.com.br/formacao-angular-14"
+       },
        {
           "titulo":"CSS FLEXBOX",
-          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em css flexbox, horas totais de: horas",
+          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em css flexbox",
           "empresa":"ORIGAMID",
           "img":"/origamid.png",
           "link":"https://www.origamid.com/curso/css-flexbox"
        },
        {
           "titulo":"BOOTSTRAP 4",
-          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em bootstrap 4, horas totais de: horas",
+          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em bootstrap 4",
           "empresa":"ORIGAMID",
           "img":"/origamid.png",
           "link":"https://www.origamid.com/curso/bootstrap-4/"
        },
        {
           "titulo":"ADOBE XD",
-          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em adobe xd, horas totais de: horas",
+          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em adobe xd",
           "empresa":"ORIGAMID",
           "img":"/origamid.png",
           "link":"https://www.origamid.com/curso/adobe-xd"
        },
        {
           "titulo":"JAVASCRIPT",
-          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em javascript, horas totais de: horas",
+          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em javascript",
           "empresa":"ORIGAMID",
           "img":"/origamid.png",
           "link":"https://www.origamid.com/curso/javascript-completo-es6"
        },
        {
           "titulo":"JQUERY",
-          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em jquery, horas totais de: horas",
+          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em jquery",
           "empresa":"ORIGAMID",
           "img":"/origamid.png",
           "link":"https://www.origamid.com/curso/javascript-e-jquery"
        },
        {
           "titulo":"PHP 7",
-          "conteudo":"Cursos feito na udemy ao qual foi desenvolvido um ecommerce do zero com php 7. total de horas: horas",
+          "conteudo":"Cursos feito na udemy ao qual foi desenvolvido um ecommerce do zero com php 7.",
           "empresa":"HCODE",
           "img":"/hcode.png",
           "link":"https://www.udemy.com/course/curso-php-7-online/learn/lecture/15933562?start=0#overview"
@@ -260,7 +267,7 @@
        {
          "nome":"VITOR SIERRO",
          "cargo":"DESENVOLVEDOR FULLSTACK JR",
-         "endereco":"BLUMENAU * SANTA CATARINA * BRASIL",
+         "endereco":"Guarujá * SÃO PAULO * BRASIL",
          "telefone":"(13)9 99690-6052",
          "phone":"13996906052",
          "email": "vitorsierro_@hotmail.com",
