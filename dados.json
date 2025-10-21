@@ -266,13 +266,9 @@
     "DADOS_PESSOAIS":[
        {
          "nome":"VITOR SIERRO",
-         "cargo":"DESENVOLVEDOR FULLSTACK JR",
-         "endereco":"Guarujá * SÃO PAULO * BRASIL",
-         "telefone":"(13)9 99690-6052",
-         "phone":"13996906052",
+         "cargo":"DESENVOLVEDOR FULLSTACK PLENO",
          "email": "vitorsierro_@hotmail.com",
-         "sobre_mim":"Sou formado em ciências da computações , atuante na Phillips com desenvolvimento Web/Java, atualmente minha maior área de desenvolvimento é voltado a full-stack com stack javascript + react.js, possuo também experiências com Next.JS, html/css, JAVA e PWA",
-         "foco":"Além disso, estou desenvolvendo minha fluência em inglês e buscando conhecimento em áreas de grande valor a ser agregado como DevOps e Testes automatizados sem deixar de melhorar minhas habilidades como desenvolvedor full-stack",
+         "sobre_mim":"Com formação em Ciência da Computação pela Universidade Paulista, integro a Plurix como Desenvolvedor de full stack pleno, especializado em React, Vtex e metodologias ágeis. Nosso time se dedica a implementar soluções inovadoras, otimizar processos e contribuir para o crescimento contínuo da empresa. Minha trajetória inclui experiência como Desenvolvedor full stack Pleno na Quality digital onde desenvolvi meu conhecimento em react e node. Também fui desenvolvedor full stack Jr na Philips, onde aprimorei minhas habilidades em JavaScript e Java Spring, e um histórico em desenvolvimento web no KF Bank, reforçando minha base em tecnologias como MySQL e Javascript. Valorizo o trabalho colaborativo e estou sempre em busca de novos desafios e aprendizados no campo da tecnologia.",
          "links":[
             {
                "link":"https://github.com/vitorsierro",
