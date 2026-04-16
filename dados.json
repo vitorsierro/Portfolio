@@ -1,290 +1,275 @@
 {
-    "projetos":[
-       {
-          "titulo":"NATURE",
-          "img":"/Nature.png",
-          "conteudo":"Curso da origamid ao qual foi desenvolvido um site fictio onde aborda a natureza.",
-          "tags":[
-             "HTML",
-             "CSS",
-             "JAVASCRIPT",
-             "JQUERY"
-          ],
-          "link":"",
-          "link2":"https://github.com/vitorsierro/Nature"
-       },
-       {
-          "titulo":"CARAVAN",
-          "img":"/Caravan.png",
-          "conteudo":"Curso da origamid ao qual foi desenvolvido o site fictio onde aborda um site de turismo.",
-          "tags":[
-             "HTML",
-             "CSS",
-             "JAVASCRIPT",
-             "JQUERY"
-          ],
-          "link":"",
-          "link2":"https://github.com/vitorsierro/Caravan"
-       },
-       {
-          "titulo":"MARINA",
-          "img":"/Marina.png",
-          "conteudo":"Site criado para uma marina da região com api de previsão do tempo, previsão do mar e previsão de vento.",
-          "tags":[
-             "HTML",
-             "CSS",
-             "JAVASCRIPT",
-             "JQUERY"
-          ],
-          "link":"",
-          "link2":"https://github.com/vitorsierro/marina-front-end"
-       },
-       {
-          "titulo":"FORMULARIO REACT.JS",
-          "img":"/Formulario.png",
-          "conteudo":"Site ao qual foi desenvolvido a parte tecnica de api e componentização do react.",
-          "tags":[
-             "HTML",
-             "CSS",
-             "JAVASCRIPT",
-             "REACT.JS",
-             "MATERIAL IU",
-             "API_VIACEP"
-          ],
-          "link":"https://formulario-react-js.vercel.app",
-          "link2":"https://github.com/vitorsierro/Formulario_React.js"
-       },
-       {
-          "titulo":"TRACTIAN",
-          "img":"/Tractian.png",
-          "conteudo":"Projeto da tractian para um desafio de react, onde tive que desenvolver algumas telas com gráficos e tabela utilizando ant-design e Highcharts.",
-          "tags":[
-             "HTML",
-             "CSS",
-             "JAVASCRIPT",
-             "REACT.JS",
-             "ANT_DESIGN",
-             "HIGHCHARTS"
-          ],
-          "link":"https://tractian-ashen.vercel.app",
-          "link2":"https://github.com/vitorsierro/tractian"
-       },
-       {
-          "titulo":"DEVSUPERIOR",
-          "img":"/DevSuperior.png",
-          "conteudo":"Curso da devsuperior para o desenvolvimento de um backend em  java spring e react para criar graficos ficticios",
-          "tags":[
-             "HTML",
-             "CSS",
-             "JAVASCRIPT",
-             "REACT.JS",
-             "JAVA",
-             "SPRING"
-          ],
-          "link":"",
-          "link2":"https://github.com/vitorsierro/DevSuperior_Spring_React"
-       },
-       {
-          "titulo":"DESAFIO COODESH",
-          "img":"/Coodesh.png",
-          "conteudo":"Desafio da coodesh onde o objetivo era criar um site em react utilizando uma api de wiki para buscar receita entre outras coisa",
-          "tags":[
-             "HTML",
-             "CSS",
-             "JAVASCRIPT",
-             "REACT.JS",
-             "API_WIKI"
-          ],
-          "link":"https://challenge-coodesh.vercel.app",
-          "link2":"https://github.com/vitorsierro/challenge_Coodesh"
-       },
-       {
-          "titulo":"KFBANK PROTOTIPO",
-          "img":"/KFBANK.png",
-          "conteudo":"Prototipo desenvolvido para a empresa kf bank para uso comercial com tela de login e animação em css",
-          "tags":[
-             "HTML",
-             "CSS",
-             "JAVASCRIPT",
-             "REACT.JS",
-             "ANT_DESIGN",
-             "GOOGLE CHARTS"
-          ],
-          "link":"https://kf-bank-prot.vercel.app",
-          "link2":"https://github.com/vitorsierro/kf_bank_prot"
-       }
+  "projetos": [
+    {
+      "titulo": "NATURE",
+      "img": "/Nature.png",
+      "conteudo": "Curso da origamid ao qual foi desenvolvido um site fictio onde aborda a natureza.",
+      "tags": ["HTML", "CSS", "JAVASCRIPT", "JQUERY"],
+      "link": "",
+      "link2": "https://github.com/vitorsierro/Nature"
+    },
+    {
+      "titulo": "CARAVAN",
+      "img": "/Caravan.png",
+      "conteudo": "Curso da origamid ao qual foi desenvolvido o site fictio onde aborda um site de turismo.",
+      "tags": ["HTML", "CSS", "JAVASCRIPT", "JQUERY"],
+      "link": "",
+      "link2": "https://github.com/vitorsierro/Caravan"
+    },
+    {
+      "titulo": "MARINA",
+      "img": "/Marina.png",
+      "conteudo": "Site criado para uma marina da região com api de previsão do tempo, previsão do mar e previsão de vento.",
+      "tags": ["HTML", "CSS", "JAVASCRIPT", "JQUERY"],
+      "link": "",
+      "link2": "https://github.com/vitorsierro/marina-front-end"
+    },
+    {
+      "titulo": "FORMULARIO REACT.JS",
+      "img": "/Formulario.png",
+      "conteudo": "Site ao qual foi desenvolvido a parte tecnica de api e componentização do react.",
+      "tags": [
+        "HTML",
+        "CSS",
+        "JAVASCRIPT",
+        "REACT.JS",
+        "MATERIAL IU",
+        "API_VIACEP"
       ],
-    "Experiencia_Profissional":[
-       {
-         "cargo":"DESENVOLVEDOR FRONTEND PLENO",
-         "empresa":"Quality digital",
-         "conteudo":"Atuo em um projeto jamstack com parte em vtex io, criando componentes novos e refatorando codigos legados em vtex io",
-         "datas":"DE 09/2022 ATÉ HOJE",
-         "tecnologias":[
-            "HTML 5",
-            "POST CSS",
-            "REACT.JS",
-            "TYPESCRIPT",
-            "GATSBY",
-            "GRAPHQL",
-            "VTEX IO",
-            "FASTSTORE",
-            "SCRUM",
-            "KANBAN"
-         ],
-         "link":"https://www.linkedin.com/company/acctglobal/mycompany/verification/"
-      },
-      {
-          "cargo":"ENTRY LEVEL SOFTWARE DEVELOPER",
-          "empresa":"PHILIPS",
-          "conteudo":"Atuei como desenvolvedor java criando endpoint para se comunicar com o sistema tasy no primeiro momento e com o sistema tasy na parte de contabilidade do sistema.",
-          "datas":"DE 11/2021 ATÉ 09/2022",
-          "tecnologias":[
-             "JAVA SE 8",
-             "JAVA SWING",
-             "PLSQL",
-             "JAVASCRIPT",
-             "ANGULAR.JS",
-             "SCRUM",
-             "KANBAN"
-          ],
-          "link":"https://www.linkedin.com/company/philips/mycompany/verification/"
-       },
-       {
-          "cargo":"DESENVOLVEDOR WEB JUNIOR",
-          "empresa":"KF BANK",
-          "conteudo":"Atuei como Desenvolvedor web criando alguns prototipos em react com o framework next e trabalhando com wordpress para alguns projetos internos.",
-          "datas":"DE 05/2021 ATÉ 11/2021",
-          "tecnologias":[
-             "REACT.JS",
-             "NEXT.JS",
-             "JAVASCRIPT",
-             "WORDPRESS"
-          ],
-          "link":"https://www.linkedin.com/company/kf-bank/?originalSubdomain=br"
-       },
-      {
-          "cargo":"ESTAGÍARIO DE ENGENHARIA DE SOFTWARE",
-          "empresa":"ITAÚ UNIBANCO",
-          "conteudo":"Atuei com Peoplesoft e Oracle DB \n Utilizando metodologias ageis e desenvolvimento voltado a teste",
-          "datas":"DE 03/2020 ATÉ 12/2020",
-          "tecnologias":[
-             "SQL ORACLE",
-             "PEOPLESOFT",
-             "PEOPLESOFT FLUID",
-             "HTML",
-             "CSS",
-             "SCRUM",
-             "KANBAN",
-             "DEVOPS"
-          ],
-          "link":"https://www.linkedin.com/company/itau/?originalSubdomain=br"
-       },
-       {
-          "cargo":"ESTAGÍARIO DE MANUTENÇÃO DE COMPUTADOR",
-          "empresa":"PREFEITURA DE GUARUJA - SECRETARIA DE SAÚDE",
-          "conteudo":"Atuei com Manutenção de computadores, faturamento de algumas unidades de saúde e ajudava os responsaveis de unidade com o departamento de ti.\n Utilizando as ferramentas do governo federal(ESUS, GIL, CADWEB).",
-          "datas":"DE 03/2019 ATÉ 02/2020",
-          "tecnologias":[
-             
-          ],
-          "link":"https://www.guaruja.sp.gov.br/"
-       }
-   ],
-    "CERTIFICACAO":[
-       {
-          "titulo":"SCRUM FOUNDATION PROFESSIONAL CERTIFCATE(SFPC)",
-          "img":"/scrum_foundation.png",
-          "empresa":"CERTIPROF",
-          "link":"https://certiprof.com/pages/scrum-foundations-professional-certificate-sfpc-ptbr"
-       },
-       {
-          "titulo":"DEVOPS ESSENTIALS PROFESSIONAL CERTIFICATE(DEPC)",
-          "img":"/devops_essentials.png",
-          "empresa":"CERTIPROF",
-          "link":"https://certiprof.com/pages/devops-essentials-professional-certificate-depc"
-       }
-    ],
-    "CURSOS":[
-       {
-          "titulo":"FORMAÇÃO ALURA - REACT",
-          "conteudo":"Curso feito na alura ao qual foi desenvolvido minhas tecnicas em react.js",
-          "empresa":"ALURA",
-          "img":"/formacao_react.jpg",
-          "link":"https://www.alura.com.br/formacao-react-js"
-       },
+      "link": "https://formulario-react-js.vercel.app",
+      "link2": "https://github.com/vitorsierro/Formulario_React.js"
+    },
+    {
+      "titulo": "TRACTIAN",
+      "img": "/Tractian.png",
+      "conteudo": "Projeto da tractian para um desafio de react, onde tive que desenvolver algumas telas com gráficos e tabela utilizando ant-design e Highcharts.",
+      "tags": [
+        "HTML",
+        "CSS",
+        "JAVASCRIPT",
+        "REACT.JS",
+        "ANT_DESIGN",
+        "HIGHCHARTS"
+      ],
+      "link": "https://tractian-ashen.vercel.app",
+      "link2": "https://github.com/vitorsierro/tractian"
+    },
+    {
+      "titulo": "DEVSUPERIOR",
+      "img": "/DevSuperior.png",
+      "conteudo": "Curso da devsuperior para o desenvolvimento de um backend em  java spring e react para criar graficos ficticios",
+      "tags": ["HTML", "CSS", "JAVASCRIPT", "REACT.JS", "JAVA", "SPRING"],
+      "link": "",
+      "link2": "https://github.com/vitorsierro/DevSuperior_Spring_React"
+    },
+    {
+      "titulo": "DESAFIO COODESH",
+      "img": "/Coodesh.png",
+      "conteudo": "Desafio da coodesh onde o objetivo era criar um site em react utilizando uma api de wiki para buscar receita entre outras coisa",
+      "tags": ["HTML", "CSS", "JAVASCRIPT", "REACT.JS", "API_WIKI"],
+      "link": "https://challenge-coodesh.vercel.app",
+      "link2": "https://github.com/vitorsierro/challenge_Coodesh"
+    },
+    {
+      "titulo": "KFBANK PROTOTIPO",
+      "img": "/KFBANK.png",
+      "conteudo": "Prototipo desenvolvido para a empresa kf bank para uso comercial com tela de login e animação em css",
+      "tags": [
+        "HTML",
+        "CSS",
+        "JAVASCRIPT",
+        "REACT.JS",
+        "ANT_DESIGN",
+        "GOOGLE CHARTS"
+      ],
+      "link": "https://kf-bank-prot.vercel.app",
+      "link2": "https://github.com/vitorsierro/kf_bank_prot"
+    },
+    {
+      "titulo": "Desafio da Magalu",
+      "img": "/magalu.png",
+      "conteudo": "Projeto de desafio na qual foi sugerido criar um spotify para lista musicas e artistas e trabalhar com offline first",
+      "tags": [
+        "TYPESCRIPT",
+        "REACT.JS",
+        "NEXT",
+        "ZUSTAND",
+        "SCSS",
+        "SPOTiFY API",
+        "SENTRY",
+        "JEST",
+        "CYPRESS",
+        "GITHUB_ACTIONS"
+      ],
+      "link": "https://desafio-tecnico-magalu.vercel.app/",
+      "link2": "https://github.com/vitorsierro/desafio-tecnico-magalu"
+    }
+  ],
+  "Experiencia_Profissional": [
+    {
+      "cargo": "DESENVOLVEDOR FRONTEND PLENO",
+      "empresa": "Quality digital",
+      "conteudo": "Atuo em um projeto jamstack com parte em vtex io, criando componentes novos e refatorando codigos legados em vtex io",
+      "datas": "DE 09/2022 ATÉ HOJE",
+      "tecnologias": [
+        "HTML 5",
+        "POST CSS",
+        "REACT.JS",
+        "TYPESCRIPT",
+        "GATSBY",
+        "GRAPHQL",
+        "VTEX IO",
+        "FASTSTORE",
+        "SCRUM",
+        "KANBAN"
+      ],
+      "link": "https://www.linkedin.com/company/acctglobal/mycompany/verification/"
+    },
+    {
+      "cargo": "ENTRY LEVEL SOFTWARE DEVELOPER",
+      "empresa": "PHILIPS",
+      "conteudo": "Atuei como desenvolvedor java criando endpoint para se comunicar com o sistema tasy no primeiro momento e com o sistema tasy na parte de contabilidade do sistema.",
+      "datas": "DE 11/2021 ATÉ 09/2022",
+      "tecnologias": [
+        "JAVA SE 8",
+        "JAVA SWING",
+        "PLSQL",
+        "JAVASCRIPT",
+        "ANGULAR.JS",
+        "SCRUM",
+        "KANBAN"
+      ],
+      "link": "https://www.linkedin.com/company/philips/mycompany/verification/"
+    },
+    {
+      "cargo": "DESENVOLVEDOR WEB JUNIOR",
+      "empresa": "KF BANK",
+      "conteudo": "Atuei como Desenvolvedor web criando alguns prototipos em react com o framework next e trabalhando com wordpress para alguns projetos internos.",
+      "datas": "DE 05/2021 ATÉ 11/2021",
+      "tecnologias": ["REACT.JS", "NEXT.JS", "JAVASCRIPT", "WORDPRESS"],
+      "link": "https://www.linkedin.com/company/kf-bank/?originalSubdomain=br"
+    },
+    {
+      "cargo": "ESTAGÍARIO DE ENGENHARIA DE SOFTWARE",
+      "empresa": "ITAÚ UNIBANCO",
+      "conteudo": "Atuei com Peoplesoft e Oracle DB \n Utilizando metodologias ageis e desenvolvimento voltado a teste",
+      "datas": "DE 03/2020 ATÉ 12/2020",
+      "tecnologias": [
+        "SQL ORACLE",
+        "PEOPLESOFT",
+        "PEOPLESOFT FLUID",
+        "HTML",
+        "CSS",
+        "SCRUM",
+        "KANBAN",
+        "DEVOPS"
+      ],
+      "link": "https://www.linkedin.com/company/itau/?originalSubdomain=br"
+    },
+    {
+      "cargo": "ESTAGÍARIO DE MANUTENÇÃO DE COMPUTADOR",
+      "empresa": "PREFEITURA DE GUARUJA - SECRETARIA DE SAÚDE",
+      "conteudo": "Atuei com Manutenção de computadores, faturamento de algumas unidades de saúde e ajudava os responsaveis de unidade com o departamento de ti.\n Utilizando as ferramentas do governo federal(ESUS, GIL, CADWEB).",
+      "datas": "DE 03/2019 ATÉ 02/2020",
+      "tecnologias": [],
+      "link": "https://www.guaruja.sp.gov.br/"
+    }
+  ],
+  "CERTIFICACAO": [
+    {
+      "titulo": "SCRUM FOUNDATION PROFESSIONAL CERTIFCATE(SFPC)",
+      "img": "/scrum_foundation.png",
+      "empresa": "CERTIPROF",
+      "link": "https://certiprof.com/pages/scrum-foundations-professional-certificate-sfpc-ptbr"
+    },
+    {
+      "titulo": "DEVOPS ESSENTIALS PROFESSIONAL CERTIFICATE(DEPC)",
+      "img": "/devops_essentials.png",
+      "empresa": "CERTIPROF",
+      "link": "https://certiprof.com/pages/devops-essentials-professional-certificate-depc"
+    }
+  ],
+  "CURSOS": [
+    {
+      "titulo": "FORMAÇÃO ALURA - REACT",
+      "conteudo": "Curso feito na alura ao qual foi desenvolvido minhas tecnicas em react.js",
+      "empresa": "ALURA",
+      "img": "/formacao_react.jpg",
+      "link": "https://www.alura.com.br/formacao-react-js"
+    },
+    {
+      "titulo": "FORMAÇÃO ALURA - ANGULAR",
+      "conteudo": "Curso feito na alura ao qual foi desenvolvido minhas tecnicas em angular.js",
+      "empresa": "ALURA",
+      "img": "/formacao_react.jpg",
+      "link": "https://www.alura.com.br/formacao-angular-14"
+    },
+    {
+      "titulo": "CSS FLEXBOX",
+      "conteudo": "Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em css flexbox",
+      "empresa": "ORIGAMID",
+      "img": "/origamid.png",
+      "link": "https://www.origamid.com/curso/css-flexbox"
+    },
+    {
+      "titulo": "BOOTSTRAP 4",
+      "conteudo": "Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em bootstrap 4",
+      "empresa": "ORIGAMID",
+      "img": "/origamid.png",
+      "link": "https://www.origamid.com/curso/bootstrap-4/"
+    },
+    {
+      "titulo": "ADOBE XD",
+      "conteudo": "Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em adobe xd",
+      "empresa": "ORIGAMID",
+      "img": "/origamid.png",
+      "link": "https://www.origamid.com/curso/adobe-xd"
+    },
+    {
+      "titulo": "JAVASCRIPT",
+      "conteudo": "Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em javascript",
+      "empresa": "ORIGAMID",
+      "img": "/origamid.png",
+      "link": "https://www.origamid.com/curso/javascript-completo-es6"
+    },
+    {
+      "titulo": "JQUERY",
+      "conteudo": "Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em jquery",
+      "empresa": "ORIGAMID",
+      "img": "/origamid.png",
+      "link": "https://www.origamid.com/curso/javascript-e-jquery"
+    },
+    {
+      "titulo": "PHP 7",
+      "conteudo": "Cursos feito na udemy ao qual foi desenvolvido um ecommerce do zero com php 7.",
+      "empresa": "HCODE",
+      "img": "/hcode.png",
+      "link": "https://www.udemy.com/course/curso-php-7-online/learn/lecture/15933562?start=0#overview"
+    }
+  ],
+  "DADOS_PESSOAIS": [
+    {
+      "nome": "VITOR SIERRO",
+      "cargo": "DESENVOLVEDOR FULLSTACK PLENO",
+      "email": "vitorsierro_@hotmail.com",
+      "sobre_mim": "Com formação em Ciência da Computação pela Universidade Paulista, integro a Plurix como Desenvolvedor de full stack pleno, especializado em React, Vtex e metodologias ágeis. Nosso time se dedica a implementar soluções inovadoras, otimizar processos e contribuir para o crescimento contínuo da empresa. Minha trajetória inclui experiência como Desenvolvedor full stack Pleno na Quality digital onde desenvolvi meu conhecimento em react e node. Também fui desenvolvedor full stack Jr na Philips, onde aprimorei minhas habilidades em JavaScript e Java Spring, e um histórico em desenvolvimento web no KF Bank, reforçando minha base em tecnologias como MySQL e Javascript. Valorizo o trabalho colaborativo e estou sempre em busca de novos desafios e aprendizados no campo da tecnologia.",
+      "links": [
         {
-          "titulo":"FORMAÇÃO ALURA - ANGULAR",
-          "conteudo":"Curso feito na alura ao qual foi desenvolvido minhas tecnicas em angular.js",
-          "empresa":"ALURA",
-          "img":"/formacao_react.jpg",
-          "link":"https://www.alura.com.br/formacao-angular-14"
-       },
-       {
-          "titulo":"CSS FLEXBOX",
-          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em css flexbox",
-          "empresa":"ORIGAMID",
-          "img":"/origamid.png",
-          "link":"https://www.origamid.com/curso/css-flexbox"
-       },
-       {
-          "titulo":"BOOTSTRAP 4",
-          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em bootstrap 4",
-          "empresa":"ORIGAMID",
-          "img":"/origamid.png",
-          "link":"https://www.origamid.com/curso/bootstrap-4/"
-       },
-       {
-          "titulo":"ADOBE XD",
-          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em adobe xd",
-          "empresa":"ORIGAMID",
-          "img":"/origamid.png",
-          "link":"https://www.origamid.com/curso/adobe-xd"
-       },
-       {
-          "titulo":"JAVASCRIPT",
-          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em javascript",
-          "empresa":"ORIGAMID",
-          "img":"/origamid.png",
-          "link":"https://www.origamid.com/curso/javascript-completo-es6"
-       },
-       {
-          "titulo":"JQUERY",
-          "conteudo":"Curso feito na origamid ao qual foi desenvolvido minhas tecnicas em jquery",
-          "empresa":"ORIGAMID",
-          "img":"/origamid.png",
-          "link":"https://www.origamid.com/curso/javascript-e-jquery"
-       },
-       {
-          "titulo":"PHP 7",
-          "conteudo":"Cursos feito na udemy ao qual foi desenvolvido um ecommerce do zero com php 7.",
-          "empresa":"HCODE",
-          "img":"/hcode.png",
-          "link":"https://www.udemy.com/course/curso-php-7-online/learn/lecture/15933562?start=0#overview"
-       }
-      ],
-    "DADOS_PESSOAIS":[
-       {
-         "nome":"VITOR SIERRO",
-         "cargo":"DESENVOLVEDOR FULLSTACK PLENO",
-         "email": "vitorsierro_@hotmail.com",
-         "sobre_mim":"Com formação em Ciência da Computação pela Universidade Paulista, integro a Plurix como Desenvolvedor de full stack pleno, especializado em React, Vtex e metodologias ágeis. Nosso time se dedica a implementar soluções inovadoras, otimizar processos e contribuir para o crescimento contínuo da empresa. Minha trajetória inclui experiência como Desenvolvedor full stack Pleno na Quality digital onde desenvolvi meu conhecimento em react e node. Também fui desenvolvedor full stack Jr na Philips, onde aprimorei minhas habilidades em JavaScript e Java Spring, e um histórico em desenvolvimento web no KF Bank, reforçando minha base em tecnologias como MySQL e Javascript. Valorizo o trabalho colaborativo e estou sempre em busca de novos desafios e aprendizados no campo da tecnologia.",
-         "links":[
-            {
-               "link":"https://github.com/vitorsierro",
-               "img":"/github.png",
-               "alt":"Icon of the github"
-            },
-            {
-               "link":"https://www.linkedin.com/in/vitor-sierro/",
-               "img":"/linkedin.png",
-               "alt":"Icon of the linkedIn"
-            },
-            {
-               "link":"https://bit.ly/vitorsierro",
-               "img":"/cv.png",
-               "alt":"Picture of the curriculum"
-            }
-         ]
-         }]
- }
+          "link": "https://github.com/vitorsierro",
+          "img": "/github.png",
+          "alt": "Icon of the github"
+        },
+        {
+          "link": "https://www.linkedin.com/in/vitor-sierro/",
+          "img": "/linkedin.png",
+          "alt": "Icon of the linkedIn"
+        },
+        {
+          "link": "https://bit.ly/vitorsierro",
+          "img": "/cv.png",
+          "alt": "Picture of the curriculum"
+        }
+      ]
+    }
+  ]
+}
