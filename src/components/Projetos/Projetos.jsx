@@ -1,44 +1,87 @@
-import Link from 'next/link';
-import Image from 'next/image'
-
-import { Row, Col, Divider, Typography, Tag } from 'antd';
-import styled from '../../styles/Projetos.module.css'
-
-const { Title } = Typography;
-
-import dados from '../../../dados.json';
+import dados from "../../../dados.json";
+import styles from "../../styles/Projetos.module.css";
 
 export default function Projetos() {
-  const projetos = dados["projetos"];
+  const projetos = dados.projetos;
+
   return (
-    <>
-      <Divider id="project" orientation="left" className={styled.Divider}>Projetos</Divider>
-      <Row className={styled.Container}>
-      {
-        projetos.map(({titulo,empresa,link,link2,img,conteudo,tags},key) => (
-            <Col className={styled.Projetos} span={7} key={key}>
-            <Link href={link != "" ? link : link2} >
-              <a target='_blank'>
-                <div className={styled.Image}>
-                  <Image src={img} desfoquedataurl="blur" width='250%' height='250%' />
-                </div>
-                <div className={styled.Conteudo}>
-                  <hr />
-                  <Title level={3}>{titulo}</Title>
-                  <p>{conteudo}</p>
-                  <p className={styled.Empresa}>{empresa}</p>
-                  <div className={styled.Line}>
-                  {tags.map((tag,key) => (
-                      <Tag key={key} color='blue' className={styled.Tag}>{tag}</Tag>
-                  ))}</div>
-                </div>
-              </a></Link>
-            <Link href={link2}><a target='_blank'>
-              <p className={styled.ConteudoLink}>Saiba mais sobre a estrutura</p></a></Link>
-          </Col>
-          ))
-			}
-      </Row>
-    </>
-  )
-};
+    <section
+      id="project"
+      className={styles.section}
+      aria-labelledby="projects-title"
+    >
+      <div className={styles.sectionHeader}>
+        <p className={styles.eyebrow}>Projetos em destaque</p>
+        <h2 id="projects-title" className={styles.title}>
+          Projetos
+        </h2>
+        <p className={styles.description}>
+          Uma selecao dos trabalhos mais relevantes, com links para a versao
+          publicada e para a estrutura de codigo.
+        </p>
+      </div>
+
+      <div className={styles.grid}>
+        {projetos.map(
+          ({ titulo, empresa, link, link2, img, conteudo, tags }, key) => {
+            const projectLink = link || link2;
+
+            return (
+              <article className={styles.cardShell} key={`${titulo}-${key}`}>
+                <a
+                  className={styles.card}
+                  href={projectLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Abrir projeto ${titulo}`}
+                >
+                  <div className={styles.imageFrame}>
+                    <img
+                      src={img}
+                      alt={`Preview do projeto ${titulo}`}
+                      className={styles.image}
+                    />
+                  </div>
+
+                  <div className={styles.cardBody}>
+                    {empresa ? (
+                      <p className={styles.company}>{empresa}</p>
+                    ) : null}
+                    <h3>{titulo}</h3>
+                    <p className={styles.copy}>{conteudo}</p>
+
+                    <ul
+                      className={styles.tagList}
+                      aria-label={`Tecnologias de ${titulo}`}
+                    >
+                      {tags.map((tag) => (
+                        <li className={styles.tag} key={`${titulo}-${tag}`}>
+                          {tag}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className={styles.linkRow}>
+                      <span className={styles.primaryLink}>Abrir projeto</span>
+                       {link2 ? (
+                      <a
+                        className={styles.secondaryLink}
+                        href={link2}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Ver estrutura
+                      </a>
+                    ) : null}
+                    </div>
+                   
+                  </div>
+                </a>
+              </article>
+            );
+          },
+        )}
+      </div>
+    </section>
+  );
+}

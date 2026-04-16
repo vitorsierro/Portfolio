@@ -1,33 +1,44 @@
-import { Divider, Row, Typography, Tag } from 'antd';
-import styled from '../../styles/Experiencia.module.css';
 import dados from '../../../dados.json';
-import Link from 'next/link';
-
-const { Title } = Typography;
+import styles from '../../styles/Experiencia.module.css';
 
 export default function Experiencia() {
-  const projetos = dados["Experiencia_Profissional"];
+  const experiencias = dados.Experiencia_Profissional;
+
   return (
-    <>
-      <Divider id="experiency" orientation="left" className={styled.Divider}>Experiência Profissional</Divider>
-      <Row className={styled.Container}>
-      {
-        projetos.map(({cargo,empresa,conteudo,link,datas,tecnologias},key) => (
-          <div className={styled.Experiencia} key={key}>
-          <div className={styled.Line}>
-            <Title level={2}>{cargo}</Title>
-            <Title level={2}>{datas}</Title>
-          </div>
-          <Link href={link} ><a target='_blank'><Title level={4} className={styled.ExperienciaH4}>{empresa}</Title></a></Link>
-          <hr />
-          <Title level={5}>{conteudo}</Title>
-          {tecnologias.map((tecnologia,key) => (
-                       <Tag key={key} color='blue' className={styled.Tag}>{tecnologia}</Tag>
-                  ))}
-        </div>
-          ))
-			}
-      </Row>
-    </> 
-  )
-};
+    <section id="experiencia" className={styles.section} aria-labelledby="experience-title">
+      <div className={styles.sectionHeader}>
+        <p className={styles.eyebrow}>Trajetoria profissional</p>
+        <h2 id="experience-title" className={styles.title}>
+          Experiencia profissional
+        </h2>
+      </div>
+
+      <div className={styles.list}>
+        {experiencias.map(({ cargo, empresa, conteudo, link, datas, tecnologias }, key) => (
+          <article className={styles.card} key={`${empresa}-${key}`}>
+            <div className={styles.topLine}>
+              <h3>{cargo}</h3>
+              <p className={styles.period}>{datas}</p>
+            </div>
+
+            <a href={link} target="_blank" rel="noreferrer" className={styles.companyLink}>
+              {empresa}
+            </a>
+
+            <p className={styles.copy}>{conteudo}</p>
+
+            {tecnologias.length > 0 && (
+              <ul className={styles.tagList} aria-label={`Tecnologias usadas em ${empresa}`}>
+                {tecnologias.map((tecnologia) => (
+                  <li className={styles.tag} key={`${empresa}-${tecnologia}`}>
+                    {tecnologia}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}

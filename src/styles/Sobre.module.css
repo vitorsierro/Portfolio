@@ -1,67 +1,145 @@
-.Container{
-  display: flex;
+.section {
+  display: grid;
+  gap: var(--space-6);
+  margin-top: var(--space-12);
+  animation: fade-up var(--motion-slow) both;
 }
 
-.Divider{
-  border-top-color: #707070 !important;
-  font-size: 32px !important;
-}
-.Sobre{
-  width: 720px;
-  margin-left: 14%;
-}
-.Line{
-  display: contents;
-}
-.Sobre h1,.Sobre h2,.Sobre h4{
-  margin-top: 0rem !important;
-  margin-bottom: 0.5rem !important;
-  font-family: 'Roboto Mono', monospace;
-  color:#797979 !important;
-}
-.Sobre h1{
-  font-size: 100px !important;
-  font-family: 'Dancing Script', cursive;
-  margin-bottom: 0px !important;
-  color:#797979 !important;
-}
-.Sobre hr{
-  margin: 0.75rem -2rem !important;
+.sectionHeader {
+  display: grid;
+  gap: var(--space-2);
 }
 
-.Pessoal{
-  display: flex;
-  flex-direction: row;
-  
-}
-.Pessoal h4{
-  margin-top:auto;
-  margin-right: 2rem;
-}
-.Pessoal a{
-  color: #797979 !important;
-  border: none;
-}
-.Pessoal a:hover{
-  color: #4169E1;
-  border-bottom: 1px solid #191970;
+.eyebrow {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--color-accent);
 }
 
-.Icons{
-  margin-top:4rem;
-  margin-bottom: 2rem;
+.title {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  color: var(--color-accent-strong);
+}
+
+.card {
+  display: grid;
+  gap: var(--space-6);
+  padding: var(--space-5);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  transition:
+    transform var(--motion-smooth),
+    border-color var(--motion-smooth),
+    box-shadow var(--motion-smooth);
+  animation: soft-zoom var(--motion-slow) both;
+}
+
+.content {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.kicker,
+.socialLabel {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--color-accent);
+}
+
+.name {
+  font-size: clamp(2.2rem, 8vw, 4.8rem);
+  line-height: 0.95;
+  color: var(--color-accent-strong);
+  transition: transform var(--motion-smooth);
+}
+
+.role {
+  font-size: clamp(1.05rem, 3vw, 1.45rem);
+  color: var(--color-text-muted);
+}
+
+.email {
+  width: fit-content;
+  font-weight: 700;
+  color: var(--color-accent);
+  transition: color var(--motion-smooth), transform var(--motion-smooth);
+}
+
+.copy {
+  max-width: 44rem;
+  color: var(--color-text-muted);
+}
+
+.socialBlock {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.socialList {
   display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.socialLink {
+  width: 3.5rem;
+  height: 3.5rem;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: #f3f6f1;
+  transition:
+    transform var(--motion-smooth),
+    border-color var(--motion-smooth),
+    box-shadow var(--motion-smooth);
+}
 
+.socialIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+  object-fit: contain;
 }
-.Nome{
-  margin-left: -4rem;
+
+.card:hover,
+.card:focus-within {
+  transform: translateY(-6px);
+  border-color: rgba(31, 92, 74, 0.24);
+  box-shadow: 0 26px 52px rgba(18, 57, 46, 0.14);
 }
-.Icons a{
-  margin-right: 3.5rem;
+
+.card:hover .name,
+.card:focus-within .name {
+  transform: translateX(4px);
 }
-.FotoPerfil{
-  margin-left: 18%;
-  margin-top: 1.5rem;
-  display: flex;
+
+.email:hover,
+.email:focus-visible {
+  color: var(--color-accent-strong);
+  transform: translateX(4px);
+}
+
+.socialLink:hover,
+.socialLink:focus-visible {
+  transform: translateY(-4px) scale(1.04);
+  border-color: rgba(31, 92, 74, 0.24);
+  box-shadow: 0 18px 32px rgba(18, 57, 46, 0.14);
+}
+
+@media (min-width: 768px) {
+  .card {
+    padding: var(--space-6);
+  }
+}
+
+@media (min-width: 1024px) {
+  .card {
+    grid-template-columns: minmax(0, 1.5fr) minmax(16rem, 0.9fr);
+    align-items: start;
+  }
 }

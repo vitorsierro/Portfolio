@@ -1,59 +1,131 @@
-.Container{
-  margin:0px;
-  margin-left: 8rem;
-  justify-content: center;
-}
-.Divider{
-  border-top-color: #707070 !important;
-  font-size: 32px !important;
-  margin-top: 2rem;
-}
-.ContainerCard{
-  border: 2px solid #686868;
-  border-radius: 5%;
-  margin: 2rem;
-  width: 100%;
-  max-width: 320px;
-  padding-bottom: 2rem;
-}
-.ContainerCard header{
-  margin: 2rem 2rem !important;
-  text-align: -webkit-center;
-}
-.ContainerCard img{
-  margin:center;
-  border-radius: 5%;
-}
-.ContainerCard h3{
-  text-align: center;
-}
-.ContainerCard h5{
-  padding: 0rem 2rem;
-  height: 6rem;
-}
-.Empresa{
-  text-align: unset !important;
-  margin-left: 2rem;
-  color: #191970 !important;
+.section {
+  display: grid;
+  gap: var(--space-6);
+  margin-top: var(--space-12);
+  animation: fade-up var(--motion-slow) both;
 }
 
-.ContainerCard main p{
-  font-size: 32px;
-  float: right;
-  margin-right: 1rem;
-  margin-bottom: 3px;
-  
+.sectionHeader,
+.courseHeader {
+  display: grid;
+  gap: var(--space-2);
 }
-.ContainerCard main p:hover{
-  color: #4169E1;
-  border-bottom: 1px solid #191970 !important;
+
+.courseHeader {
+  margin-top: var(--space-6);
 }
-.ContainerCard:hover{
-  transform: translateX(1px) rotate(3deg) translateY(2px);
+
+.eyebrow {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--color-accent);
 }
-@media only screen and (max-width: 850px) {
-  .Container{
-    flex-flow: row wrap !important;
+
+.title {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  color: var(--color-accent-strong);
+}
+
+.grid {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.cardShell {
+  display: block;
+}
+
+.card {
+  overflow: hidden;
+  display: grid;
+  gap: var(--space-4);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  transition:
+    transform var(--motion-smooth),
+    border-color var(--motion-smooth),
+    box-shadow var(--motion-smooth),
+    background var(--motion-smooth);
+  animation: soft-zoom var(--motion-slow) both;
+}
+
+.imageFrame {
+  aspect-ratio: 4 / 3;
+  background: #eef3ee;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cardBody {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0 var(--space-5) var(--space-5);
+}
+
+.company {
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+}
+
+.copy {
+  color: var(--color-text-muted);
+}
+
+.link {
+  width: fit-content;
+  color: var(--color-accent-strong);
+  font-weight: 700;
+  transition: color var(--motion-smooth), transform var(--motion-smooth);
+}
+
+.card:hover,
+.card:focus-within {
+  transform: translateY(-8px) rotate(1deg);
+  border-color: rgba(31, 92, 74, 0.24);
+  box-shadow: 0 28px 60px rgba(18, 57, 46, 0.16);
+}
+
+.card:hover .image,
+.card:focus-within .image {
+  transform: scale(1.05);
+}
+
+.card:hover .link,
+.card:focus-visible .link {
+  color: var(--color-accent);
+  transform: translateX(4px);
+}
+
+.grid .cardShell:nth-child(2) .card {
+  animation-delay: 70ms;
+}
+
+.grid .cardShell:nth-child(3) .card {
+  animation-delay: 140ms;
+}
+
+.grid .cardShell:nth-child(4) .card {
+  animation-delay: 210ms;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }

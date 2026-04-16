@@ -1,31 +1,120 @@
-.Divider{
-  border-top-color: #707070 !important;
-  font-size: 32px !important;
-}
-.Experiencia{
-  margin: 2rem 5rem;
-  width: 100%;
+.section {
+  display: grid;
+  gap: var(--space-6);
+  margin-top: var(--space-12);
+  animation: fade-up var(--motion-slow) both;
 }
 
-.Experiencia hr{
-  width: 100%;
-  margin-left: initial;
-  background-color: #d3d3d3;
+.sectionHeader {
+  display: grid;
+  gap: var(--space-2);
 }
-.Experiencia div h2, .ant-typography + h2.ant-typography{
-  margin-top:auto !important;
-  margin: 0px;
-  color: #696969 !important;
+
+.eyebrow {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--color-accent);
 }
-.Experiencia a:hover, .Experiencia a:active{
-  color:red !important; 
+
+.title {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  color: var(--color-accent-strong);
 }
-.Line{
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
+
+.list {
+  display: grid;
+  gap: var(--space-5);
 }
-.Tag{
+
+.card {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  transition:
+    transform var(--motion-smooth),
+    border-color var(--motion-smooth),
+    box-shadow var(--motion-smooth);
+  animation: fade-up var(--motion-slow) both;
+}
+
+.topLine {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.topLine h3 {
+  font-size: clamp(1.3rem, 3vw, 1.7rem);
+  color: var(--color-accent-strong);
+}
+
+.period {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.companyLink {
+  width: fit-content;
+  color: var(--color-accent);
   font-weight: 700;
-  font-size: 16px !important;
+  transition: color var(--motion-smooth), transform var(--motion-smooth);
+}
+
+.copy {
+  color: var(--color-text-muted);
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tag {
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(31, 92, 74, 0.1);
+  color: var(--color-accent-strong);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.card:hover,
+.card:focus-within {
+  transform: translateY(-6px);
+  border-color: rgba(31, 92, 74, 0.24);
+  box-shadow: 0 26px 52px rgba(18, 57, 46, 0.14);
+}
+
+.companyLink:hover,
+.companyLink:focus-visible {
+  color: var(--color-accent-strong);
+  transform: translateX(4px);
+}
+
+.card:nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.card:nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.card:nth-child(4) {
+  animation-delay: 210ms;
+}
+
+@media (min-width: 768px) {
+  .topLine {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .card {
+    padding: var(--space-6);
+  }
 }

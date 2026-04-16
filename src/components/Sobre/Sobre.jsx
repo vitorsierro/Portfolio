@@ -1,46 +1,43 @@
-import Link from 'next/link'
-import Image from 'next/image'
-import { Typography, Divider } from 'antd';
-import styled from '../../styles/Sobre.module.css'
 import dados from '../../../dados.json';
-
-const { Title } = Typography;
+import styles from '../../styles/Sobre.module.css';
 
 export default function Sobre() {
-  const fontStyle = "https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Roboto+Mono:ital@1&display=swap";
-  const dados_pessoais = dados["DADOS_PESSOAIS"];
+  const dadosPessoais = dados.DADOS_PESSOAIS[0];
+  const { nome, cargo, email, sobre_mim: sobreMim, links = [] } = dadosPessoais;
+
   return (
-    <>
-    <Divider id="sobre" orientation="left" className={styled.Divider}>Sobre</Divider>
-    <div className={styled.Container}>  
-      {dados_pessoais.map(({nome,cargo,endereco,phone,telefone,email,foco,sobre_mim,links,photo},index) => ( 
-        <div className={styled.Line} key={index}>
-          <div className={styled.Sobre}>
-              <link href={fontStyle} rel="stylesheet" />
-              <Title className={styled.Nome}>{nome}</Title>
-              <Title level={2}>{cargo}</Title>
-              <Title level={4}>{endereco}</Title>
-              <div className={styled.Pessoal}>
-                <Title level={4}><Link href={`tel:+${phone}`}><a target="_blank">{telefone}</a></Link></Title>
-                <Title level={4}><Link href="mailto:vitorsierro_@hotmail.com"><a target="_blank">{email}</a></Link></Title>
-              </div>
-              <br /><hr />
-              <Title level={4}>{foco}</Title>
-              <br />
-              <Title level={4}>{sobre_mim}</Title>
-              <div className={styled.Icons}>
-              {links.map(({link,img,alt},index) => (
-                  <div key={index}>
-                    <Link href={link}><a target="_blank" >
-                    <Image src={img} desfoquedataurl="blur" width={50} height={50} quality={100}
-                      alt={alt} /></a></Link>
-                  </div>  
-              ))}
-              </div>
-          </div>
-         </div>
-      ))}
-    </div>
-    </>
-  )
-};
+    <section id="sobre" className={styles.section} aria-labelledby="about-title">
+      <div className={styles.sectionHeader}>
+        <p className={styles.eyebrow}>Quem sou eu</p>
+        <h2 id="about-title" className={styles.title}>
+          Sobre
+        </h2>
+      </div>
+
+      <article className={styles.card}>
+        <div className={styles.content}>
+          <p className={styles.kicker}>Perfil profissional</p>
+          <h3 className={styles.name}>{nome}</h3>
+          <p className={styles.role}>{cargo}</p>
+          <a href={`mailto:${email}`} className={styles.email}>
+            {email}
+          </a>
+          <p className={styles.copy}>{sobreMim}</p>
+        </div>
+
+        <div className={styles.socialBlock}>
+          <p className={styles.socialLabel}>Links importantes</p>
+          <ul className={styles.socialList}>
+            {links.map(({ link, img, alt }) => (
+              <li key={link}>
+                <a href={link} target="_blank" rel="noreferrer" className={styles.socialLink}>
+                  <img src={img} alt={alt} className={styles.socialIcon} />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </article>
+    </section>
+  );
+}

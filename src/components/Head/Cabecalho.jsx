@@ -1,19 +1,20 @@
-import Head from 'next/head'
+import Head from 'next/head';
 
 export default function Cabecalho() {
-  return(
+  return (
     <Head>
-      <meta httpEquiv="content-language" content="pt-br" />
+      <meta httpEquiv="content-language" content="pt-BR" />
       <meta httpEquiv="content-type" content="text/html; charset=UTF-8" />
-      
-      <title>Portfólio</title>
-      <meta name="viewport" content="initial-scale=1.0, width=device-width" />
-      <meta name = "description" content = "Site criado para o fim de apresentar projetos criados, certificados e experiencias adquirido na minha carreira " />
-      
+      <title>Portfolio | Vitor Sierro</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta
+        name="description"
+        content="Portfolio com projetos, experiencia profissional, certificados e cursos de Vitor Sierro."
+      />
       <meta name="rating" content="general" />
-      <meta name = "robôs" content = "index, nofollow" />
-      <meta name="author" content="Vitor Sierro"/>
+      <meta name="robots" content="index, nofollow" />
+      <meta name="author" content="Vitor Sierro" />
       <meta name="keywords" content="Site, web, desenvolvimento next, React.js, Api/Rest, api, axios, ant-design" />
     </Head>
-  )
-};
+  );
+}

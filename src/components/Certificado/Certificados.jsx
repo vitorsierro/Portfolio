@@ -1,57 +1,70 @@
-import Link from 'next/link'
-import Image from 'next/image'
-
-import { Divider, Typography, Row, Col } from 'antd';
-import styled from '../../styles/Certificados.module.css'
-
 import dados from '../../../dados.json';
-
-const { Title } = Typography;
-
+import styles from '../../styles/Certificados.module.css';
 
 export default function Certificados() {
-	const certificados = dados["CERTIFICACAO"];
-	const cursos = dados["CURSOS"];
-	return (
-		<>
-			<Divider id="certificados" orientation="left" className={styled.Divider}>Certificados</Divider>
-			<Row className={styled.Container}>	
-			{certificados.map(({titulo,empresa,link,img},key) => (
-					<Col className={styled.ContainerCard} key={key} span={7}>
-						<header>
-							<Image src={img} width={250} height={250} quality={100} />
-						</header>
-						<main>
-							<Title level={3}>{titulo}</Title>
-							<Title level={3} className={styled.Empresa}>{empresa}</Title>
-							<Link href={link}><a target="_blank">
-								<p>Ver mais</p>
-							</a></Link>
-						</main>
-					</Col>
-				))
-			}
-			</Row>
-			<Divider id="cursos" orientation="left" className={styled.Divider}>Cursos</Divider>
-			<Row className={styled.Container}>	
-			{cursos.map(({titulo,empresa,link,img,conteudo},key) => (
+  const certificados = dados.CERTIFICACAO;
+  const cursos = dados.CURSOS;
 
-					<Col className={styled.ContainerCard} key={key} span={7}>
-					<header>
-						<Image src={img} width={250} height={250} quality={100} />						
-					</header>
-					<main>
-						<Title level={3}>{titulo}</Title>
-						<Title level={5}>{conteudo}</Title>
-						<Title level={3} className={styled.Empresa}>{empresa}</Title>
-						<Link href={link}><a target="_blank">
-							<p>Ver mais</p>
-						</a></Link>
-					</main>
-				</Col>				
-				))
-			}
-			</Row>
-				</>
-	);
-};
+  return (
+    <section id="certificados" className={styles.section} aria-labelledby="certificates-title">
+      <div className={styles.sectionHeader}>
+        <p className={styles.eyebrow}>Formacao e aprendizado continuo</p>
+        <h2 id="certificates-title" className={styles.title}>
+          Certificados
+        </h2>
+      </div>
+
+      <div className={styles.grid}>
+        {certificados.map(({ titulo, empresa, link, img }, key) => (
+          <article className={styles.cardShell} key={`${titulo}-${key}`}>
+            <a
+              href={link}
+              target="_blank"
+              rel="noreferrer"
+              className={styles.card}
+              aria-label={`Abrir certificado ${titulo}`}
+            >
+              <div className={styles.imageFrame}>
+                <img src={img} alt={`Certificado ${titulo}`} className={styles.image} />
+              </div>
+              <div className={styles.cardBody}>
+                <p className={styles.company}>{empresa}</p>
+                <h3>{titulo}</h3>
+                <span className={styles.link}>Ver certificado</span>
+              </div>
+            </a>
+          </article>
+        ))}
+      </div>
+
+      <div className={styles.courseHeader} id="cursos">
+        <p className={styles.eyebrow}>Habilidades desenvolvidas</p>
+        <h2 className={styles.title}>Cursos</h2>
+      </div>
+
+      <div className={styles.grid}>
+        {cursos.map(({ titulo, empresa, link, img, conteudo }, key) => (
+          <article className={styles.cardShell} key={`${titulo}-${key}`}>
+            <a
+              href={link}
+              target="_blank"
+              rel="noreferrer"
+              className={styles.card}
+              aria-label={`Abrir curso ${titulo}`}
+            >
+              <div className={styles.imageFrame}>
+                <img src={img} alt={`Curso ${titulo}`} className={styles.image} />
+              </div>
+              <div className={styles.cardBody}>
+                <p className={styles.company}>{empresa}</p>
+                <h3>{titulo}</h3>
+                <p className={styles.copy}>{conteudo}</p>
+                <span className={styles.link}>Ver detalhes</span>
+              </div>
+            </a>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
