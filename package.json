@@ -1,27 +1,18 @@
 {
-  "name": "my_portfolio",
+  "name": "vitor-sierro-portfolio",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "test": "jest --runInBand",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "dev": "concurrently -n web,api -c blue,green \"yarn workspace web dev\" \"yarn workspace api start:dev\"",
+    "dev:web": "yarn workspace web dev",
+    "dev:api": "yarn workspace api start:dev",
+    "build": "yarn workspace api build && yarn workspace web build",
+    "test": "yarn workspace web test && yarn workspace api test"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^5.17.0",
-    "@testing-library/react": "^12.1.5",
-    "@testing-library/user-event": "^13.5.0",
-    "jest": "^27.5.1",
-    "jest-environment-jsdom": "^27.5.1"
-  },
-  "dependencies": {
-    "antd": "^4.18.7",
-    "antd-demo": "^0.1.0",
-    "next": "^12.1.0",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2"
+    "concurrently": "^9.1.0"
   }
 }
