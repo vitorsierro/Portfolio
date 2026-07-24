@@ -1,0 +1,33 @@
+# Docker reads .dockerignore from the BUILD CONTEXT root, which is the repo
+# root (`docker build -f apps/api/Dockerfile .`). A .dockerignore inside
+# apps/ is silently ignored — which is how the dev SQLite file and local
+# .env files would otherwise end up in the build context (and dev.db in the
+# image, via `COPY apps/api/prisma`).
+
+.git
+.gitignore
+node_modules
+**/node_modules
+
+# local env files — must never reach an image layer
+.env
+.env.local
+**/.env
+**/.env.local
+infra/openclaw.env
+
+# dev database (contains the seeded admin's password hash)
+**/*.db
+**/*.db-journal
+
+# build output
+apps/api/dist
+apps/web/.next
+apps/web/out
+**/coverage
+
+# not needed to build the API
+apps/web
+infra
+public
+*.md

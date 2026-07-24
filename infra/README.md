@@ -124,6 +124,48 @@ docker compose -f infra/docker-compose.yml --env-file infra/.env logs -f api
 docker compose -f infra/docker-compose.yml --env-file infra/.env ps
 ```
 
+## Testar localmente (antes de ter a VPS)
+
+### Sem Docker — valida toda a lógica de auth
+
+```bash
+yarn workspace api prisma:migrate && yarn workspace api prisma:seed
+yarn dev                       # web:3000 + api:3001
+```
+
+Com a API no ar, rode o contrato de segurança:
+
+```bash
+bash infra/verify-auth.sh http://localhost:3001 admin@vitorsierro.dev 'ChangeMe123!'
+```
+
+São 12 asserções: rotas públicas x protegidas, o contrato 204/401 do
+`/auth/verify`, revogação no logout, bloqueio de origem, e o invariante
+anti-CSRF (cookie sozinho nunca autoriza mutação). Tudo deve passar.
+
+No navegador: `/blog`, `/blog/post/<slug>`, e `/admin` (login → hub → CMS).
+Os cards das ferramentas só aparecem se `NEXT_PUBLIC_DRAW_URL`/`_CLAW_URL`
+estiverem preenchidos.
+
+**O que isso não cobre:** o forward-auth do nginx. Sem nginx, nada exercita
+`auth_request`, o redirect condicional nem os certificados.
+
+### Com Docker — ensaio do forward-auth
+
+Para exercitar o gate de verdade antes da VPS, use domínios `.test` apontando
+para o loopback. No Windows, como administrador, adicione em
+`C:\Windows\System32\drivers\etc\hosts`:
+
+```
+127.0.0.1 api.vitorsierro.test draw.vitorsierro.test claw.vitorsierro.test
+```
+
+Então suba a stack com `SESSION_COOKIE_DOMAIN=".vitorsierro.test"` e
+`WEB_ORIGIN="http://localhost:3000"`. Como não há TLS local, ajuste os
+`server` blocks para `listen 80` sem `ssl` numa cópia de `conf.d/` — a
+estrutura de `auth_request` é idêntica à de produção, que é justamente o que
+você quer ensaiar.
+
 ## Verificação
 
 ```bash

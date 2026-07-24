@@ -33,6 +33,10 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY apps/api/prisma ./apps/api/prisma
+# tsconfig is needed at runtime too: `prisma db seed` runs prisma/seed.ts
+# through ts-node, which reads it. Without this the admin seed fails in the
+# container.
+COPY apps/api/tsconfig.json ./apps/api/tsconfig.json
 
 # The SQLite file lives on a mounted volume so it survives redeploys.
 VOLUME /data

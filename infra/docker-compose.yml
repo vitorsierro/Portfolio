@@ -70,7 +70,9 @@ services:
       - ./nginx/snippets:/etc/nginx/snippets:ro
       - certbot_conf:/etc/letsencrypt:ro
       - certbot_www:/var/www/certbot:ro
-    depends_on: [api, excalidraw, openclaw]
+    # nginx resolves proxy_pass hostnames at startup, so every upstream it
+    # references must exist or it refuses to boot — excalidraw-room included.
+    depends_on: [api, excalidraw, excalidraw-room, openclaw]
     networks: [web]
 
   # Renews certs twice a day; nginx reloads them via its own timer below.
