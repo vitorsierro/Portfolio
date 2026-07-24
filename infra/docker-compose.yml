@@ -1,0 +1,95 @@
+# Hostinger KVM2 stack: API + self-hosted tools behind one login.
+#
+# Only nginx publishes ports. Every other service is reachable solely on the
+# internal Docker network, so the tools can't be hit directly, bypassing the
+# forward-auth check.
+#
+# Run from the repo root:  docker compose -f infra/docker-compose.yml up -d
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: file:/data/prod.db
+      WEB_ORIGIN: ${WEB_ORIGIN}
+      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
+      REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-7d}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      SEED_SAMPLE_POSTS: "false"
+    volumes:
+      - api_data:/data
+    networks: [web]
+
+  excalidraw:
+    image: excalidraw/excalidraw:latest
+    restart: unless-stopped
+    networks: [web]
+
+  # Collaboration backend (socket.io). NOTE: the public excalidraw image bakes
+  # its WS server URL in at build time, so live collaboration only engages if
+  # you build the frontend yourself with VITE_APP_WS_SERVER_URL set. Solo
+  # drawing works regardless.
+  excalidraw-room:
+    image: excalidraw/excalidraw-room:latest
+    restart: unless-stopped
+    networks: [web]
+
+  openclaw:
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+    restart: unless-stopped
+    environment:
+      # Provider keys / channel tokens go in infra/.env — see .env.example.
+      OPENCLAW_PORT: 18789
+    env_file:
+      - path: ./openclaw.env
+        required: false
+    volumes:
+      - openclaw_data:/root/.openclaw
+    networks: [web]
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    # Periodic reload so renewed certs are picked up without a restart.
+    command: >
+      sh -c "while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    depends_on: [api, excalidraw, openclaw]
+    networks: [web]
+
+  # Renews certs twice a day; nginx reloads them via its own timer below.
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    entrypoint: >
+      sh -c "trap exit TERM;
+      while :; do certbot renew --webroot -w /var/www/certbot --quiet;
+      sleep 12h & wait $${!}; done"
+
+volumes:
+  api_data:
+  openclaw_data:
+  certbot_conf:
+  certbot_www:
+
+networks:
+  web:

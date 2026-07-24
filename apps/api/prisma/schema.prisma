@@ -16,6 +16,23 @@ model Admin {
   passwordHash     String
   refreshTokenHash String? // hash of the current refresh token (rotation)
   createdAt        DateTime @default(now())
+  sessions         Session[]
+}
+
+// Opaque session cookie shared by the self-hosted tools (Excalidraw, OpenClaw)
+// behind the nginx forward-auth check. Separate from the CMS access/refresh
+// tokens so tool sessions don't die on every 15m access-token refresh, and so
+// logout/revocation can be enforced server-side (a JWT here couldn't be).
+model Session {
+  id         String   @id @default(cuid())
+  adminId    String
+  admin      Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  tokenHash  String   @unique // sha256 of the cookie value
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  @@index([adminId])
 }
 
 model Post {

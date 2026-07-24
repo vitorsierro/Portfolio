@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export interface TokenPair {
   accessToken: string;
   refreshToken: string;
+  adminId: string;
 }
 
 @Injectable()
@@ -87,7 +88,7 @@ export class AuthService {
       data: { refreshTokenHash: this.hashToken(refreshToken) },
     });
 
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, adminId: sub };
   }
 
   private hashToken(token: string): string {

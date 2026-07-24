@@ -156,6 +156,58 @@
   font-size: 0.9rem;
 }
 
+/* Tool hub (Excalidraw, OpenClaw) */
+.sectionTitle {
+  font-size: 1.1rem;
+  color: var(--color-accent-strong);
+}
+
+.tools {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.toolGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+
+.toolCard {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  background: var(--color-surface-strong);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+  transition: transform var(--motion-smooth), border-color var(--motion-smooth),
+    box-shadow var(--motion-smooth);
+}
+
+.toolCard:hover,
+.toolCard:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(31, 92, 74, 0.28);
+  box-shadow: var(--shadow-soft);
+}
+
+.toolName {
+  font-weight: 700;
+  color: var(--color-accent-strong);
+}
+
+.toolDescription {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+}
+
+.toolOpen {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
 /* Posts list */
 .list {
   display: grid;

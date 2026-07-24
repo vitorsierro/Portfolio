@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { login } from '../../../lib/auth';
+import { safeNextUrl } from '../../../lib/tools';
 import styles from '../../../styles/Admin.module.css';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
@@ -18,7 +20,20 @@ export default function LoginPage() {
     setError(null);
     try {
       await login(email, password);
-      router.push('/admin');
+
+      // nginx sends the admin here with ?next=<tool url> when an
+      // unauthenticated navigation hits draw./claw.
+      const next = safeNextUrl(
+        searchParams.get('next'),
+        window.location.origin,
+      );
+
+      if (next && next.startsWith('http')) {
+        // Cross-origin (a tool subdomain) — full page load, not a route push.
+        window.location.assign(next);
+        return;
+      }
+      router.push(next || '/admin');
     } catch (err) {
       setError(err.message || 'Nao foi possivel entrar.');
       setLoading(false);
@@ -80,5 +95,14 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  // useSearchParams needs a Suspense boundary to keep this route prerenderable.
+  return (
+    <Suspense fallback={<p className={styles.state}>Carregando…</p>}>
+      <LoginForm />
+    </Suspense>
   );
 }

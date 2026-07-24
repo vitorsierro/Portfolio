@@ -41,5 +41,9 @@ yarn-error.log*
 apps/*/.env
 apps/*/.env.local
 
+# infra secrets (VPS)
+infra/.env
+infra/openclaw.env
+
 # vercel
 .vercel

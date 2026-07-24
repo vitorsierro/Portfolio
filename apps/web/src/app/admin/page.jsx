@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authFetch, ensureSession, logout } from '../../lib/auth';
+import { TOOLS } from '../../lib/tools';
 import styles from '../../styles/Admin.module.css';
 
 function formatDate(value) {
@@ -104,6 +105,27 @@ export default function AdminDashboard() {
           </button>
         </div>
       </div>
+
+      {TOOLS.some((tool) => tool.url) ? (
+        <section className={styles.tools} aria-labelledby="tools-title">
+          <h2 id="tools-title" className={styles.sectionTitle}>
+            Ferramentas
+          </h2>
+          <div className={styles.toolGrid}>
+            {TOOLS.filter((tool) => tool.url).map((tool) => (
+              <a className={styles.toolCard} href={tool.url} key={tool.key}>
+                <span className={styles.toolName}>{tool.name}</span>
+                <span className={styles.toolDescription}>
+                  {tool.description}
+                </span>
+                <span className={styles.toolOpen}>Abrir →</span>
+              </a>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <h2 className={styles.sectionTitle}>Posts</h2>
 
       {posts.length === 0 ? (
         <p className={styles.state}>Nenhum post ainda. Crie o primeiro!</p>

@@ -35,7 +35,11 @@ describe('AuthService', () => {
 
     const res = await service.login('a@b.c', 'secret123');
 
-    expect(res).toEqual({ accessToken: 'token', refreshToken: 'token' });
+    expect(res).toEqual({
+      accessToken: 'token',
+      refreshToken: 'token',
+      adminId: 'a1',
+    });
     // refresh hash persisted
     expect(prisma.admin.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'a1' } }),
