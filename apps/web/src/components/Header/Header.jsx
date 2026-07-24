@@ -4,11 +4,12 @@ import { useState } from 'react';
 import styles from '../../styles/Menu.module.css';
 
 const navItems = [
-  { href: '#project', label: 'Projetos' },
-  { href: '#experiencia', label: 'Experiencia' },
-  { href: '#cursos', label: 'Habilidades' },
-  { href: '#certificados', label: 'Certificados' },
-  { href: '#sobre', label: 'Sobre' },
+  { href: '/#project', label: 'Projetos' },
+  { href: '/#experiencia', label: 'Experiencia' },
+  { href: '/#cursos', label: 'Habilidades' },
+  { href: '/#certificados', label: 'Certificados' },
+  { href: '/#sobre', label: 'Sobre' },
+  { href: '/blog', label: 'Blog' },
 ];
 
 export default function Header() {

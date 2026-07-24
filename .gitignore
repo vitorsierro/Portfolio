@@ -16,6 +16,11 @@ apps/web/out/
 # nest
 apps/api/dist/
 
+# prisma / sqlite
+apps/api/prisma/*.db
+apps/api/prisma/*.db-journal
+apps/api/prisma/dev.db*
+
 # production
 /build
 
