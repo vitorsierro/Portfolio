@@ -24,8 +24,9 @@ async function main() {
   console.log(`Seeded admin: ${admin.email}`);
 
   // Sample posts (helpful to exercise the /blog infinite scroll).
+  // Set SEED_SAMPLE_POSTS=false in production to skip them.
   const existing = await prisma.post.count();
-  if (existing === 0) {
+  if (existing === 0 && process.env.SEED_SAMPLE_POSTS !== 'false') {
     const now = Date.now();
     const samples = Array.from({ length: 15 }, (_, i) => {
       const n = i + 1;
