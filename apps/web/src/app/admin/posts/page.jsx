@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authFetch, ensureSession } from '../../../lib/auth';
 import styles from '../../../styles/Admin.module.css';
 
 const PAGE_SIZE = 10;
+const DEBOUNCE_MS = 350;
 
 function formatDate(value) {
   if (!value) return '';
@@ -22,12 +23,36 @@ export default function PostsManager() {
   const [total, setTotal] = useState(0);
   const [pageCount, setPageCount] = useState(1);
   const [page, setPage] = useState(1);
-  const [term, setTerm] = useState('');
-  const [query, setQuery] = useState(''); // termo efetivamente aplicado
+  const [term, setTerm] = useState(''); // o que está no input
+  const [query, setQuery] = useState(''); // o que foi de fato buscado
   const [status, setStatus] = useState('loading');
   const [busyId, setBusyId] = useState(null);
 
+  // Busca enquanto digita, esperando a pausa. Sem isso, cada tecla vira uma
+  // requisição — e as respostas podem chegar fora de ordem, deixando a lista
+  // mostrando o resultado de um termo antigo.
+  useEffect(() => {
+    const trimmed = term.trim();
+    if (trimmed === query) {
+      return undefined;
+    }
+
+    const timer = setTimeout(() => {
+      setPage(1); // um termo novo invalida a página atual
+      setQuery(trimmed);
+    }, DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+  }, [term, query]);
+
+  // Só a requisição mais recente pode escrever na tela. Digitando rápido há
+  // várias em voo, e sem isto uma resposta lenta de um termo antigo chegaria
+  // por último e sobrescreveria o resultado certo.
+  const latestRequest = useRef(0);
+
   const load = useCallback(async () => {
+    const requestId = ++latestRequest.current;
+
     const params = new URLSearchParams({
       page: String(page),
       limit: String(PAGE_SIZE),
@@ -35,6 +60,10 @@ export default function PostsManager() {
     if (query) params.set('q', query);
 
     const response = await authFetch(`/admin/posts?${params.toString()}`);
+    if (requestId !== latestRequest.current) {
+      return; // já existe uma busca mais nova
+    }
+
     if (response.status === 401) {
       router.replace('/admin/login');
       return;
@@ -43,7 +72,12 @@ export default function PostsManager() {
       setStatus('error');
       return;
     }
+
     const data = await response.json();
+    if (requestId !== latestRequest.current) {
+      return;
+    }
+
     setPosts(data.items);
     setTotal(data.total);
     setPageCount(data.pageCount ?? 1);
@@ -61,17 +95,15 @@ export default function PostsManager() {
     })();
   }, [load, router]);
 
-  function onSearch(event) {
+  // Enter aplica na hora, sem esperar o debounce.
+  function onSubmit(event) {
     event.preventDefault();
-    setPage(1); // um termo novo invalida a página atual
+    setPage(1);
     setQuery(term.trim());
   }
 
-  function clearSearch() {
-    setTerm('');
-    setPage(1);
-    setQuery('');
-  }
+  // Limpar fica por conta do "x" nativo do input type=search: ele dispara
+  // `input`, então o debounce recolhe a limpeza como qualquer outra edição.
 
   async function togglePublish(post) {
     setBusyId(post.id);
@@ -128,7 +160,7 @@ export default function PostsManager() {
         </div>
       </div>
 
-      <form className={styles.searchRow} onSubmit={onSearch} role="search">
+      <form className={styles.searchRow} onSubmit={onSubmit} role="search">
         <input
           type="search"
           className={styles.input}
@@ -136,20 +168,16 @@ export default function PostsManager() {
           onChange={(e) => setTerm(e.target.value)}
           placeholder="Buscar por titulo ou slug…"
           aria-label="Buscar posts"
+          autoComplete="off"
         />
-        <button type="submit" className={`${styles.button} ${styles.secondary}`}>
-          Buscar
-        </button>
-        {query ? (
-          <button
-            type="button"
-            className={styles.smallButton}
-            onClick={clearSearch}
-          >
-            Limpar
-          </button>
-        ) : null}
       </form>
+
+      {/* Anuncia o resultado a leitores de tela: como a busca acontece
+          sozinha, sem isso a mudança da lista passaria despercebida. */}
+      <p className={styles.srOnly} role="status" aria-live="polite">
+        {total} {total === 1 ? 'resultado' : 'resultados'}
+        {query ? ` para ${query}` : ''}
+      </p>
 
       {posts.length === 0 ? (
         <p className={styles.state}>

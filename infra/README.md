@@ -196,6 +196,21 @@ Ou cole o token no campo "Token do Gateway" na própria tela. `docker compose
 -f infra/docker-compose.local.yml exec openclaw node openclaw.mjs dashboard
 --no-open` imprime a URL.
 
+**O OpenClaw recusa a Control UI quando ela vem de outra origem.** Servido
+atrás do proxy, a origem deixa de ser a dele (`:18789`) e ele fecha o
+WebSocket com `origin not allowed` — a tela fica presa no login mesmo com o
+token certo. Libere a origem uma vez (fica no volume, sobrevive a restart):
+
+```bash
+echo '{ gateway: { controlUi: { allowedOrigins: ["http://localhost:8082"] } } }' \
+  | docker compose -f infra/docker-compose.dev.yml exec -T openclaw \
+    node openclaw.mjs config patch --stdin
+docker compose -f infra/docker-compose.dev.yml restart openclaw
+```
+
+Em produção o valor é `https://claw.vitorsierro.com` — sem isso o OpenClaw
+não abre pelo domínio, por mais que o gate do nginx deixe passar.
+
 ⚠️ Rodando assim **não existe barreira de login** do nosso lado: sem nginx,
 nada faz o forward-auth. Serve para desenvolver a integração do `/admin`, não
 para validar o gate. (A porta fica presa a `127.0.0.1` no host, então ao menos
