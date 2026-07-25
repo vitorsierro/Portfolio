@@ -1,17 +1,19 @@
 // Self-hosted tools that live on the VPS behind the nginx forward-auth check.
-// Configured via env so dev/staging can point elsewhere without code changes.
+// Env-configurable, but defaulted to the production subdomains so the admin
+// nav always renders — an unset variable used to make the tools vanish from
+// the UI with no hint as to why.
 export const TOOLS = [
   {
     key: 'draw',
     name: 'Excalidraw',
     description: 'Quadro branco para diagramas e rascunhos.',
-    url: process.env.NEXT_PUBLIC_DRAW_URL || '',
+    url: process.env.NEXT_PUBLIC_DRAW_URL || 'https://draw.vitorsierro.com',
   },
   {
     key: 'claw',
     name: 'OpenClaw',
     description: 'Assistente de IA pessoal multi-canal.',
-    url: process.env.NEXT_PUBLIC_CLAW_URL || '',
+    url: process.env.NEXT_PUBLIC_CLAW_URL || 'https://claw.vitorsierro.com',
   },
 ];
 

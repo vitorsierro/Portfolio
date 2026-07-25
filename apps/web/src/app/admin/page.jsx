@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { authFetch, ensureSession, logout } from '../../lib/auth';
+import { authFetch, ensureSession } from '../../lib/auth';
 import { TOOLS } from '../../lib/tools';
 import styles from '../../styles/Admin.module.css';
 
@@ -68,11 +68,6 @@ export default function AdminDashboard() {
     setBusyId(null);
   }
 
-  async function onLogout() {
-    await logout();
-    router.replace('/admin/login');
-  }
-
   if (status === 'loading') {
     return <p className={styles.state}>Carregando…</p>;
   }
@@ -96,13 +91,6 @@ export default function AdminDashboard() {
           >
             Novo post
           </a>
-          <button
-            type="button"
-            className={`${styles.button} ${styles.secondary}`}
-            onClick={onLogout}
-          >
-            Sair
-          </button>
         </div>
       </div>
 
