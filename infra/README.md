@@ -150,6 +150,36 @@ estiverem preenchidos.
 **O que isso não cobre:** o forward-auth do nginx. Sem nginx, nada exercita
 `auth_request`, o redirect condicional nem os certificados.
 
+### Rodar as ferramentas no localhost
+
+Aponte o web para as portas locais em `apps/web/.env.local` (e **reinicie o
+`yarn dev`** — o Next só lê env na inicialização):
+
+```
+NEXT_PUBLIC_DRAW_URL="http://localhost:8080"
+NEXT_PUBLIC_CLAW_URL="http://localhost:18789"
+```
+
+**Com Docker** (um comando, sobe as duas):
+
+```bash
+docker compose -f infra/docker-compose.local.yml up -d
+```
+
+**Sem Docker:**
+
+- *OpenClaw* exige Node `>=22.22.3 <23`, `>=24.15 <25` ou `>=25.9`. Com nvm:
+  `nvm install 24.15.0 && nvm use 24.15.0`, depois
+  `npm i -g openclaw@latest` e `openclaw gateway --port 18789`.
+- *Excalidraw* não tem pacote standalone no npm (o `excalidraw` do registry é
+  só um componente para embutir). Sem Docker, é clonar
+  `github.com/excalidraw/excalidraw` e rodar o dev server dele numa porta
+  livre — ou usar `excalidraw.com` enquanto isso.
+
+⚠️ Rodando assim **não existe barreira de login**: sem nginx, nada faz o
+forward-auth e as portas ficam abertas em localhost. Serve para desenvolver a
+integração do `/admin`, não para validar o gate.
+
 ### Com Docker — ensaio do forward-auth
 
 Para exercitar o gate de verdade antes da VPS, use domínios `.test` apontando

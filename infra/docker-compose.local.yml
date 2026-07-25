@@ -1,0 +1,31 @@
+# Só as ferramentas, para rodar no localhost durante o desenvolvimento.
+# A API e o site continuam no `yarn dev` — este arquivo não os sobe.
+#
+#   docker compose -f infra/docker-compose.local.yml up -d
+#
+# ATENÇÃO: aqui NÃO há nginx, logo NÃO há barreira de login. As portas ficam
+# abertas em localhost. Isso serve para desenvolver a integração do /admin;
+# o gate de autenticação só é exercitado com o docker-compose.yml completo.
+
+services:
+  excalidraw:
+    image: excalidraw/excalidraw:latest
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+
+  openclaw:
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+    restart: unless-stopped
+    ports:
+      - "18789:18789"
+    environment:
+      OPENCLAW_PORT: 18789
+    env_file:
+      - path: ./openclaw.env
+        required: false
+    volumes:
+      - openclaw_data:/root/.openclaw
+
+volumes:
+  openclaw_data:
