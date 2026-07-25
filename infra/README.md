@@ -163,7 +163,7 @@ yarn dev                       # web:3000 + api:3001
 Com a API no ar, rode o contrato de segurança:
 
 ```bash
-bash infra/verify-auth.sh http://localhost:3001 admin@vitorsierro.dev 'ChangeMe123!'
+bash infra/verify-auth.sh http://localhost:3001 <email-do-admin> '<senha>'
 ```
 
 São 12 asserções: rotas públicas x protegidas, o contrato 204/401 do

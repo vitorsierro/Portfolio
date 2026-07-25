@@ -33,6 +33,9 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
+      // Rejeita campos desconhecidos em vez de descartá-los em silêncio —
+      // um payload inesperado vira erro explícito, não comportamento mudo.
+      forbidNonWhitelisted: true,
       transform: true,
     }),
   );

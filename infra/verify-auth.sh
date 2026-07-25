@@ -2,7 +2,7 @@
 # Asserts the auth contract the whole design rests on. Run against the API
 # directly (dev) or through nginx (VPS rehearsal / production).
 #
-#   ./infra/verify-auth.sh http://localhost:3001 admin@vitorsierro.dev 'ChangeMe123!'
+#   ./infra/verify-auth.sh http://localhost:3001 <email-do-admin> '<senha>'
 #
 # Every check is a claim that must hold. A failure here means the login gate
 # or the CSRF protection is not doing what it's supposed to.

@@ -8,6 +8,11 @@ import { PrismaService } from '../prisma/prisma.service';
 const SLIDING_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const ABSOLUTE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
+// nginx chama /auth/verify uma vez por REQUISIÇÃO — inclusive cada asset de
+// uma página. Gravar lastSeenAt em todas elas serializa escritas no SQLite
+// sem necessidade; o campo é informativo, precisão de minutos basta.
+const LAST_SEEN_THROTTLE_MS = 5 * 60 * 1000;
+
 export interface IssuedSession {
   id: string;
   token: string;
@@ -46,10 +51,12 @@ export class SessionService {
       return null;
     }
 
-    await this.prisma.session.update({
-      where: { id: session.id },
-      data: { lastSeenAt: new Date() },
-    });
+    if (Date.now() - session.lastSeenAt.getTime() > LAST_SEEN_THROTTLE_MS) {
+      await this.prisma.session.update({
+        where: { id: session.id },
+        data: { lastSeenAt: new Date() },
+      });
+    }
 
     return { adminId: session.adminId };
   }

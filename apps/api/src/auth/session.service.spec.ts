@@ -42,12 +42,42 @@ describe('SessionService', () => {
       id: 's1',
       adminId: 'admin1',
       expiresAt: new Date(Date.now() + 1000),
+      lastSeenAt: new Date(),
     });
-    prisma.session.update.mockResolvedValue({});
 
     await expect(service.verify('some-token')).resolves.toEqual({
       adminId: 'admin1',
     });
+  });
+
+  it('does not write lastSeenAt on every check', async () => {
+    // nginx chama isto para cada asset; escrever sempre serializaria o SQLite
+    prisma.session.findUnique.mockResolvedValue({
+      id: 's1',
+      adminId: 'admin1',
+      expiresAt: new Date(Date.now() + 1000),
+      lastSeenAt: new Date(), // acabou de ser visto
+    });
+
+    await service.verify('token');
+
+    expect(prisma.session.update).not.toHaveBeenCalled();
+  });
+
+  it('refreshes lastSeenAt once the throttle window passes', async () => {
+    prisma.session.findUnique.mockResolvedValue({
+      id: 's1',
+      adminId: 'admin1',
+      expiresAt: new Date(Date.now() + 1000),
+      lastSeenAt: new Date(Date.now() - 10 * 60 * 1000), // 10 min atrás
+    });
+    prisma.session.update.mockResolvedValue({});
+
+    await service.verify('token');
+
+    expect(prisma.session.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 's1' } }),
+    );
   });
 
   it('rejects unknown, expired and missing tokens', async () => {

@@ -28,8 +28,8 @@ export default function AdminHeader() {
     <header className={styles.header}>
       <div className={styles.inner}>
         <a href="/admin" className={styles.brand}>
-          <span className={styles.brandEyebrow}>Vitor Sierro</span>
-          <span className={styles.brandTitle}>Admin</span>
+          <span className={styles.brandEyebrow}>Bem-vindo</span>
+          <span className={styles.brandTitle}>Vitor Sierro</span>
         </a>
 
         <button
