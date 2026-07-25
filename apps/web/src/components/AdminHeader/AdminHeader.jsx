@@ -61,19 +61,32 @@ export default function AdminHeader() {
 
             <span className={styles.divider} aria-hidden="true" />
 
-            {TOOLS.map((tool) => (
-              <a
-                key={tool.key}
-                href={tool.url}
-                className={styles.link}
-                onClick={() => setIsOpen(false)}
-              >
-                {tool.name}
-                <span className={styles.external} aria-hidden="true">
-                  ↗
-                </span>
-              </a>
-            ))}
+            {TOOLS.map((tool) => {
+              // O Excalidraw abre embutido em /admin/draw (mantém este
+              // header à vista). O OpenClaw proíbe iframe, então abre fora.
+              const embedded = tool.key === 'draw';
+
+              return (
+                <a
+                  key={tool.key}
+                  href={embedded ? '/admin/draw' : tool.url}
+                  className={styles.link}
+                  target={embedded ? undefined : '_blank'}
+                  rel={embedded ? undefined : 'noreferrer'}
+                  aria-current={
+                    embedded && pathname === '/admin/draw' ? 'page' : undefined
+                  }
+                  onClick={() => setIsOpen(false)}
+                >
+                  {tool.name}
+                  {embedded ? null : (
+                    <span className={styles.external} aria-hidden="true">
+                      ↗
+                    </span>
+                  )}
+                </a>
+              );
+            })}
           </nav>
 
           <button

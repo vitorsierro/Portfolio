@@ -201,6 +201,35 @@ nada faz o forward-auth. Serve para desenvolver a integração do `/admin`, não
 para validar o gate. (A porta fica presa a `127.0.0.1` no host, então ao menos
 não está exposta na LAN.)
 
+### Ensaio do forward-auth (recomendado) — barreira de login de verdade
+
+`docker-compose.local.yml` publica as ferramentas direto, **sem autenticação**.
+Para exercitar o mesmo gate da produção, use o `dev`, onde elas ficam atrás do
+nginx e **não publicam portas**:
+
+```bash
+yarn dev                                              # a API em :3001 valida a sessão
+docker compose -f infra/docker-compose.dev.yml up -d
+```
+
+- `http://localhost:8081` → Excalidraw (exige login)
+- `http://localhost:8082` → OpenClaw (exige login)
+
+Com `apps/web/.env.local` apontando para essas portas, o `/admin` já usa a
+versão protegida. Sem sessão, uma navegação cai em
+`/admin/login?next=…`; um XHR recebe 401 puro.
+
+Aqui as portas são separadas por número em vez de subdomínio, para não exigir
+mexer no `hosts` do Windows. Cookies **ignoram porta**, então o `admin_session`
+de `localhost:3001` vale para `localhost:8081` — é isso que faz o login único
+funcionar neste ensaio.
+
+**Armadilha:** `host.docker.internal` resolve para IPv4 **e** IPv6, e só o IPv4
+é roteável. Sem `resolver ... ipv6=off` o nginx alterna entre os dois e metade
+das requisições morre com 500 (o HTML carrega, os assets falham). Por isso o
+`proxy_pass` do bloco de auth usa variável — é o que força a resolução pelo
+resolver.
+
 ### Com Docker — ensaio do forward-auth
 
 Para exercitar o gate de verdade antes da VPS, use domínios `.test` apontando

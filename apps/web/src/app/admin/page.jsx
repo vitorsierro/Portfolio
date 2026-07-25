@@ -100,15 +100,27 @@ export default function AdminDashboard() {
             Ferramentas
           </h2>
           <div className={styles.toolGrid}>
-            {TOOLS.filter((tool) => tool.url).map((tool) => (
-              <a className={styles.toolCard} href={tool.url} key={tool.key}>
-                <span className={styles.toolName}>{tool.name}</span>
-                <span className={styles.toolDescription}>
-                  {tool.description}
-                </span>
-                <span className={styles.toolOpen}>Abrir →</span>
-              </a>
-            ))}
+            {TOOLS.filter((tool) => tool.url).map((tool) => {
+              const embedded = tool.key === 'draw';
+
+              return (
+                <a
+                  className={styles.toolCard}
+                  href={embedded ? '/admin/draw' : tool.url}
+                  target={embedded ? undefined : '_blank'}
+                  rel={embedded ? undefined : 'noreferrer'}
+                  key={tool.key}
+                >
+                  <span className={styles.toolName}>{tool.name}</span>
+                  <span className={styles.toolDescription}>
+                    {tool.description}
+                  </span>
+                  <span className={styles.toolOpen}>
+                    {embedded ? 'Abrir →' : 'Abrir em nova aba ↗'}
+                  </span>
+                </a>
+              );
+            })}
           </div>
         </section>
       ) : null}

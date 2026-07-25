@@ -1,10 +1,14 @@
 /** @type {import('next').NextConfig} */
 
-// The tools live on their own subdomains (they break when served from a
-// subpath, and /admin already belongs to the Next.js CMS routes). These
-// redirects keep the /admin/<tool> URLs the user expects as entry points.
+// /admin/draw NÃO entra aqui: virou uma página real que embute o Excalidraw
+// num iframe, para manter o header do admin visível. Um redirect teria
+// precedência sobre a página e a tornaria inalcançável.
+//
+// /admin/claw continua como redirect porque o OpenClaw manda
+// `X-Frame-Options: DENY` — ele não pode ser embutido, e essa proteção
+// anti-clickjacking existe por um bom motivo numa ferramenta que executa
+// comandos.
 const TOOL_REDIRECTS = [
-  { source: '/admin/draw', env: process.env.NEXT_PUBLIC_DRAW_URL },
   { source: '/admin/claw', env: process.env.NEXT_PUBLIC_CLAW_URL },
 ];
 

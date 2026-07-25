@@ -1,0 +1,51 @@
+# Ensaio local do forward-auth: as ferramentas ficam ATRÁS do nginx, com a
+# mesma barreira de login da produção — só que sem TLS e separadas por porta.
+#
+# Pré-requisito: `yarn dev` rodando (a API em :3001 é quem valida a sessão).
+#
+#   docker compose -f infra/docker-compose.dev.yml up -d
+#
+#   http://localhost:8081  → Excalidraw (exige login)
+#   http://localhost:8082  → OpenClaw   (exige login)
+#
+# Diferente do docker-compose.local.yml, aqui as ferramentas NÃO publicam
+# portas: só o nginx é alcançável, então não há como driblar o gate.
+
+services:
+  excalidraw:
+    image: excalidraw/excalidraw:latest
+    restart: unless-stopped
+
+  openclaw:
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+    restart: unless-stopped
+    command:
+      - node
+      - openclaw.mjs
+      - gateway
+      - --allow-unconfigured
+      - --auth
+      - token
+      - --port
+      - "18789"
+    env_file:
+      - path: ./openclaw.env
+        required: false
+    volumes:
+      - openclaw_data:/root/.openclaw
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:8081"
+      - "127.0.0.1:8082:8082"
+    volumes:
+      - ./nginx/dev:/etc/nginx/conf.d:ro
+    depends_on: [excalidraw, openclaw]
+    # Permite ao nginx alcançar a API do `yarn dev`, que roda no host.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  openclaw_data:

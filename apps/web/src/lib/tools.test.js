@@ -59,6 +59,19 @@ describe('safeNextUrl', () => {
     expect(safeNextUrl('javascript:alert(1)', ORIGIN)).toBeNull();
   });
 
+  it('allows http only on loopback, and only if allowlisted', () => {
+    jest.resetModules();
+    process.env.NEXT_PUBLIC_DRAW_URL = 'http://localhost:8081';
+    process.env.NEXT_PUBLIC_CLAW_URL = 'http://localhost:8082';
+    const dev = require('./tools');
+
+    expect(dev.safeNextUrl('http://localhost:8081/', ORIGIN)).toBe(
+      'http://localhost:8081/',
+    );
+    // loopback não vira passe livre: o hostname ainda tem de estar na allowlist
+    expect(dev.safeNextUrl('http://evil.com/', ORIGIN)).toBeNull();
+  });
+
   it('rejects unparseable input', () => {
     expect(safeNextUrl('http://[bad', ORIGIN)).toBeNull();
   });

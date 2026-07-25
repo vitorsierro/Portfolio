@@ -53,7 +53,11 @@ export function safeNextUrl(raw, origin) {
     return `${url.pathname}${url.search}${url.hash}`;
   }
 
-  if (url.protocol !== 'https:') {
+  // HTTPS obrigatório, exceto no loopback — em dev as ferramentas ficam atrás
+  // do nginx local sem TLS. Não enfraquece produção: o alvo teria de ser a
+  // própria máquina da vítima, e o hostname ainda precisa estar na allowlist.
+  const isLoopback = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && isLoopback)) {
     return null;
   }
   if (!allowedNextHostnames().includes(url.hostname)) {
