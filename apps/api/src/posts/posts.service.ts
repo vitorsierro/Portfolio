@@ -60,19 +60,33 @@ export class PostsService {
   async listAll(query: AdminListQueryDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
+    const term = query.q?.trim();
+
+    // SQLite's LIKE is case-insensitive for ASCII by default, which is what
+    // Prisma's `contains` compiles to. (Prisma's `mode: 'insensitive'` isn't
+    // supported on SQLite, so don't reach for it here.)
+    const where: Prisma.PostWhereInput = term
+      ? {
+          OR: [{ title: { contains: term } }, { slug: { contains: term } }],
+        }
+      : {};
+
     const [items, total] = await this.prisma.$transaction([
       this.prisma.post.findMany({
+        where,
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
       }),
-      this.prisma.post.count(),
+      this.prisma.post.count({ where }),
     ]);
+
     return {
       items: items.map((p) => this.toAdminListItem(p)),
       total,
       page,
       limit,
+      pageCount: Math.max(1, Math.ceil(total / limit)),
     };
   }
 

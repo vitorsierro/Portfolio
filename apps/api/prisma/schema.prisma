@@ -11,26 +11,31 @@ datasource db {
 }
 
 model Admin {
-  id               String   @id @default(cuid())
-  email            String   @unique
-  passwordHash     String
-  refreshTokenHash String? // hash of the current refresh token (rotation)
-  createdAt        DateTime @default(now())
-  sessions         Session[]
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  sessions     Session[]
 }
 
-// Opaque session cookie shared by the self-hosted tools (Excalidraw, OpenClaw)
-// behind the nginx forward-auth check. Separate from the CMS access/refresh
-// tokens so tool sessions don't die on every 15m access-token refresh, and so
-// logout/revocation can be enforced server-side (a JWT here couldn't be).
+// One row per signed-in browser. Holds BOTH credentials for that browser:
+//
+//  - tokenHash:        the opaque cookie the nginx forward-auth check validates
+//                      to let the self-hosted tools through.
+//  - refreshTokenHash: the CMS refresh token.
+//
+// Keeping the refresh token here (rather than a single column on Admin) is
+// what makes concurrent sessions work: a single global hash meant every new
+// login or refresh silently invalidated every other tab and device.
 model Session {
-  id         String   @id @default(cuid())
-  adminId    String
-  admin      Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
-  tokenHash  String   @unique // sha256 of the cookie value
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  lastSeenAt DateTime @default(now())
+  id               String   @id @default(cuid())
+  adminId          String
+  admin            Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  tokenHash        String   @unique // sha256 of the tool-session cookie
+  refreshTokenHash String? // sha256 of this browser's current refresh token
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+  lastSeenAt       DateTime @default(now())
 
   @@index([adminId])
 }

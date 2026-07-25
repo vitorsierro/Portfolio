@@ -40,16 +40,9 @@ export class AuthController {
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string }> {
-    const { accessToken, refreshToken, adminId } = await this.authService.login(
-      dto.email,
-      dto.password,
-    );
-    this.setRefreshCookie(res, refreshToken);
-
-    const session = await this.sessionService.issue(adminId);
-    this.setSessionCookie(res, session.token, session.expiresAt);
-
-    return { accessToken };
+    const result = await this.authService.login(dto.email, dto.password);
+    this.setAuthCookies(res, result);
+    return { accessToken: result.accessToken };
   }
 
   @Post('refresh')
@@ -60,23 +53,11 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ accessToken: string }> {
     const token = req.cookies?.[REFRESH_COOKIE] as string | undefined;
-    const { accessToken, refreshToken } = await this.authService.refresh(token);
-    this.setRefreshCookie(res, refreshToken);
-
-    // Renewing the tool-session cookie is best-effort: most CMS refreshes
-    // (every ~15m) happen without the admin ever having visited draw./claw.,
-    // so there's often no session cookie to renew.
-    const sessionToken = req.cookies?.[SESSION_COOKIE()] as string | undefined;
-    if (sessionToken) {
-      const renewed = await this.sessionService.renew(sessionToken);
-      if (renewed) {
-        this.setSessionCookie(res, renewed.token, renewed.expiresAt);
-      } else {
-        this.clearSessionCookie(res);
-      }
-    }
-
-    return { accessToken };
+    // Rotates only this browser's session row, so other tabs/devices keep
+    // their own refresh tokens working.
+    const result = await this.authService.refresh(token);
+    this.setAuthCookies(res, result);
+    return { accessToken: result.accessToken };
   }
 
   @Post('logout')
@@ -87,11 +68,15 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ success: true }> {
     const token = req.cookies?.[REFRESH_COOKIE] as string | undefined;
+    // Deleting the session row kills both credentials at once — the CMS
+    // refresh token and the tools' cookie.
     await this.authService.logout(token);
     res.clearCookie(REFRESH_COOKIE, { path: '/auth' });
 
+    // Belt and braces: if the refresh cookie was already gone, fall back to
+    // revoking by the session cookie we still have.
     const sessionToken = req.cookies?.[SESSION_COOKIE()] as string | undefined;
-    await this.sessionService.revoke(sessionToken);
+    await this.sessionService.revokeByToken(sessionToken);
     this.clearSessionCookie(res);
 
     return { success: true };
@@ -115,6 +100,18 @@ export class AuthController {
     }
 
     res.setHeader('X-Auth-User', session.adminId);
+  }
+
+  private setAuthCookies(
+    res: Response,
+    result: {
+      refreshToken: string;
+      sessionToken: string;
+      sessionExpiresAt: Date;
+    },
+  ): void {
+    this.setRefreshCookie(res, result.refreshToken);
+    this.setSessionCookie(res, result.sessionToken, result.sessionExpiresAt);
   }
 
   private setRefreshCookie(res: Response, token: string): void {

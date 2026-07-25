@@ -15,6 +15,11 @@ export class ListQueryDto {
 }
 
 export class AdminListQueryDto {
+  // Free-text search over title and slug.
+  @IsOptional()
+  @IsString()
+  q?: string;
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()
