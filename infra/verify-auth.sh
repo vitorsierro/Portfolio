@@ -51,6 +51,16 @@ echo "== Session gates the tools =="
 check "/auth/verify with a session"         204 "$(code -b "$JAR" "$BASE/auth/verify")"
 
 echo
+echo "== Forward-auth must survive a tool's Origin header =="
+# Regression: nginx copies the original request's headers into the auth
+# subrequest, so a browser's cross-origin subresource request arrives here
+# carrying the TOOL's Origin — which is deliberately absent from the CORS
+# allowlist. Rejecting it with an error turned every asset request into a
+# 500 and broke the gate. Must stay a clean 204.
+check "/auth/verify with a tool Origin"     204 "$(code -b "$JAR" \
+  -H 'Origin: https://draw.example.com' "$BASE/auth/verify")"
+
+echo
 echo "== CSRF invariant: cookies must NEVER authorise a mutation =="
 # The whole design depends on JwtAuthGuard reading only the Authorization
 # header. If this ever returns 2xx, every admin mutation became forgeable

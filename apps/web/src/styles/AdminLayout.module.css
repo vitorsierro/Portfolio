@@ -1,0 +1,7 @@
+/* Coluna flex para que uma página possa esticar até o fim da viewport
+   (o iframe das ferramentas) sem depender da altura exata do header. */
+.root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}

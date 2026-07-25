@@ -18,9 +18,14 @@ async function bootstrap() {
       // No Origin header = same-origin or a non-browser client — allow.
       if (!origin || parseAllowedOrigins().includes(origin)) {
         callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
+        return;
       }
+      // Deny by omitting the CORS headers rather than throwing: an error here
+      // surfaces as a 500, which turned a disallowed Origin into a broken
+      // endpoint instead of a blocked one. The browser still refuses to
+      // expose the response, and the mutating cookie routes stay protected by
+      // OriginCheckGuard — which returns a deliberate 403.
+      callback(null, false);
     },
     credentials: true,
   });
