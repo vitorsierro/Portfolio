@@ -17,10 +17,26 @@ services:
   openclaw:
     image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
     restart: unless-stopped
+    # --allow-unconfigured: sem isso o gateway sai em loop exigindo
+    #   `openclaw setup` (que é interativo e não roda em container).
+    # Não passe --bind: em container o OpenClaw já detecta o ambiente e usa
+    #   bind=auto (0.0.0.0). Forçar `lan` faz ele recusar a subir.
+    # --auth token: NÃO é opcional. O OpenClaw se recusa a escutar fora do
+    #   loopback sem autenticação, e em container o bind é sempre 0.0.0.0.
+    #   O token vem de OPENCLAW_GATEWAY_TOKEN (infra/openclaw.env).
+    command:
+      - node
+      - openclaw.mjs
+      - gateway
+      - --allow-unconfigured
+      - --auth
+      - token
+      - --port
+      - "18789"
     ports:
-      - "18789:18789"
-    environment:
-      OPENCLAW_PORT: 18789
+      # 127.0.0.1 no host: sem isso a porta ficaria aberta para toda a LAN, e
+      # o OpenClaw executa comandos na máquina.
+      - "127.0.0.1:18789:18789"
     env_file:
       - path: ./openclaw.env
         required: false

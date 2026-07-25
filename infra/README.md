@@ -176,9 +176,30 @@ docker compose -f infra/docker-compose.local.yml up -d
   `github.com/excalidraw/excalidraw` e rodar o dev server dele numa porta
   livre — ou usar `excalidraw.com` enquanto isso.
 
-⚠️ Rodando assim **não existe barreira de login**: sem nginx, nada faz o
-forward-auth e as portas ficam abertas em localhost. Serve para desenvolver a
-integração do `/admin`, não para validar o gate.
+**O OpenClaw exige token — não é opcional.** Ele se recusa a escutar fora do
+loopback sem autenticação, e em container o bind é sempre `0.0.0.0`. Sem token
+o container entra em loop de restart com `Missing config`. Gere um em
+`infra/openclaw.env`:
+
+```bash
+node -e "console.log('OPENCLAW_GATEWAY_TOKEN='+require('crypto').randomBytes(32).toString('base64url'))" >> infra/openclaw.env
+```
+
+Para abrir a Control UI, o token vai no **fragmento** da URL (não query
+string — assim não trafega ao servidor nem entra em log):
+
+```
+http://localhost:18789/#token=<SEU_TOKEN>
+```
+
+Ou cole o token no campo "Token do Gateway" na própria tela. `docker compose
+-f infra/docker-compose.local.yml exec openclaw node openclaw.mjs dashboard
+--no-open` imprime a URL.
+
+⚠️ Rodando assim **não existe barreira de login** do nosso lado: sem nginx,
+nada faz o forward-auth. Serve para desenvolver a integração do `/admin`, não
+para validar o gate. (A porta fica presa a `127.0.0.1` no host, então ao menos
+não está exposta na LAN.)
 
 ### Com Docker — ensaio do forward-auth
 
@@ -217,9 +238,43 @@ No navegador: acesse `draw.vitorsierro.com` deslogado → deve cair em
 
 ## Pendências
 
-**OpenClaw** — a imagem em `OPENCLAW_IMAGE` é um palpite razoável; confirme o
-nome publicado no repositório oficial. As credenciais de provedor de IA e os
-tokens de canal vão em `infra/openclaw.env` (git-ignored, opcional).
+**OpenClaw com login realmente único (`trusted-proxy`)** — hoje o gateway usa
+`--auth token`, então, mesmo passando pelo gate do nginx, a Control UI ainda
+pede o token uma vez. O OpenClaw suporta `auth.mode = "trusted-proxy"`, que
+delega a autenticação ao proxy e elimina esse passo. Exige arquivo de config
+(não dá só por flag):
+
+```json5
+{
+  gateway: {
+    bind: "lan",
+    trustedProxies: ["<IP do container nginx na rede docker>"],
+    auth: {
+      mode: "trusted-proxy",
+      trustedProxy: {
+        userHeader: "x-auth-user",          // já enviado pelo nosso nginx
+        requiredHeaders: ["x-forwarded-proto", "x-forwarded-host"],
+        allowUsers: ["<email do admin>"],
+        allowLoopback: false,
+      },
+    },
+  },
+}
+```
+
+Cuidados que a doc oficial destaca, e que já valem no nosso desenho:
+a porta do gateway **não pode** estar exposta a ninguém além do proxy (o
+compose de produção não publica portas — ok); o proxy precisa **sobrescrever**
+os headers vindos do cliente (`proxy_set_header X-Auth-User $auth_user`
+substitui, não anexa — ok); e o startup é **rejeitado** se um token
+compartilhado também estiver configurado, então ao migrar remova
+`OPENCLAW_GATEWAY_TOKEN` e o `--auth token`.
+
+Para `allowUsers` ficar legível, convém `/auth/verify` passar a devolver o
+e-mail do admin em `X-Auth-User` em vez do `adminId`.
+
+**Imagem** — `ghcr.io/openclaw/openclaw:latest` foi confirmada (baixa e roda).
+Credenciais de provedor de IA e tokens de canal vão em `infra/openclaw.env`.
 
 **Excalidraw colaborativo** — a imagem pública embute a URL do servidor de WS
 em tempo de build. O `excalidraw-room` está no Compose e roteado, mas a

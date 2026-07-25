@@ -46,9 +46,27 @@ services:
   openclaw:
     image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
     restart: unless-stopped
-    environment:
-      # Provider keys / channel tokens go in infra/.env — see .env.example.
-      OPENCLAW_PORT: 18789
+    # Sem estas flags o gateway sai em loop pedindo `openclaw setup`
+    # (interativo, não roda em container).
+    #
+    # --auth token: o OpenClaw SE RECUSA a escutar fora do loopback sem
+    #   autenticação, e em container o bind é sempre 0.0.0.0. Aqui o token é
+    #   defesa em profundidade: o nginx já barra tudo antes, mas se alguém
+    #   alcançar a porta interna, ainda precisa do token.
+    #   Ele vem de OPENCLAW_GATEWAY_TOKEN em infra/openclaw.env.
+    #
+    # Existe um modo `trusted-proxy`, que delegaria a auth ao nginx e daria
+    # login único de verdade (sem colar token na Control UI). Exige arquivo de
+    # config com trustedProxies/userHeader/allowUsers — ver infra/README.md.
+    command:
+      - node
+      - openclaw.mjs
+      - gateway
+      - --allow-unconfigured
+      - --auth
+      - token
+      - --port
+      - "18789"
     env_file:
       - path: ./openclaw.env
         required: false
