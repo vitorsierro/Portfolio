@@ -116,6 +116,33 @@ crontab -e
 off-site (rclone/S3/Backblaze) no ponto marcado no script — até lá, o disco é
 um ponto único de falha.
 
+## Raio de alcance do OpenClaw
+
+O OpenClaw é o único serviço aqui que executa comandos e processa entrada não
+confiável (mensagens, páginas web). Se ele for comprometido ou "enlouquecer",
+o que ele consegue atingir:
+
+**Não consegue:**
+- Apagar o banco — o volume `api_data` (onde vive o `prod.db`) não é montado
+  nele. Só enxerga o próprio `/home/node/.openclaw`.
+- Controlar containers — sem acesso ao socket do Docker.
+- Virar root no host — roda como uid 1000, sem `privileged` e sem
+  capabilities extras.
+- Falar com a API ou o Excalidraw pela rede interna — cada zona tem sua
+  própria rede e ele está sozinho na `claw`.
+
+**Consegue:**
+- Destruir os próprios dados (config, credenciais de provedor, memória).
+- Sair para a internet — é o que ele precisa para chamar as APIs de IA. Por
+  aí ele também alcança `api.vitorsierro.com` pela via pública, mas então
+  passa pelo nginx e cai no rate limit do `/auth/login`, como qualquer um.
+- Se alguém obtiver o login do admin, aí sim é possível apagar posts via API
+  — mas isso vale para qualquer atacante com a senha, não é específico dele.
+
+A segmentação de rede é o que fecha o caminho mais perigoso: sem ela, o
+OpenClaw falaria direto com `api:3001` e poderia tentar senhas à vontade,
+já que o `limit_req` mora no nginx e uma chamada interna o contorna.
+
 ## Operação
 
 ```bash

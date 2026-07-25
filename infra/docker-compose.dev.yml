@@ -15,6 +15,7 @@ services:
   excalidraw:
     image: excalidraw/excalidraw:latest
     restart: unless-stopped
+    networks: [draw]
 
   openclaw:
     image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
@@ -32,7 +33,12 @@ services:
       - path: ./openclaw.env
         required: false
     volumes:
-      - openclaw_data:/root/.openclaw
+      # /home/node: a imagem roda como uid 1000, um volume em /root fica
+      # inacessível e a config não persistiria. Ver docker-compose.yml.
+      - openclaw_data:/home/node/.openclaw
+    # Isolado: não alcança o Excalidraw nem a API. Espelha a segmentação de
+    # produção — ver o comentário em docker-compose.yml.
+    networks: [claw]
 
   nginx:
     image: nginx:alpine
@@ -43,9 +49,14 @@ services:
     volumes:
       - ./nginx/dev:/etc/nginx/conf.d:ro
     depends_on: [excalidraw, openclaw]
+    networks: [draw, claw]
     # Permite ao nginx alcançar a API do `yarn dev`, que roda no host.
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
 volumes:
   openclaw_data:
+
+networks:
+  draw:
+  claw:

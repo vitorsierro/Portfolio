@@ -4,6 +4,14 @@
 # internal Docker network, so the tools can't be hit directly, bypassing the
 # forward-auth check.
 #
+# NETWORK SEGMENTATION — one network per zone, nginx bridging them.
+# A single shared network would let OpenClaw talk straight to api:3001,
+# which matters because OpenClaw is the one service here that runs commands
+# and processes untrusted input (messages, web pages). From there it could
+# hammer /auth/login with no rate limit, since limit_req lives in nginx and
+# a direct call skips the proxy entirely. Each service only needs to be
+# reachable BY nginx — none of them need to reach each other.
+#
 # Run from the repo root:  docker compose -f infra/docker-compose.yml up -d
 
 services:
@@ -27,12 +35,12 @@ services:
       SEED_SAMPLE_POSTS: "false"
     volumes:
       - api_data:/data
-    networks: [web]
+    networks: [backend]
 
   excalidraw:
     image: excalidraw/excalidraw:latest
     restart: unless-stopped
-    networks: [web]
+    networks: [draw]
 
   # Collaboration backend (socket.io). NOTE: the public excalidraw image bakes
   # its WS server URL in at build time, so live collaboration only engages if
@@ -41,7 +49,7 @@ services:
   excalidraw-room:
     image: excalidraw/excalidraw-room:latest
     restart: unless-stopped
-    networks: [web]
+    networks: [draw]
 
   openclaw:
     image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
@@ -78,8 +86,15 @@ services:
       - path: ./openclaw.env
         required: false
     volumes:
-      - openclaw_data:/root/.openclaw
-    networks: [web]
+      # /home/node, NÃO /root: a imagem roda como uid 1000 (node), então um
+      # volume em /root fica sem permissão de leitura — a config iria para
+      # /home/node/.openclaw, fora do volume, e sumiria a cada recreate
+      # (credenciais de provedor, canais conectados, memória do agente).
+      - openclaw_data:/home/node/.openclaw
+    # Rede própria: o OpenClaw não alcança api:3001 nem o Excalidraw. Ele só
+    # precisa ser alcançado pelo nginx. Mantém saída para a internet (as APIs
+    # de IA), que é o que ele legitimamente precisa.
+    networks: [claw]
 
   nginx:
     image: nginx:alpine
@@ -98,7 +113,9 @@ services:
     # nginx resolves proxy_pass hostnames at startup, so every upstream it
     # references must exist or it refuses to boot — excalidraw-room included.
     depends_on: [api, excalidraw, excalidraw-room, openclaw]
-    networks: [web]
+    # O nginx é a única peça que participa de todas as zonas — é ele quem
+    # faz a ponte, e sempre passando pelo gate.
+    networks: [backend, draw, claw]
 
   # Renews certs twice a day; nginx reloads them via its own timer below.
   certbot:
@@ -119,4 +136,6 @@ volumes:
   certbot_www:
 
 networks:
-  web:
+  backend: # api
+  draw: # excalidraw + sala de colaboração
+  claw: # openclaw, isolado do resto
