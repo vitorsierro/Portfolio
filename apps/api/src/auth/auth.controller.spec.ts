@@ -1,14 +1,17 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { Request, Response } from 'express';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { SessionService } from './session.service';
 
-// Mimics Express's Request/Response just enough for the controller.
-function mockReq(cookies: Record<string, string> = {}) {
-  return { cookies } as any;
+// Dublês de Request/Response do Express com só o que o controller usa. O
+// `unknown` intermediário evita `any` sem fingir que o objeto é completo.
+function mockReq(cookies: Record<string, string> = {}): Request {
+  return { cookies } as unknown as Request;
 }
-function mockRes() {
+
+function mockRes(): Response & { headers: Record<string, string> } {
   const headers: Record<string, string> = {};
   return {
     cookie: jest.fn(),
@@ -17,7 +20,7 @@ function mockRes() {
       headers[name] = value;
     }),
     headers,
-  } as any;
+  } as unknown as Response & { headers: Record<string, string> };
 }
 
 describe('AuthController /auth/verify', () => {

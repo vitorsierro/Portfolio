@@ -47,3 +47,6 @@ infra/openclaw.env
 
 # vercel
 .vercel
+
+# relatorios de diagnostico (react-doctor)
+rd-report.json

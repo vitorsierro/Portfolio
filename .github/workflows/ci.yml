@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  push:
+    branches: [main, reestruturar-arquitetura]
+  pull_request:
+  workflow_dispatch:
+
+# Um push novo cancela a execução anterior do mesmo branch — sem isso, uma
+# sequência de commits enfileira builds que já nasceram obsoletos.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Só precisa existir para o build; nenhum teste toca no banco de verdade.
+  DATABASE_URL: "file:./ci.db"
+
+jobs:
+  qualidade:
+    name: Lint e tipos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      # O client do Prisma é gerado, não versionado: sem isto o tsc não acha
+      # os tipos das entidades.
+      - run: yarn workspace api prisma:generate
+      - run: yarn lint
+      - run: yarn typecheck
+
+  testes:
+    name: Testes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn workspace api prisma:generate
+      - run: yarn workspace api test
+      - run: yarn workspace web test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn workspace api prisma:generate
+      - run: yarn workspace api build
+      # O build do web busca conteúdo da API. Em CI ela não existe, e o
+      # código já cai em fallback — por isso o build passa sem backend.
+      - run: yarn workspace web build
+
+  contrato-de-auth:
+    name: Contrato de autenticação
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn workspace api prisma:generate
+
+      - name: Preparar banco e admin
+        working-directory: apps/api
+        env:
+          DATABASE_URL: "file:./ci.db"
+          ADMIN_EMAIL: ci@example.com
+          ADMIN_PASSWORD: ci-password-123
+          SEED_SAMPLE_POSTS: "false"
+        run: |
+          npx prisma migrate deploy
+          npx prisma db seed
+
+      # As 13 asserções que sustentam o login único: contrato 204/401 do
+      # /auth/verify, revogação no logout e o invariante anti-CSRF (cookie
+      # sozinho nunca autoriza mutação). É a rede de segurança que impede
+      # alguém de "simplificar" o guard e abrir tudo sem perceber.
+      - run: yarn workspace api build
+
+      # working-directory importa: o Prisma resolve um DATABASE_URL relativo a
+      # partir do diretório do SCHEMA, não do cwd. Rodar da raiz faz o SQLite
+      # procurar o arquivo em apps/api/prisma/apps/api/ e falhar com
+      # "Unable to open the database file".
+      - name: Subir a API
+        working-directory: apps/api
+        env:
+          DATABASE_URL: "file:./ci.db"
+          JWT_ACCESS_SECRET: ci-access-secret-not-a-real-one
+          JWT_REFRESH_SECRET: ci-refresh-secret-not-a-real-one
+          WEB_ORIGIN: "http://localhost:3000"
+          NODE_ENV: test
+        run: node dist/main.js &
+
+      - name: Aguardar a API responder
+        run: npx --yes wait-on -t 60000 http://localhost:3001/portfolio
+
+      - name: Rodar o contrato de autenticação
+        run: bash infra/verify-auth.sh http://localhost:3001 ci@example.com 'ci-password-123'
+
+  react-doctor:
+    name: React Doctor
+    runs-on: ubuntu-latest
+    # Informativo por enquanto: o score atual é 43 e travar o merge nele
+    # pararia o trabalho em vez de melhorar o código. Vira bloqueante quando
+    # a dívida estiver paga.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - name: Diagnóstico do app web
+        run: npx --yes react-doctor@latest --no-supply-chain apps/web

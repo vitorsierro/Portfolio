@@ -71,6 +71,12 @@ export default function DrawPage() {
       src={DRAW.url}
       title="Excalidraw"
       allow="clipboard-read; clipboard-write; fullscreen"
+      // sandbox limita o que o app embutido pode fazer dentro do /admin.
+      // allow-same-origin é necessário para o Excalidraw acessar o próprio
+      // localStorage (é onde ele guarda os desenhos) — e é seguro aqui porque
+      // a origem dele é OUTRA (draw.*), então isso não lhe dá acesso ao nosso
+      // documento. Ficam de fora, entre outros, top-navigation e modals.
+      sandbox="allow-scripts allow-same-origin allow-downloads allow-popups allow-forms"
     />
   );
 }

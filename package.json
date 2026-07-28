@@ -10,9 +10,17 @@
     "dev:web": "yarn workspace web dev",
     "dev:api": "yarn workspace api start:dev",
     "build": "yarn workspace api build && yarn workspace web build",
-    "test": "yarn workspace web test && yarn workspace api test"
+    "test": "yarn workspace web test && yarn workspace api test",
+    "lint": "eslint apps/web apps/api",
+    "typecheck": "tsc --noEmit -p apps/api/tsconfig.json",
+    "doctor": "react-doctor --no-supply-chain apps/web",
+    "verify": "yarn lint && yarn typecheck && yarn test && yarn build"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "@eslint/eslintrc": "^3.3.6",
+    "concurrently": "^9.1.0",
+    "eslint": "^9",
+    "eslint-config-next": "^15",
+    "typescript-eslint": "^8.65.0"
   }
 }
