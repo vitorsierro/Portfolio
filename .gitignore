@@ -50,3 +50,7 @@ infra/openclaw.env
 
 # relatorios de diagnostico (react-doctor)
 rd-report.json
+
+# banco efemero da CI
+apps/api/**/ci.db
+apps/api/ci.db
