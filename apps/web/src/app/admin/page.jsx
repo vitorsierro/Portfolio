@@ -16,6 +16,13 @@ const DESTINATIONS = [
     href: '/admin/posts',
     embedded: true,
   },
+  {
+    key: 'enseada',
+    name: 'Enseada',
+    description: 'Conteúdo do site de temporada: ambientes, guia e fotos.',
+    href: '/admin/enseada',
+    embedded: true,
+  },
   ...TOOLS.map((tool) => ({
     key: tool.key,
     name: tool.name,

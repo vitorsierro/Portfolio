@@ -1,0 +1,185 @@
+/* Telas do módulo Enseada. Reaproveita os tokens e o container do
+   Admin.module.css — aqui ficam só os padrões que o CMS do blog não tinha
+   (formulários longos, galeria, listas editáveis). */
+
+.form {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.fieldset {
+  display: grid;
+  gap: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-strong);
+  padding: var(--space-5);
+}
+
+.legend {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-accent-strong);
+}
+
+.grid2 {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+
+.field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-accent-strong);
+}
+
+.hint {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.error {
+  color: #a1341f;
+  font-size: 0.9rem;
+}
+
+.ok {
+  color: var(--color-accent);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Upload */
+.uploader {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.uploadRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.thumbs {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+}
+
+.thumb {
+  display: grid;
+  gap: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+  background: var(--color-surface);
+}
+
+.thumb img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.thumb input {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.thumbActions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.thumbActions button {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-strong);
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.thumbActions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.danger {
+  color: #a1341f;
+  border-color: rgba(161, 52, 31, 0.35) !important;
+}
+
+.dims {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+}
+
+/* Lista editável (ambientes, guia, faq) */
+.items {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-strong);
+  padding: var(--space-4) var(--space-5);
+}
+
+.itemHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.itemTitle {
+  font-weight: 600;
+  color: var(--color-accent-strong);
+}
+
+.itemMeta {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.itemActions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.preview {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #12251f;
+  color: #eaf1ec;
+  padding: var(--space-4);
+  overflow-x: auto;
+  font-family: "IBM Plex Mono", Consolas, monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  max-height: 32rem;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}

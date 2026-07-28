@@ -9,6 +9,7 @@ import styles from '../../styles/AdminHeader.module.css';
 const NAV = [
   { href: '/admin', label: 'Painel' },
   { href: '/admin/posts', label: 'Posts' },
+  { href: '/admin/enseada', label: 'Enseada' },
 ];
 
 export default function AdminHeader() {
