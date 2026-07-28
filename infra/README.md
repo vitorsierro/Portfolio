@@ -26,6 +26,44 @@ Tudo vive sob o mesmo domínio registrável, então o cookie `admin_session`
 
 ## Setup inicial
 
+### 0. Provisionamento (uma vez, na VPS nova)
+
+```bash
+ssh root@SEU_IP
+curl -fsSL https://raw.githubusercontent.com/vitorsierro/Portfolio/main/infra/provision.sh -o provision.sh
+bash provision.sh
+```
+
+Instala Docker, cria o usuário `deploy` (o GitHub Actions **não** usa root),
+liga `ufw`/`fail2ban`, clona o repositório em `/opt/portfolio` e gera a chave
+SSH do deploy. No fim ele imprime a chave privada e os próximos passos.
+
+⚠️ **Só desative o login por senha depois de confirmar que
+`ssh deploy@SEU_IP` funciona** — na ordem inversa você se tranca para fora.
+
+### Deploy automático
+
+Um push na `main` que toque em `apps/api/**` ou `infra/**` dispara
+`.github/workflows/deploy.yml`, que: roda lint e testes, conecta por SSH,
+executa `infra/deploy.sh` (backup → pull → rebuild → healthcheck) e depois
+confirma pela internet que a API respondeu **e** que o contrato de auth
+continua valendo.
+
+Segredos necessários no GitHub (*Settings → Secrets and variables → Actions*):
+
+| Segredo | Valor |
+|---|---|
+| `VPS_HOST` | IP da VPS |
+| `VPS_USER` | `deploy` |
+| `VPS_SSH_KEY` | chave privada gerada pelo `provision.sh` |
+| `API_HOST` | `api.vitorsierro.com` |
+| `WEB_HOST` | `vitorsierro.com` |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | opcionais — habilitam o contrato de auth pós-deploy |
+
+Se o healthcheck falhar, o deploy falha e o log mostra o comando exato para
+voltar ao commit anterior. **Não há rollback automático**: reverter um deploy
+que já rodou migration pode perder dados, então essa decisão fica com você.
+
 ### 1. DNS
 Registros `A` apontando para o IP da VPS:
 

@@ -1,0 +1,98 @@
+name: Deploy na VPS
+
+on:
+  push:
+    branches: [main]
+    # Mudança só no site/docs não precisa reiniciar a stack.
+    paths:
+      - 'apps/api/**'
+      - 'infra/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+    inputs:
+      motivo:
+        description: 'Por que está deployando manualmente'
+        required: false
+
+# Dois deploys ao mesmo tempo deixariam o servidor num estado indefinido.
+# Aqui NÃO cancelamos o anterior: interromper no meio de uma migration é pior
+# do que esperar.
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  # Não adianta ter CI se o deploy não olha para ela. Este job repete as
+  # verificações essenciais antes de tocar em produção.
+  verificar:
+    name: Verificar antes de subir
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn workspace api prisma:generate
+      - run: yarn lint
+      - run: yarn workspace api test
+
+  deploy:
+    name: Deploy
+    needs: verificar
+    runs-on: ubuntu-latest
+    environment: producao
+    steps:
+      - name: Enviar o deploy por SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          # Build de imagem na VPS leva alguns minutos; o default de 10s
+          # derrubaria a conexão no meio.
+          command_timeout: 20m
+          script: |
+            set -euo pipefail
+            cd /opt/portfolio
+            git fetch --all
+            git reset --hard origin/main
+            chmod +x infra/*.sh
+            ./infra/deploy.sh
+
+      - name: Confirmar que a API respondeu
+        # Um deploy que "passou" mas deixou o serviço fora do ar é o pior
+        # resultado possível: silencioso. Esta checagem transforma isso em
+        # falha visível.
+        run: |
+          for tentativa in $(seq 1 10); do
+            codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 \
+              "https://${{ secrets.API_HOST }}/portfolio" || echo 000)
+            if [ "$codigo" = "200" ]; then
+              echo "API respondendo (200) na tentativa $tentativa"
+              exit 0
+            fi
+            echo "tentativa $tentativa: HTTP $codigo — aguardando"
+            sleep 10
+          done
+          echo "::error::A API não respondeu 200 após o deploy"
+          exit 1
+
+      - name: Rodar o contrato de autenticação em produção
+        # As mesmas 13 asserções da CI, agora contra o ambiente real: garante
+        # que o gate de login continua fechado depois do deploy.
+        env:
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        run: |
+          if [ -z "${ADMIN_EMAIL}" ]; then
+            echo "ADMIN_EMAIL/PASSWORD não configurados — pulando o contrato."
+            exit 0
+          fi
+          curl -fsSL -o verify-auth.sh \
+            "https://raw.githubusercontent.com/${{ github.repository }}/main/infra/verify-auth.sh"
+          ORIGIN="https://${{ secrets.WEB_HOST }}" \
+            bash verify-auth.sh "https://${{ secrets.API_HOST }}" "$ADMIN_EMAIL" "$ADMIN_PASSWORD"
