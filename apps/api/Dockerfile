@@ -29,6 +29,10 @@ RUN apk add --no-cache openssl sqlite
 # leaving migrations to a network fetch at boot. Costs image size, buys a
 # deterministic startup.
 COPY --from=builder /app/node_modules ./node_modules
+# Os dois níveis são necessários: em yarn workspaces nem tudo sobe para a raiz.
+# O @nestjs, por exemplo, fica em apps/api/node_modules, e copiar só a raiz
+# deixa o container subindo em loop com "Cannot find module '@nestjs/common'".
+COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
