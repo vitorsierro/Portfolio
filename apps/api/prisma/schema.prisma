@@ -54,3 +54,150 @@ model Post {
 
   @@index([published, createdAt])
 }
+
+// ---------------------------------------------------------------------------
+// Módulo Enseada — CMS do site de temporada (site-enseada consome via
+// GET /public/enseada/content). Este projeto é a fonte da verdade; o site
+// não tem banco.
+//
+// Campos que seriam array no JSON viram CSV, como em Post.tags: SQLite não
+// tem tipo array.
+// ---------------------------------------------------------------------------
+
+// Registro único. `id` fixo em vez de autoincremento para tornar impossível
+// existir uma segunda propriedade por acidente.
+model Property {
+  id              String   @id @default("singleton")
+  name            String   @default("")
+  tagline         String   @default("")
+  description     String   @default("") // markdown
+  airbnbListingId String   @default("")
+  maxGuests       Int      @default(0)
+  bedrooms        Int      @default(0)
+  beds            Int      @default(0)
+  bathrooms       Int      @default(0)
+  areaM2          Int      @default(0)
+  basePriceFrom   Int      @default(0) // "a partir de" — nunca um total
+  minNights       Int      @default(1)
+  checkInTime     String   @default("15:00")
+  checkOutTime    String   @default("11:00")
+  lat             Float?
+  lng             Float?
+  neighborhood    String   @default("")
+  seoTitle        String   @default("")
+  seoDescription  String   @default("")
+  seoOgImage      String   @default("")
+  updatedAt       DateTime @updatedAt
+}
+
+model Space {
+  id          String       @id @default(cuid())
+  slug        String       @unique
+  category    String // quarto | sala | cozinha | area-util | externa
+  title       String
+  description String       @default("")
+  order       Int          @default(0)
+  amenities   String       @default("") // CSV de slugs de Amenity
+  images      SpaceImage[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([category, order])
+}
+
+model SpaceImage {
+  id           String  @id @default(cuid())
+  spaceId      String
+  space        Space   @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  url          String
+  alt          String  @default("")
+  width        Int
+  height       Int
+  blurDataURL  String  @default("")
+  order        Int     @default(0)
+  // Guardado para poder apagar do Cloudinary quando a imagem sai do CMS.
+  cloudinaryId String?
+
+  @@index([spaceId, order])
+}
+
+model Amenity {
+  id    String @id @default(cuid())
+  slug  String @unique
+  label String
+  icon  String @default("")
+  group String @default("essencial")
+  order Int    @default(0)
+
+  @@index([group, order])
+}
+
+model Restaurant {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  cuisine         String   @default("")
+  priceRange      String   @default("$$")
+  distanceMinutes Int      @default(0)
+  distanceMode    String   @default("walking") // walking | driving
+  description     String   @default("")
+  tip             String   @default("") // dica pessoal — é o diferencial de SEO
+  lat             Float?
+  lng             Float?
+  mapsUrl         String   @default("")
+  imageUrl        String   @default("")
+  imageAlt        String   @default("")
+  imageWidth      Int?
+  imageHeight     Int?
+  imageBlur       String   @default("")
+  cloudinaryId    String?
+  order           Int      @default(0)
+  published       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([published, order])
+}
+
+model Activity {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  category        String   @default("praia") // praia | trilha | cultura | familia | chuva
+  seasons         String   @default("") // CSV: verao,inverno
+  distanceMinutes Int      @default(0)
+  description     String   @default("")
+  tip             String   @default("")
+  lat             Float?
+  lng             Float?
+  imageUrl        String   @default("")
+  imageAlt        String   @default("")
+  imageWidth      Int?
+  imageHeight     Int?
+  imageBlur       String   @default("")
+  cloudinaryId    String?
+  order           Int      @default(0)
+  published       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([published, order])
+}
+
+model FaqItem {
+  id       String @id @default(cuid())
+  question String
+  answer   String
+  order    Int    @default(0)
+
+  @@index([order])
+}
+
+// Registro único, mesmo padrão de Property.
+model Model3d {
+  id        String  @id @default("singleton")
+  enabled   Boolean @default(false)
+  type      String  @default("gltf") // gltf | matterport | image-sequence
+  url       String  @default("")
+  posterUrl String  @default("")
+}
