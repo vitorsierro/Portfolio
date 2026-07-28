@@ -11,6 +11,9 @@ set -euo pipefail
 
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
 REPO_URL="${REPO_URL:-https://github.com/vitorsierro/Portfolio.git}"
+# Enquanto o trabalho não estiver na main, dá para provisionar apontando para
+# outra branch:  REPO_BRANCH=reestruturar-arquitetura bash provision.sh
+REPO_BRANCH="${REPO_BRANCH:-main}"
 APP_DIR="/opt/portfolio"
 
 log() { printf '\n\033[1;32m==> %s\033[0m\n' "$1"; }
@@ -56,12 +59,21 @@ touch "/home/$DEPLOY_USER/.ssh/authorized_keys"
 chown "$DEPLOY_USER:$DEPLOY_USER" "/home/$DEPLOY_USER/.ssh/authorized_keys"
 chmod 600 "/home/$DEPLOY_USER/.ssh/authorized_keys"
 
-log "Preparando $APP_DIR"
+log "Preparando $APP_DIR (branch: $REPO_BRANCH)"
 if [ ! -d "$APP_DIR/.git" ]; then
-  git clone "$REPO_URL" "$APP_DIR"
+  git clone --branch "$REPO_BRANCH" "$REPO_URL" "$APP_DIR"
+else
+  git -C "$APP_DIR" fetch --all --quiet
+  git -C "$APP_DIR" checkout "$REPO_BRANCH" --quiet
+  git -C "$APP_DIR" pull --ff-only --quiet
 fi
 chown -R "$DEPLOY_USER:$DEPLOY_USER" "$APP_DIR"
 chmod +x "$APP_DIR"/infra/*.sh 2>/dev/null || true
+
+if [ "$REPO_BRANCH" != "main" ]; then
+  aviso "Provisionado a partir de '$REPO_BRANCH'. O deploy automático só"
+  aviso "dispara em push na main — faça o merge quando for a hora."
+fi
 
 log "Firewall (só 22, 80 e 443)"
 ufw --force reset >/dev/null
