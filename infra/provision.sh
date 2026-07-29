@@ -70,6 +70,13 @@ fi
 chown -R "$DEPLOY_USER:$DEPLOY_USER" "$APP_DIR"
 chmod +x "$APP_DIR"/infra/*.sh 2>/dev/null || true
 
+# /var/backups pertence ao root, então o backup-db.sh não consegue criar a
+# pasta rodando como $DEPLOY_USER — e o deploy.sh aborta de propósito quando o
+# backup falha. Rodando o deploy à mão como root isso nunca aparece; o primeiro
+# deploy pelo GitHub Actions falha na hora.
+log "Criando o diretório de backups"
+install -d -o "$DEPLOY_USER" -g "$DEPLOY_USER" -m 750 /var/backups/portfolio
+
 if [ "$REPO_BRANCH" != "main" ]; then
   aviso "Provisionado a partir de '$REPO_BRANCH'. O deploy automático só"
   aviso "dispara em push na main — faça o merge quando for a hora."

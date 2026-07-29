@@ -49,7 +49,12 @@ executa `infra/deploy.sh` (backup → pull → rebuild → healthcheck) e depois
 confirma pela internet que a API respondeu **e** que o contrato de auth
 continua valendo.
 
-Segredos necessários no GitHub (*Settings → Secrets and variables → Actions*):
+Segredos necessários no GitHub. O job `deploy` declara `environment: producao`,
+então eles precisam estar **num environment chamado exatamente `producao`**
+(*Settings → Environments → producao*) ou no nível do repositório. Num
+environment de outro nome eles existem, aparecem na tela de secrets — e chegam
+vazios no workflow. O passo "Conferir os segredos" falha nomeando os que
+faltam antes de tocar no servidor.
 
 | Segredo | Valor |
 |---|---|
