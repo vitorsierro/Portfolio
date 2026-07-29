@@ -65,10 +65,14 @@ export async function refresh() {
 // On client-side navigation the token is still in memory, so no rotation
 // happens. Returns true when a usable session exists.
 export async function ensureSession() {
+  try{
   if (accessToken) {
     return true;
   }
   return refresh();
+  } catch {
+    return false;
+  }
 }
 
 export async function logout() {
