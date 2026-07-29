@@ -90,8 +90,11 @@ CLAW_ORIGIN="${CLAW_ORIGIN:-https://claw.vitorsierro.com}"
 echo "==> Conferindo a origem permitida do OpenClaw"
 origens_atuais="$($COMPOSE exec -T openclaw node openclaw.mjs config get \
   gateway.controlUi.allowedOrigins 2>/dev/null || true)"
+# `config get` devolve JSON: um array com as origens entre aspas. Casar com as
+# aspas incluídas evita que um prefixo (https://claw.vitorsierro.com.evil.com)
+# seja lido como se a origem certa já estivesse configurada.
 case "$origens_atuais" in
-  *"$CLAW_ORIGIN"*)
+  *"\"$CLAW_ORIGIN\""*)
     echo "    ok: ${CLAW_ORIGIN} já está permitida"
     ;;
   *)
