@@ -1,18 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ensureSession } from '../../../../lib/auth';
 import { faq as api } from '../../../../lib/enseada';
 import admin from '../../../../styles/Admin.module.css';
 import styles from '../../../../styles/Enseada.module.css';
 
-const VAZIO = { question: '', answer: '' };
+const EMPTY = { question: '', answer: '' };
 
 export default function FaqPage() {
-  const router = useRouter();
   const [items, setItems] = useState([]);
-  const [form, setForm] = useState(VAZIO);
+  const [form, setForm] = useState(EMPTY);
   const [editingId, setEditingId] = useState(null);
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState(null);
@@ -24,17 +22,13 @@ export default function FaqPage() {
 
   useEffect(() => {
     (async () => {
-      if (!(await ensureSession())) {
-        router.replace('/admin/login');
-        return;
-      }
       try {
         await load();
       } catch {
         setStatus('error');
       }
     })();
-  }, [router]);
+  }, []);
 
   async function save(event) {
     event.preventDefault();
@@ -42,7 +36,7 @@ export default function FaqPage() {
     try {
       if (editingId) await api.update(editingId, form);
       else await api.create(form);
-      setForm(VAZIO);
+      setForm(EMPTY);
       setEditingId(null);
       await load();
     } catch (err) {
@@ -132,7 +126,7 @@ export default function FaqPage() {
               type="button"
               className={`${admin.button} ${admin.secondary}`}
               onClick={() => {
-                setForm(VAZIO);
+                setForm(EMPTY);
                 setEditingId(null);
               }}
             >

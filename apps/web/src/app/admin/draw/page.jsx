@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ensureSession } from '../../../lib/auth';
 import { TOOLS } from '../../../lib/tools';
 import styles from '../../../styles/ToolFrame.module.css';
@@ -16,17 +15,10 @@ const DRAW = TOOLS.find((tool) => tool.key === 'draw');
 // ferramenta que executa comandos. Remover isso no proxy seria desligar uma
 // defesa real, então lá o link abre em aba própria.
 export default function DrawPage() {
-  const router = useRouter();
   const [status, setStatus] = useState('checking'); // checking | ready | offline
 
   useEffect(() => {
     (async () => {
-      const authed = await ensureSession();
-      if (!authed) {
-        router.replace('/admin/login');
-        return;
-      }
-
       // Um iframe apontando para um servidor fora do ar fica em branco, sem
       // erro nenhum — o que é indistinguível de "quebrou". Este ping resolve
       // isso: com no-cors a resposta é opaca (um 401 do gate ainda resolve),
@@ -38,7 +30,7 @@ export default function DrawPage() {
         setStatus('offline');
       }
     })();
-  }, [router]);
+  }, []);
 
   if (status === 'checking') {
     return <p className={styles.state}>Carregando…</p>;

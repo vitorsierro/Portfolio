@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ensureSession } from '../../../../lib/auth';
 import { amenities as api } from '../../../../lib/enseada';
 import admin from '../../../../styles/Admin.module.css';
 import styles from '../../../../styles/Enseada.module.css';
 
-const GRUPOS = ['essencial', 'cozinha', 'lazer', 'seguranca', 'externa'];
-const VAZIO = { slug: '', label: '', icon: '', group: 'essencial' };
+const GROUP = ['essencial', 'cozinha', 'lazer', 'seguranca', 'externa'];
+const EMPTY = { slug: '', label: '', icon: '', group: 'essencial' };
 
 function slugify(value) {
   return value
@@ -20,9 +19,8 @@ function slugify(value) {
 }
 
 export default function AmenidadesPage() {
-  const router = useRouter();
   const [items, setItems] = useState([]);
-  const [form, setForm] = useState(VAZIO);
+  const [form, setForm] = useState(EMPTY);
   const [editingId, setEditingId] = useState(null);
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState(null);
@@ -34,17 +32,13 @@ export default function AmenidadesPage() {
 
   useEffect(() => {
     (async () => {
-      if (!(await ensureSession())) {
-        router.replace('/admin/login');
-        return;
-      }
       try {
         await load();
       } catch {
         setStatus('error');
       }
     })();
-  }, [router]);
+  }, []);
 
   async function save(event) {
     event.preventDefault();
@@ -53,7 +47,7 @@ export default function AmenidadesPage() {
     try {
       if (editingId) await api.update(editingId, payload);
       else await api.create(payload);
-      setForm(VAZIO);
+      setForm(EMPTY);
       setEditingId(null);
       await load();
     } catch (err) {
@@ -132,7 +126,7 @@ export default function AmenidadesPage() {
               value={form.group}
               onChange={(e) => setForm((p) => ({ ...p, group: e.target.value }))}
             >
-              {GRUPOS.map((g) => (
+              {GROUP.map((g) => (
                 <option key={g} value={g}>
                   {g}
                 </option>
@@ -168,7 +162,7 @@ export default function AmenidadesPage() {
               type="button"
               className={`${admin.button} ${admin.secondary}`}
               onClick={() => {
-                setForm(VAZIO);
+                setForm(EMPTY);
                 setEditingId(null);
               }}
             >

@@ -1,24 +1,37 @@
-'use client';
+"use client";
 
-import { usePathname } from 'next/navigation';
-import AdminHeader from '../../components/AdminHeader/AdminHeader';
-import styles from '../../styles/AdminLayout.module.css';
+import { usePathname, useRouter } from "next/navigation";
+import AdminHeader from "../../components/AdminHeader/AdminHeader";
+import styles from "../../styles/AdminLayout.module.css";
+import { ROUTER_LOGIN } from "../../constants";
+import { useEffect, useState } from "react";
+import { ensureSession } from "../../lib/auth";
 
 export default function AdminLayout({ children }) {
+  const [ready, setReady] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
-  // A tela de login é a única rota do admin sem sessão — mostrar um botão de
-  // logout ali não faria sentido.
-  const isLogin = pathname === '/admin/login';
+  useEffect(() => {
+    (async () => {
+      const authed = await ensureSession();
+      console.log(authed);
+      if (!authed) {
+        router.replace(ROUTER_LOGIN);
+        return;
+      }
+      setReady(true);
+    })();
+  }, [router]);
 
-  if (isLogin) {
+  if (pathname === ROUTER_LOGIN) {
     return children;
   }
 
   return (
     <div className={styles.root}>
       <AdminHeader />
-      {children}
+      {ready ? children : <p className={styles.state}>Carregando…</p>}
     </div>
   );
 }
