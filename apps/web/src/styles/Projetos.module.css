@@ -58,6 +58,9 @@
 }
 
 .imageFrame {
+  /* `position: relative` ancora o <Image fill> do next/image, que se posiciona
+     em absolute — sem isso ele escaparia para o ancestral posicionado. */
+  position: relative;
   aspect-ratio: 16 / 10;
   overflow: hidden;
   background: #d9e4dd;
