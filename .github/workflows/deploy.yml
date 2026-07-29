@@ -30,8 +30,8 @@ jobs:
     name: Verificar antes de subir
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: yarn
@@ -46,6 +46,36 @@ jobs:
     runs-on: ubuntu-latest
     environment: producao
     steps:
+      # Um segredo ausente chega como string vazia, e cada passo falha de um
+      # jeito diferente e obscuro: o ssh-action diz "missing server host" só
+      # depois de baixar o binário, e o healthcheck gasta 100s tentando
+      # "https:///portfolio". Falhar aqui, nomeando o que falta, economiza a
+      # investigação inteira.
+      - name: Conferir os segredos
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          API_HOST: ${{ secrets.API_HOST }}
+        run: |
+          faltando=""
+          for nome in VPS_HOST VPS_USER VPS_SSH_KEY API_HOST; do
+            [ -n "${!nome:-}" ] || faltando="$faltando $nome"
+          done
+          if [ -n "$faltando" ]; then
+            echo "::error::Segredos ausentes ou vazios:$faltando"
+            echo "Cadastre em Settings > Secrets and variables > Actions > Secrets."
+            echo "Atencao: a aba 'Variables' NAO serve — tem que ser 'Secrets'."
+            echo "Se cadastrou no environment, o nome dele precisa ser exatamente 'producao'."
+            exit 1
+          fi
+          # Erro de colagem mais comum: a chave sem as linhas BEGIN/END.
+          case "$VPS_SSH_KEY" in
+            *"BEGIN OPENSSH PRIVATE KEY"*) ;;
+            *) echo "::error::VPS_SSH_KEY nao parece uma chave privada completa (falta a linha BEGIN)."; exit 1 ;;
+          esac
+          echo "Todos os segredos obrigatorios estao presentes."
+
       - name: Enviar o deploy por SSH
         uses: appleboy/ssh-action@v1
         with:
