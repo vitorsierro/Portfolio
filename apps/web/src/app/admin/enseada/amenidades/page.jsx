@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ensureSession } from '../../../../lib/auth';
 import { amenities as api } from '../../../../lib/enseada';
 import admin from '../../../../styles/Admin.module.css';
 import styles from '../../../../styles/Enseada.module.css';
