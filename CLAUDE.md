@@ -97,6 +97,22 @@ cacheado — que buscador lê como "o conteúdo sumiu". Lá um 500 é o certo.
 **Para reproduzir o ambiente da CI:** tire o `apps/web/.env.local` do lugar e
 rode o build. Com ele presente o cenário que quebra nunca aparece.
 
+### 10. O deploy roda como `deploy`, não como root
+Três coisas que só quebram no GitHub Actions porque à mão você roda como root:
+
+- **Os segredos precisam estar no environment `producao`.** O job declara
+  `environment: producao` e não enxerga segredo de environment com outro nome.
+  Eles aparecem normalmente na tela de secrets e chegam **vazios** no workflow —
+  a tela não denuncia nada.
+- **`/var/backups/portfolio` precisa existir e ser do `deploy`.** O `backup-db.sh`
+  faz `mkdir -p` ali, mas `/var/backups` é do root. Sem backup o `deploy.sh`
+  aborta de propósito, então o deploy inteiro para. O `provision.sh` já cria.
+- **O `deploy` não está no grupo `sudo`** — de propósito, para limitar o estrago
+  se a chave do CI vazar. Tarefa de root é pelo console do painel da Hostinger.
+
+E `API_URL` / `NEXT_PUBLIC_API_URL` são variáveis da **Vercel**: nenhum workflow
+as lê. Cadastradas nos secrets do Actions elas não fazem nada.
+
 ---
 
 ## Invariantes de segurança (não quebrar)
