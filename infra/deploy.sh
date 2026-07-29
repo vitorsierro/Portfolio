@@ -29,6 +29,21 @@ echo "==> Commit atual: ${COMMIT_ANTERIOR}"
 echo "==> Buscando código novo"
 git pull --ff-only || echo "    (já atualizado ou repositório em modo detached)"
 
+# A config do nginx entra por bind mount, então o container que está no ar já
+# enxerga os arquivos novos ANTES de qualquer restart. Isso permite validar
+# enquanto o proxy antigo ainda serve: uma vírgula errada aqui derruba api,
+# draw e claw de uma vez, e o healthcheck abaixo não pegaria — ele fala com a
+# API pela rede interna, sem passar pelo proxy.
+if $COMPOSE ps --services --filter status=running 2>/dev/null | grep -qx nginx; then
+  echo "==> Validando a config do nginx (antes de recarregar)"
+  if ! $COMPOSE exec -T nginx nginx -t; then
+    echo "" >&2
+    echo "ERRO: config do nginx inválida. Nada foi reiniciado — o proxy" >&2
+    echo "antigo continua no ar. Corrija antes de tentar de novo." >&2
+    exit 1
+  fi
+fi
+
 echo "==> Rebuild e restart"
 # As migrations rodam no start do container da API (prisma migrate deploy).
 $COMPOSE up -d --build
