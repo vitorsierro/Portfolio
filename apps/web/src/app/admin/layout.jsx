@@ -19,16 +19,22 @@ export default function AdminLayout({ children }) {
 
     let active = true;
     (async () => {
-      const authed = await ensureSession();
-      if (!active) {
-        return;
-      }
+      try {
+        const authed = await ensureSession();
+        if (!active) {
+          return;
+        }
 
-      if (!authed) {
-        router.replace(ROUTER_LOGIN);
-        return;
+        if (!authed) {
+          router.replace(ROUTER_LOGIN);
+          return;
+        }
+        setReady(true);
+      } catch {
+        if (active) {
+          router.replace(ROUTER_LOGIN);
+        }
       }
-      setReady(true);
     })();
 
     return () => {
