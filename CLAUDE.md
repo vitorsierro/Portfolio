@@ -2,6 +2,15 @@
 
 Contexto e armadilhas deste repositório. Leia antes de mexer.
 
+## Como trabalhar aqui
+
+1. **Responda sempre em português.** Vale para tudo: explicações, resumos,
+   mensagens de commit e descrições de PR.
+2. **Ao terminar uma tarefa, commite e suba numa branch nova a partir da `main`.**
+   Nunca empilhe o trabalho novo numa branch de feature antiga — o PR acabaria
+   arrastando junto commits que não têm nada a ver com a mudança. O fluxo é
+   `git checkout -b <nome> origin/main`, commit, push.
+
 ## Estrutura
 
 Monorepo Yarn workspaces:
