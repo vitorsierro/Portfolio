@@ -1,8 +1,14 @@
+/* Coluna flex para o Footer nao subir ate o meio da tela quando o conteudo
+   e curto (blog com poucos posts, estado vazio, post curto). */
 .page {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .main {
+  flex: 1;
   width: min(100%, var(--container-max));
   margin: 0 auto;
   padding: var(--space-8) var(--space-4) var(--space-12);
