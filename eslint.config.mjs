@@ -3,11 +3,6 @@ import tseslint from 'typescript-eslint';
 
 const compat = new FlatCompat({ baseDirectory: import.meta.dirname });
 
-/**
- * Um config na raiz cobrindo os dois workspaces. A API é NestJS (Node, TS) e
- * o web é Next.js — regras de React só fazem sentido no segundo, daí o
- * escopo por caminho.
- */
 export default [
   {
     ignores: [
