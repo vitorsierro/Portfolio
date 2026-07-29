@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ensureSession } from '../../../../lib/auth';
 import { preview } from '../../../../lib/enseada';
 import admin from '../../../../styles/Admin.module.css';
@@ -12,16 +11,11 @@ import styles from '../../../../styles/Enseada.module.css';
  * que o site vai receber antes de culpar o site por um conteúdo faltando.
  */
 export default function PreviewPage() {
-  const router = useRouter();
   const [data, setData] = useState(null);
   const [status, setStatus] = useState('loading');
 
   useEffect(() => {
     (async () => {
-      if (!(await ensureSession())) {
-        router.replace('/admin/login');
-        return;
-      }
       try {
         setData(await preview());
         setStatus('ready');
@@ -29,7 +23,7 @@ export default function PreviewPage() {
         setStatus('error');
       }
     })();
-  }, [router]);
+  }, []);
 
   if (status === 'loading') return <p className={admin.state}>Carregando…</p>;
   if (status === 'error')

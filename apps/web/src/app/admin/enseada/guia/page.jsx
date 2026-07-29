@@ -11,7 +11,7 @@ import styles from '../../../../styles/Enseada.module.css';
 const CATEGORIAS = ['praia', 'trilha', 'cultura', 'familia', 'chuva'];
 const ESTACOES = ['verao', 'outono', 'inverno', 'primavera'];
 
-const VAZIO_RESTAURANTE = {
+const EMPTY_RESTAURANT = {
   slug: '',
   name: '',
   cuisine: '',
@@ -24,7 +24,7 @@ const VAZIO_RESTAURANTE = {
   images: [],
 };
 
-const VAZIO_ATIVIDADE = {
+const EMPTY_ACTIVE = {
   slug: '',
   name: '',
   category: 'praia',
@@ -76,7 +76,6 @@ function fromImageList(images) {
 }
 
 export default function GuiaPage() {
-  const router = useRouter();
   const [aba, setAba] = useState('restaurantes');
   const [lista, setLista] = useState([]);
   const [editing, setEditing] = useState(null);
@@ -93,18 +92,13 @@ export default function GuiaPage() {
 
   useEffect(() => {
     (async () => {
-      if (!(await ensureSession())) {
-        router.replace('/admin/login');
-        return;
-      }
       try {
         await load();
       } catch {
         setStatus('error');
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router]);
+    }, []);
 
   async function trocarAba(nova) {
     setAba(nova);
@@ -117,7 +111,7 @@ export default function GuiaPage() {
   function novo() {
     setError(null);
     setEditing(
-      aba === 'restaurantes' ? { ...VAZIO_RESTAURANTE } : { ...VAZIO_ATIVIDADE },
+      aba === 'restaurantes' ? { ...VAZIO_RESTAURANTE } : { ...EMPTY_ACTIVE },
     );
   }
 

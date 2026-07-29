@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ensureSession } from '../../lib/auth';
 import { TOOLS } from '../../lib/tools';
 import styles from '../../styles/Admin.module.css';
@@ -27,31 +26,13 @@ const DESTINATIONS = [
     key: tool.key,
     name: tool.name,
     description: tool.description,
-    // O Excalidraw abre embutido (mantém o header); o OpenClaw proíbe iframe.
     href: tool.key === 'draw' ? '/admin/draw' : tool.url,
     embedded: tool.key === 'draw',
   })),
 ];
 
+
 export default function AdminHub() {
-  const router = useRouter();
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      const authed = await ensureSession();
-      if (!authed) {
-        router.replace('/admin/login');
-        return;
-      }
-      setReady(true);
-    })();
-  }, [router]);
-
-  if (!ready) {
-    return <p className={styles.state}>Carregando…</p>;
-  }
-
   return (
     <div className={styles.page}>
       <div className={styles.topbar}>

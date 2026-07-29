@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { authFetch, ensureSession } from '../../../../lib/auth';
 import styles from '../../../../styles/Admin.module.css';
+import { ROUTER_LOGIN } from '../../../../constants';
 
 const EMPTY = {
   title: '',
@@ -39,7 +40,7 @@ export default function PostEditor() {
     (async () => {
       const authed = await ensureSession();
       if (!authed) {
-        router.replace('/admin/login');
+        router.replace(ROUTER_LOGIN);
         return;
       }
       if (isNew) {
@@ -48,7 +49,7 @@ export default function PostEditor() {
       }
       const response = await authFetch(`/admin/posts/${id}`);
       if (response.status === 401) {
-        router.replace('/admin/login');
+        router.replace(ROUTER_LOGIN);
         return;
       }
       if (!response.ok) {
@@ -107,7 +108,7 @@ export default function PostEditor() {
     });
 
     if (response.status === 401) {
-      router.replace('/admin/login');
+      router.replace(ROUTER_LOGIN);
       return;
     }
     if (response.status === 409) {

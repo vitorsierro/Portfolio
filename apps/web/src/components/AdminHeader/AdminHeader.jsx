@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { logout } from '../../lib/auth';
 import { TOOLS } from '../../lib/tools';
 import styles from '../../styles/AdminHeader.module.css';
+import { ROUTER_LOGIN } from '../../constants';
 
 const NAV = [
   { href: '/admin', label: 'Painel' },
@@ -22,7 +23,7 @@ export default function AdminHeader() {
     setLeaving(true);
     // Revokes the tool session server-side too, so draw./claw. stop opening.
     await logout();
-    router.replace('/admin/login');
+    router.replace(ROUTER_LOGIN);
   }
 
   return (

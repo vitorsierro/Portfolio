@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ensureSession } from '../../../../lib/auth';
 import { property } from '../../../../lib/enseada';
 import admin from '../../../../styles/Admin.module.css';
@@ -18,17 +17,12 @@ const NUMERICOS = [
 ];
 
 export default function PropriedadePage() {
-  const router = useRouter();
   const [form, setForm] = useState(null);
   const [status, setStatus] = useState('loading');
   const [feedback, setFeedback] = useState(null);
 
   useEffect(() => {
     (async () => {
-      if (!(await ensureSession())) {
-        router.replace('/admin/login');
-        return;
-      }
       try {
         const data = await property.get();
         setForm({
@@ -57,7 +51,7 @@ export default function PropriedadePage() {
         setStatus('error');
       }
     })();
-  }, [router]);
+  }, []);
 
   function set(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));

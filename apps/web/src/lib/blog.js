@@ -1,4 +1,4 @@
-const SERVER_API_URL = process.env.API_URL || 'http://localhost:3001';
+const SERVER_API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const POSTS_PAGE_SIZE = 9;
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authFetch, ensureSession } from '../../../lib/auth';
 import styles from '../../../styles/Admin.module.css';
+import { ROUTER_LOGIN } from '../../../constants';
 
 const PAGE_SIZE = 10;
 const DEBOUNCE_MS = 350;
@@ -65,7 +66,7 @@ export default function PostsManager() {
     }
 
     if (response.status === 401) {
-      router.replace('/admin/login');
+      router.replace(ROUTER_LOGIN);
       return;
     }
     if (!response.ok) {
@@ -88,7 +89,7 @@ export default function PostsManager() {
     (async () => {
       const authed = await ensureSession();
       if (!authed) {
-        router.replace('/admin/login');
+        router.replace(ROUTER_LOGIN);
         return;
       }
       await load();

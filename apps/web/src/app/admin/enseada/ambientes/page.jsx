@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import ImageUploader from '../../../../components/Enseada/ImageUploader';
 import { ensureSession } from '../../../../lib/auth';
 import { spaces as api } from '../../../../lib/enseada';
@@ -35,7 +34,6 @@ function slugify(value) {
 }
 
 export default function AmbientesPage() {
-  const router = useRouter();
   const [items, setItems] = useState([]);
   const [editing, setEditing] = useState(null);
   const [status, setStatus] = useState('loading');
@@ -48,17 +46,13 @@ export default function AmbientesPage() {
 
   useEffect(() => {
     (async () => {
-      if (!(await ensureSession())) {
-        router.replace('/admin/login');
-        return;
-      }
       try {
         await load();
       } catch {
         setStatus('error');
       }
     })();
-  }, [router]);
+  }, []);
 
   function startNew() {
     setError(null);

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { ensureSession } from '../../../lib/auth';
 import styles from '../../../styles/Admin.module.css';
 
@@ -39,21 +38,6 @@ const SECOES = [
 ];
 
 export default function EnseadaHub() {
-  const router = useRouter();
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      if (!(await ensureSession())) {
-        router.replace('/admin/login');
-        return;
-      }
-      setReady(true);
-    })();
-  }, [router]);
-
-  if (!ready) return <p className={styles.state}>Carregando…</p>;
-
   return (
     <div className={styles.page}>
       <div className={styles.topbar}>
