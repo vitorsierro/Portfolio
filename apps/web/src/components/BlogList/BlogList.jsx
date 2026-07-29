@@ -24,6 +24,13 @@ function PostCard({ post }) {
       <a className={styles.card} href={`/blog/post/${post.slug}`}>
         {post.coverImageUrl ? (
           <div className={styles.imageFrame}>
+            {/* Continua <img> de proposito. `coverImageUrl` e campo livre no
+                editor do CMS: o admin cola qualquer URL. O next/image so serve
+                host que esteja em images.remotePatterns e responde 400 nos
+                demais — trocaria uma capa que funciona por uma quebrada, a
+                cada host novo. As imagens locais (projetos, certificados) usam
+                next/image justamente porque a origem delas e conhecida. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={post.coverImageUrl}
               alt={`Capa do post ${post.title}`}

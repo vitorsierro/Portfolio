@@ -80,6 +80,10 @@ export default async function PostPage({ params }) {
 
           {post.coverImageUrl ? (
             <div className={styles.cover}>
+              {/* <img> de proposito — mesmo motivo do BlogList: coverImageUrl e
+                  URL livre digitada no CMS, e o next/image rejeitaria host
+                  fora de images.remotePatterns com 400. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={post.coverImageUrl} alt={`Capa do post ${post.title}`} />
             </div>
           ) : null}

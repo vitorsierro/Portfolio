@@ -53,7 +53,10 @@
 }
 
 .imageFrame {
+  /* Ancora o <Image fill> do next/image, que se posiciona em absolute. */
+  position: relative;
   aspect-ratio: 4 / 3;
+  overflow: hidden;
   background: #eef3ee;
 }
 

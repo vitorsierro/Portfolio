@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import ImageUploader from '../../../../components/Enseada/ImageUploader';
 import { activities, restaurants } from '../../../../lib/enseada';
 import admin from '../../../../styles/Admin.module.css';
@@ -82,28 +82,26 @@ export default function GuiaPage() {
 
   const api = aba === 'restaurantes' ? restaurants : activities;
 
-  async function load(current = aba) {
-    const source = current === 'restaurantes' ? restaurants : activities;
-    setLista(await source.list());
+  // `api` e restaurants ou activities — objetos de modulo, entao a referencia
+  // e estavel por aba e serve de dependencia.
+  const recarregar = useCallback(async () => {
+    setLista(await api.list());
     setStatus('ready');
-  }
+  }, [api]);
 
+  // Carga inicial e troca de aba passam pelo mesmo caminho. Antes trocarAba()
+  // buscava por conta propria e o efeito rodava com lista de dependencias
+  // vazia, mentindo sobre `load` — o que so nao quebrava porque a aba nova era
+  // passada na mao. Agora quem busca e o efeito, e ninguem precisa lembrar.
   useEffect(() => {
-    (async () => {
-      try {
-        await load();
-      } catch {
-        setStatus('error');
-      }
-    })();
-    }, []);
+    setStatus('loading');
+    recarregar().catch(() => setStatus('error'));
+  }, [recarregar]);
 
-  async function trocarAba(nova) {
+  function trocarAba(nova) {
     setAba(nova);
     setEditing(null);
     setError(null);
-    setStatus('loading');
-    await load(nova);
   }
 
   function novo() {
@@ -157,7 +155,7 @@ export default function GuiaPage() {
       if (id) await api.update(id, payload);
       else await api.create(payload);
       setEditing(null);
-      await load();
+      await recarregar();
     } catch (err) {
       setError(err.message);
     }
@@ -166,7 +164,7 @@ export default function GuiaPage() {
   async function remover(item) {
     if (!window.confirm(`Remover "${item.name}"?`)) return;
     await api.remove(item.id);
-    await load();
+    await recarregar();
   }
 
   if (status === 'loading') return <p className={admin.state}>Carregando…</p>;

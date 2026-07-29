@@ -1,3 +1,4 @@
+import Image from "next/image";
 import styles from "../../styles/Projetos.module.css";
 
 export default function Projetos({ projetos }) {
@@ -27,10 +28,14 @@ export default function Projetos({ projetos }) {
               <article className={styles.cardShell} key={`${titulo}-${key}`}>
                 <div className={styles.card}>
                   <div className={styles.imageFrame}>
-                    <img
+                    {/* `fill` porque as capas vem do JSON sem dimensoes; quem
+                        define o formato e o aspect-ratio do .imageFrame. */}
+                    <Image
                       src={img}
                       alt={`Preview do projeto ${titulo}`}
                       className={styles.image}
+                      fill
+                      sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw"
                     />
                   </div>
 

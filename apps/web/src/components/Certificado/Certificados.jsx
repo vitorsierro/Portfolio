@@ -1,4 +1,9 @@
+import Image from 'next/image';
 import styles from '../../styles/Certificados.module.css';
+
+// `fill` nos dois casos: as imagens vem do JSON sem dimensoes e quem manda no
+// formato e o aspect-ratio do .imageFrame.
+const CARD_SIZES = '(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw';
 
 export default function Certificados({ certificados, cursos }) {
   return (
@@ -21,7 +26,13 @@ export default function Certificados({ certificados, cursos }) {
               aria-label={`Abrir certificado ${titulo}`}
             >
               <div className={styles.imageFrame}>
-                <img src={img} alt={`Certificado ${titulo}`} className={styles.image} />
+                <Image
+                  src={img}
+                  alt={`Certificado ${titulo}`}
+                  className={styles.image}
+                  fill
+                  sizes={CARD_SIZES}
+                />
               </div>
               <div className={styles.cardBody}>
                 <p className={styles.company}>{empresa}</p>
@@ -49,7 +60,13 @@ export default function Certificados({ certificados, cursos }) {
               aria-label={`Abrir curso ${titulo}`}
             >
               <div className={styles.imageFrame}>
-                <img src={img} alt={`Curso ${titulo}`} className={styles.image} />
+                <Image
+                  src={img}
+                  alt={`Curso ${titulo}`}
+                  className={styles.image}
+                  fill
+                  sizes={CARD_SIZES}
+                />
               </div>
               <div className={styles.cardBody}>
                 <p className={styles.company}>{empresa}</p>

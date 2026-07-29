@@ -1,4 +1,9 @@
+import Image from 'next/image';
 import styles from '../../styles/Sobre.module.css';
+
+// Os icones sociais tem tamanho fixo (1.5rem no CSS), entao aqui dao para ir
+// com width/height reais em vez de `fill` — sem wrapper posicionado.
+const ICON_SIZE = 24;
 
 export default function Sobre({ dadosPessoais }) {
   const { nome, cargo, email, sobre_mim: sobreMim, links = [] } = dadosPessoais;
@@ -29,7 +34,13 @@ export default function Sobre({ dadosPessoais }) {
             {links.map(({ link, img, alt }) => (
               <li key={link}>
                 <a href={link} target="_blank" rel="noreferrer" className={styles.socialLink}>
-                  <img src={img} alt={alt} className={styles.socialIcon} />
+                  <Image
+                    src={img}
+                    alt={alt}
+                    className={styles.socialIcon}
+                    width={ICON_SIZE}
+                    height={ICON_SIZE}
+                  />
                 </a>
               </li>
             ))}
