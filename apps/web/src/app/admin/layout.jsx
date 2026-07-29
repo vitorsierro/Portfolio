@@ -13,16 +13,28 @@ export default function AdminLayout({ children }) {
   const router = useRouter();
 
   useEffect(() => {
+    if (pathname === ROUTER_LOGIN) {
+      return;
+    }
+
+    let active = true;
     (async () => {
       const authed = await ensureSession();
-      console.log(authed);
+      if (!active) {
+        return;
+      }
+
       if (!authed) {
         router.replace(ROUTER_LOGIN);
         return;
       }
       setReady(true);
     })();
-  }, [router]);
+
+    return () => {
+      active = false;
+    };
+  }, [pathname, router]);
 
   if (pathname === ROUTER_LOGIN) {
     return children;
