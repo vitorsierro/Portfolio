@@ -67,12 +67,12 @@ services:
     # login único de verdade (sem colar token na Control UI). Exige arquivo de
     # config com trustedProxies/userHeader/allowUsers — ver infra/README.md.
     #
-    # ATENÇÃO no primeiro deploy: servido pelo proxy, a origem deixa de ser a
-    # do próprio gateway e ele fecha o WebSocket com `origin not allowed` —
-    # a Control UI fica presa no login mesmo com o token correto. É preciso
-    # rodar uma vez (o valor fica no volume openclaw_data):
-    #   echo '{ gateway: { controlUi: { allowedOrigins: ["https://claw.vitorsierro.com"] } } }' \
-    #     | docker compose exec -T openclaw node openclaw.mjs config patch --stdin
+    # Servido pelo proxy, a origem deixa de ser a do próprio gateway e ele fecha
+    # o WebSocket com code=1008 `origin not allowed`. O sintoma engana: a
+    # Control UI reconecta ~2x por segundo e a página parece "recarregar
+    # sozinha", sem nada que aponte para origem. Não existe flag de CLI para
+    # isso (conferido em `gateway --help`) — só o config dentro do volume, e
+    # por isso o deploy.sh reaplica a cada deploy.
     command:
       - node
       - openclaw.mjs
