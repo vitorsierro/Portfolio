@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import ImageUploader from '../../../../components/Enseada/ImageUploader';
-import { ensureSession } from '../../../../lib/auth';
 import { activities, restaurants } from '../../../../lib/enseada';
 import admin from '../../../../styles/Admin.module.css';
 import styles from '../../../../styles/Enseada.module.css';
@@ -111,7 +109,7 @@ export default function GuiaPage() {
   function novo() {
     setError(null);
     setEditing(
-      aba === 'restaurantes' ? { ...VAZIO_RESTAURANTE } : { ...EMPTY_ACTIVE },
+      aba === 'restaurantes' ? { ...EMPTY_RESTAURANT } : { ...EMPTY_ACTIVE },
     );
   }
 

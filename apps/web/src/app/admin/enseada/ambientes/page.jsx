@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import ImageUploader from '../../../../components/Enseada/ImageUploader';
-import { ensureSession } from '../../../../lib/auth';
 import { spaces as api } from '../../../../lib/enseada';
 import admin from '../../../../styles/Admin.module.css';
 import styles from '../../../../styles/Enseada.module.css';

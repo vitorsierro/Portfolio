@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ensureSession } from '../../../lib/auth';
 import { TOOLS } from '../../../lib/tools';
 import styles from '../../../styles/ToolFrame.module.css';
 
