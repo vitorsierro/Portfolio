@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // Access token kept only in memory (lost on reload — rehydrated via the
 // httpOnly refresh cookie by calling refresh()).

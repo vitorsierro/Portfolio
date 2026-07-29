@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from '../../styles/Blog.module.css';
 
 const CLIENT_API_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  process.env.NEXT_PUBLIC_API_URL;
 const PAGE_SIZE = 9;
 
 function formatDate(value) {
