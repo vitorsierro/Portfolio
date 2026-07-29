@@ -67,6 +67,27 @@ não há token em memória).
 Se o login local parar de funcionar, provavelmente falta rodar
 `yarn workspace api prisma:migrate && yarn workspace api prisma:seed`.
 
+### 9. Nenhum fetch de página pré-renderizada pode lançar
+`/` e `/blog` são gerados no build. Se o fetch lançar, **o build inteiro cai** —
+e na CI não existe API nem `.env.local`, então o cenário normal é a API estar
+ausente, não no ar.
+
+O detalhe que engana: sem `NEXT_PUBLIC_API_URL` o template vira a string
+literal `"undefined/posts"` e o `fetch` estoura `ERR_INVALID_URL` **antes de
+tocar a rede**. Um `catch` pensado para "API fora do ar" não pega isso, e o
+Vercel não denuncia porque lá as variáveis existem — só a CI quebra.
+
+Por isso `lib/api.js` e `lib/blog.js` caem em fallback em *qualquer* falha,
+incluindo variável ausente. Já custou duas rodadas: a primeira correção pegou
+só o `api.js` e deixou o `blog.js` para trás.
+
+A exceção proposital é `getPost()`: a rota é renderizada sob demanda, então não
+bloqueia o build, e devolver `null` com a API fora do ar viraria um 404
+cacheado — que buscador lê como "o conteúdo sumiu". Lá um 500 é o certo.
+
+**Para reproduzir o ambiente da CI:** tire o `apps/web/.env.local` do lugar e
+rode o build. Com ele presente o cenário que quebra nunca aparece.
+
 ---
 
 ## Invariantes de segurança (não quebrar)
