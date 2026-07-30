@@ -14,7 +14,7 @@ node_modules
 .env.local
 **/.env
 **/.env.local
-infra/openclaw.env
+infra/hermes.env
 
 # dev database (contains the seeded admin's password hash)
 **/*.db

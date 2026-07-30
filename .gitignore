@@ -43,7 +43,7 @@ apps/*/.env.local
 
 # infra secrets (VPS)
 infra/.env
-infra/openclaw.env
+infra/hermes.env
 
 # vercel
 .vercel

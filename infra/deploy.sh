@@ -31,9 +31,9 @@ git pull --ff-only || echo "    (já atualizado ou repositório em modo detached
 
 # A config do nginx entra por bind mount, então o container que está no ar já
 # enxerga os arquivos novos ANTES de qualquer restart. Isso permite validar
-# enquanto o proxy antigo ainda serve: uma vírgula errada aqui derruba api,
-# draw e claw de uma vez, e o healthcheck abaixo não pegaria — ele fala com a
-# API pela rede interna, sem passar pelo proxy.
+# enquanto o proxy antigo ainda serve: uma vírgula errada aqui derruba api e
+# draw de uma vez, e o healthcheck abaixo não pegaria — ele fala com a API
+# pela rede interna, sem passar pelo proxy.
 if $COMPOSE ps --services --filter status=running 2>/dev/null | grep -qx nginx; then
   echo "==> Validando a config do nginx (antes de recarregar)"
   if ! $COMPOSE exec -T nginx nginx -t; then
@@ -75,44 +75,6 @@ if [ "$saudavel" -ne 1 ]; then
   echo "  cd ${REPO_DIR} && git reset --hard ${COMMIT_ANTERIOR} && ./infra/deploy.sh" >&2
   exit 1
 fi
-
-# O OpenClaw não tem flag de linha de comando para origens permitidas — conferido
-# em `gateway --help`, a lista só existe no arquivo de config dentro do volume.
-# O default que ele semeia é loopback (http://localhost:18789), então atrás do
-# proxy o browser manda Origin: https://claw..., que não está na lista, e o
-# gateway fecha o WebSocket com code=1008 "origin not allowed". A Control UI
-# reconecta em loop e o sintoma que aparece é a página "recarregando sozinha" —
-# nada que pareça um problema de origem.
-#
-# Como isso mora num volume, um recreate do openclaw_data traz o bug de volta
-# meses depois, quando ninguém lembra do diagnóstico. Por isso é reaplicado aqui.
-CLAW_ORIGIN="${CLAW_ORIGIN:-https://claw.vitorsierro.com}"
-echo "==> Conferindo a origem permitida do OpenClaw"
-origens_atuais="$($COMPOSE exec -T openclaw node openclaw.mjs config get \
-  gateway.controlUi.allowedOrigins 2>/dev/null || true)"
-# `config get` devolve JSON: um array com as origens entre aspas. Casar com as
-# aspas incluídas evita que um prefixo (https://claw.vitorsierro.com.evil.com)
-# seja lido como se a origem certa já estivesse configurada.
-case "$origens_atuais" in
-  *"\"$CLAW_ORIGIN\""*)
-    echo "    ok: ${CLAW_ORIGIN} já está permitida"
-    ;;
-  *)
-    echo "    faltando ${CLAW_ORIGIN} — aplicando"
-    # `config patch` faz merge recursivo e substitui arrays: é idempotente.
-    if printf '{"gateway":{"controlUi":{"allowedOrigins":["%s"]}}}' "$CLAW_ORIGIN" |
-       $COMPOSE exec -T openclaw node openclaw.mjs config patch --stdin; then
-      # O gateway lê a lista no boot; sem restart o patch não tem efeito.
-      $COMPOSE restart openclaw >/dev/null
-      echo "    aplicado e openclaw reiniciado"
-    else
-      # Não aborta o deploy: a API e o Excalidraw estão saudáveis, e derrubar
-      # tudo por causa da Control UI seria pior. Mas precisa gritar.
-      echo "AVISO: não consegui aplicar allowedOrigins no OpenClaw." >&2
-      echo "       A Control UI provavelmente vai ficar recarregando sozinha." >&2
-    fi
-    ;;
-esac
 
 echo "==> Limpando imagens órfãs"
 docker image prune -f >/dev/null

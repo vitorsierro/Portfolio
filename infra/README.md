@@ -1,6 +1,6 @@
 # Infra — VPS (Hostinger KVM2)
 
-API NestJS + Excalidraw + OpenClaw atrás de **um único login**, com nginx
+API NestJS + Excalidraw + Hermes atrás de **um único login**, com nginx
 fazendo forward-auth contra `GET /auth/verify` da própria API.
 
 O site Next.js **não** vive aqui — fica na Vercel, apontando para
@@ -13,7 +13,7 @@ O site Next.js **não** vive aqui — fica na Vercel, apontando para
 | `vitorsierro.com` (+ `www`) | Next.js (Vercel) | login do CMS |
 | `api.vitorsierro.com` | NestJS + SQLite | própria (JWT / cookie) |
 | `draw.vitorsierro.com` | Excalidraw | **forward-auth do nginx** |
-| `claw.vitorsierro.com` | OpenClaw | **forward-auth do nginx** |
+| `chat.vitorsierro.com` | Hermes | **forward-auth do nginx** |
 
 Só o nginx publica portas. Os demais serviços existem apenas na rede interna
 do Docker — não há como acessar as ferramentas por fora, driblando o gate.
@@ -75,7 +75,7 @@ Registros `A` apontando para o IP da VPS:
 ```
 api    A   <IP-DA-VPS>
 draw   A   <IP-DA-VPS>
-claw   A   <IP-DA-VPS>
+chat   A   <IP-DA-VPS>
 ```
 
 O apex e o `www` continuam apontando para a Vercel.
@@ -97,13 +97,13 @@ apt install -y fail2ban unattended-upgrades
 
 ### 3. Código e segredos
 
-Requer Docker Compose **2.24+** (o `env_file` opcional do OpenClaw usa a
+Requer Docker Compose **2.24+** (o `env_file` opcional do Hermes usa a
 sintaxe `required: false`). Confira com `docker compose version`.
 
 ```bash
 git clone <repo> /opt/portfolio && cd /opt/portfolio
 cp infra/.env.example infra/.env
-cp infra/openclaw.env.example infra/openclaw.env   # opcional
+cp infra/hermes.env.example infra/hermes.env   # opcional
 openssl rand -base64 48   # gere um para cada JWT_*_SECRET
 $EDITOR infra/.env
 chmod 600 infra/.env
@@ -120,7 +120,7 @@ docker run --rm -p 80:80 \
   -v portfolio_certbot_conf:/etc/letsencrypt \
   certbot/certbot certonly --standalone --agree-tos --no-eff-email \
   -m seu@email.com \
-  -d api.vitorsierro.com -d draw.vitorsierro.com -d claw.vitorsierro.com
+  -d api.vitorsierro.com -d draw.vitorsierro.com -d chat.vitorsierro.com
 ```
 
 Confirme o nome real do volume com `docker volume ls` (o Compose prefixa com o
@@ -143,7 +143,7 @@ Variáveis de ambiente do projeto web:
 API_URL=https://api.vitorsierro.com
 NEXT_PUBLIC_API_URL=https://api.vitorsierro.com
 NEXT_PUBLIC_DRAW_URL=https://draw.vitorsierro.com
-NEXT_PUBLIC_CLAW_URL=https://claw.vitorsierro.com
+NEXT_PUBLIC_HERMES_URL=https://chat.vitorsierro.com
 ```
 
 Redeploy em seguida.
@@ -159,20 +159,20 @@ crontab -e
 off-site (rclone/S3/Backblaze) no ponto marcado no script — até lá, o disco é
 um ponto único de falha.
 
-## Raio de alcance do OpenClaw
+## Raio de alcance do Hermes
 
-O OpenClaw é o único serviço aqui que executa comandos e processa entrada não
+O Hermes é o único serviço aqui que executa comandos e processa entrada não
 confiável (mensagens, páginas web). Se ele for comprometido ou "enlouquecer",
 o que ele consegue atingir:
 
 **Não consegue:**
 - Apagar o banco — o volume `api_data` (onde vive o `prod.db`) não é montado
-  nele. Só enxerga o próprio `/home/node/.openclaw`.
+  nele. Só enxerga o próprio `/opt/data`.
 - Controlar containers — sem acesso ao socket do Docker.
-- Virar root no host — roda como uid 1000, sem `privileged` e sem
-  capabilities extras.
+- Virar root no host — sem `privileged` e sem capabilities extras. O usuário
+  do container é remapeável por `HERMES_UID`/`HERMES_GID`.
 - Falar com a API ou o Excalidraw pela rede interna — cada zona tem sua
-  própria rede e ele está sozinho na `claw`.
+  própria rede e ele está sozinho na `hermes`.
 
 **Consegue:**
 - Destruir os próprios dados (config, credenciais de provedor, memória).
@@ -183,7 +183,7 @@ o que ele consegue atingir:
   — mas isso vale para qualquer atacante com a senha, não é específico dele.
 
 A segmentação de rede é o que fecha o caminho mais perigoso: sem ela, o
-OpenClaw falaria direto com `api:3001` e poderia tentar senhas à vontade,
+Hermes falaria direto com `api:3001` e poderia tentar senhas à vontade,
 já que o `limit_req` mora no nginx e uma chamada interna o contorna.
 
 ## Operação
@@ -214,7 +214,7 @@ São 12 asserções: rotas públicas x protegidas, o contrato 204/401 do
 anti-CSRF (cookie sozinho nunca autoriza mutação). Tudo deve passar.
 
 No navegador: `/blog`, `/blog/post/<slug>`, e `/admin` (login → hub → CMS).
-Os cards das ferramentas só aparecem se `NEXT_PUBLIC_DRAW_URL`/`_CLAW_URL`
+Os cards das ferramentas só aparecem se `NEXT_PUBLIC_DRAW_URL`/`_HERMES_URL`
 estiverem preenchidos.
 
 **O que isso não cobre:** o forward-auth do nginx. Sem nginx, nada exercita
@@ -227,7 +227,7 @@ Aponte o web para as portas locais em `apps/web/.env.local` (e **reinicie o
 
 ```
 NEXT_PUBLIC_DRAW_URL="http://localhost:8080"
-NEXT_PUBLIC_CLAW_URL="http://localhost:18789"
+NEXT_PUBLIC_HERMES_URL="http://localhost:9119"
 ```
 
 **Com Docker** (um comando, sobe as duas):
@@ -238,48 +238,44 @@ docker compose -f infra/docker-compose.local.yml up -d
 
 **Sem Docker:**
 
-- *OpenClaw* exige Node `>=22.22.3 <23`, `>=24.15 <25` ou `>=25.9`. Com nvm:
-  `nvm install 24.15.0 && nvm use 24.15.0`, depois
-  `npm i -g openclaw@latest` e `openclaw gateway --port 18789`.
+- *Hermes* tem instalador próprio para Linux/macOS/WSL2
+  (`hermes-agent.nousresearch.com/install.sh`) e para Windows
+  (`install.ps1`). Depois é `hermes setup` (interativo, escolhe o provedor de
+  LLM) e `hermes gateway run`.
 - *Excalidraw* não tem pacote standalone no npm (o `excalidraw` do registry é
   só um componente para embutir). Sem Docker, é clonar
   `github.com/excalidraw/excalidraw` e rodar o dev server dele numa porta
   livre — ou usar `excalidraw.com` enquanto isso.
 
-**O OpenClaw exige token — não é opcional.** Ele se recusa a escutar fora do
+**O Hermes exige token — não é opcional.** Ele se recusa a escutar fora do
 loopback sem autenticação, e em container o bind é sempre `0.0.0.0`. Sem token
-o container entra em loop de restart com `Missing config`. Gere um em
-`infra/openclaw.env`:
+o container entra em loop de restart. Gere um em `infra/hermes.env`:
 
 ```bash
-node -e "console.log('OPENCLAW_GATEWAY_TOKEN='+require('crypto').randomBytes(32).toString('base64url'))" >> infra/openclaw.env
+node -e "console.log('GATEWAY_AUTH_TOKEN='+require('crypto').randomBytes(32).toString('base64url'))" >> infra/hermes.env
 ```
 
-Para abrir a Control UI, o token vai no **fragmento** da URL (não query
-string — assim não trafega ao servidor nem entra em log):
+**Duas portas, papéis diferentes.** O `gateway run` sobe a API em `8642` e,
+com `HERMES_DASHBOARD=1`, o dashboard em `9119`. O dashboard é a interface
+web — é ele que o nginx publica em `chat.`; o `8642` fica só na rede interna.
 
-```
-http://localhost:18789/#token=<SEU_TOKEN>
-```
+**Não habilite o basic auth do dashboard** (`HERMES_DASHBOARD_BASIC_AUTH_*`).
+O nginx já exige a sessão do `/admin` antes de encostar no upstream; um
+segundo prompt de senha quebraria justamente o login único. Essas variáveis
+servem para quem publica o dashboard sem proxy na frente.
 
-Ou cole o token no campo "Token do Gateway" na própria tela. `docker compose
--f infra/docker-compose.local.yml exec openclaw node openclaw.mjs dashboard
---no-open` imprime a URL.
-
-**O OpenClaw recusa a Control UI quando ela vem de outra origem.** Servido
-atrás do proxy, a origem deixa de ser a dele (`:18789`) e ele fecha o
-WebSocket com `origin not allowed` — a tela fica presa no login mesmo com o
-token certo. Libere a origem uma vez (fica no volume, sobrevive a restart):
+**Configuração inicial.** O `hermes setup` é interativo e não roda em
+container. Rode uma vez montando o volume de dados, e o `config.yaml` gerado
+fica em `/opt/data`, sobrevivendo a recreates:
 
 ```bash
-echo '{ gateway: { controlUi: { allowedOrigins: ["http://localhost:8082"] } } }' \
-  | docker compose -f infra/docker-compose.dev.yml exec -T openclaw \
-    node openclaw.mjs config patch --stdin
-docker compose -f infra/docker-compose.dev.yml restart openclaw
+docker compose -f infra/docker-compose.local.yml run --rm -it hermes setup
 ```
 
-Em produção o valor é `https://claw.vitorsierro.com` — sem isso o OpenClaw
-não abre pelo domínio, por mais que o gate do nginx deixe passar.
+⚠️ **Não verificado ainda:** se o dashboard, servido por proxy, faz alguma
+checagem de origem no websocket. Se fizer, o sintoma típico é a tela
+"recarregando sozinha", sem nada que aponte para origem — e a chave certa está
+no `config.yaml`. Confira lá antes de escrever qualquer patch no `deploy.sh`.
 
 ⚠️ Rodando assim **não existe barreira de login** do nosso lado: sem nginx,
 nada faz o forward-auth. Serve para desenvolver a integração do `/admin`, não
@@ -298,7 +294,7 @@ docker compose -f infra/docker-compose.dev.yml up -d
 ```
 
 - `http://localhost:8081` → Excalidraw (exige login)
-- `http://localhost:8082` → OpenClaw (exige login)
+- `http://localhost:8082` → Hermes (exige login)
 
 Com `apps/web/.env.local` apontando para essas portas, o `/admin` já usa a
 versão protegida. Sem sessão, uma navegação cai em
@@ -322,7 +318,7 @@ para o loopback. No Windows, como administrador, adicione em
 `C:\Windows\System32\drivers\etc\hosts`:
 
 ```
-127.0.0.1 api.vitorsierro.test draw.vitorsierro.test claw.vitorsierro.test
+127.0.0.1 api.vitorsierro.test draw.vitorsierro.test chat.vitorsierro.test
 ```
 
 Então suba a stack com `SESSION_COOKIE_DOMAIN=".vitorsierro.test"` e
@@ -352,43 +348,28 @@ No navegador: acesse `draw.vitorsierro.com` deslogado → deve cair em
 
 ## Pendências
 
-**OpenClaw com login realmente único (`trusted-proxy`)** — hoje o gateway usa
-`--auth token`, então, mesmo passando pelo gate do nginx, a Control UI ainda
-pede o token uma vez. O OpenClaw suporta `auth.mode = "trusted-proxy"`, que
-delega a autenticação ao proxy e elimina esse passo. Exige arquivo de config
-(não dá só por flag):
+**Primeira subida do Hermes não foi exercitada.** A configuração foi feita a
+partir da documentação oficial
+(`hermes-agent.nousresearch.com/docs`), sem VPS à mão. O que precisa de
+confirmação no primeiro deploy, em ordem:
 
-```json5
-{
-  gateway: {
-    bind: "lan",
-    trustedProxies: ["<IP do container nginx na rede docker>"],
-    auth: {
-      mode: "trusted-proxy",
-      trustedProxy: {
-        userHeader: "x-auth-user",          // já enviado pelo nosso nginx
-        requiredHeaders: ["x-forwarded-proto", "x-forwarded-host"],
-        allowUsers: ["<email do admin>"],
-        allowLoopback: false,
-      },
-    },
-  },
-}
-```
+1. O dashboard responde em `9119` com `HERMES_DASHBOARD_HOST=0.0.0.0` (o
+   default é loopback, e aí o nginx não o alcança).
+2. O `GATEWAY_AUTH_TOKEN` basta para o container não entrar em loop de
+   restart — a doc diz que autenticação é obrigatória fora do loopback, mas
+   não detalha se o dashboard exige a dele separadamente.
+3. O websocket do dashboard aguenta ser servido por proxy sem checagem de
+   origem (ver a nota acima).
 
-Cuidados que a doc oficial destaca, e que já valem no nosso desenho:
-a porta do gateway **não pode** estar exposta a ninguém além do proxy (o
-compose de produção não publica portas — ok); o proxy precisa **sobrescrever**
-os headers vindos do cliente (`proxy_set_header X-Auth-User $auth_user`
-substitui, não anexa — ok); e o startup é **rejeitado** se um token
-compartilhado também estiver configurado, então ao migrar remova
-`OPENCLAW_GATEWAY_TOKEN` e o `--auth token`.
+**Login único de verdade** — o gate do nginx já cobre `chat.` igual a `draw.`,
+e o dashboard não pede token na tela. Se ele vier a exigir autenticação
+própria, o caminho documentado é
+OIDC (`HERMES_DASHBOARD_OIDC_ISSUER`/`_CLIENT_ID`) — o que exigiria um
+issuer nosso, hoje inexistente. Avaliar só se o item 2 acima falhar.
 
-Para `allowUsers` ficar legível, convém `/auth/verify` passar a devolver o
-e-mail do admin em `X-Auth-User` em vez do `adminId`.
-
-**Imagem** — `ghcr.io/openclaw/openclaw:latest` foi confirmada (baixa e roda).
-Credenciais de provedor de IA e tokens de canal vão em `infra/openclaw.env`.
+**Imagem** — `nousresearch/hermes-agent:latest` (Docker Hub), o caminho de
+dados é `/opt/data`. Credenciais de provedor de IA e tokens de canal vão em
+`infra/hermes.env`.
 
 **Excalidraw colaborativo** — a imagem pública embute a URL do servidor de WS
 em tempo de build. O `excalidraw-room` está no Compose e roteado, mas a

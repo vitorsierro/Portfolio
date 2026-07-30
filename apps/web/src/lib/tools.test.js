@@ -11,7 +11,7 @@ describe('safeNextUrl', () => {
   beforeEach(() => {
     jest.resetModules();
     process.env.NEXT_PUBLIC_DRAW_URL = 'https://draw.vitorsierro.com';
-    process.env.NEXT_PUBLIC_CLAW_URL = 'https://claw.vitorsierro.com';
+    process.env.NEXT_PUBLIC_HERMES_URL = 'https://chat.vitorsierro.com';
     ({ safeNextUrl } = require('./tools'));
   });
 
@@ -24,8 +24,8 @@ describe('safeNextUrl', () => {
     expect(safeNextUrl('https://draw.vitorsierro.com/', ORIGIN)).toBe(
       'https://draw.vitorsierro.com/',
     );
-    expect(safeNextUrl('https://claw.vitorsierro.com/chat', ORIGIN)).toBe(
-      'https://claw.vitorsierro.com/chat',
+    expect(safeNextUrl('https://chat.vitorsierro.com/', ORIGIN)).toBe(
+      'https://chat.vitorsierro.com/',
     );
   });
 
@@ -62,7 +62,7 @@ describe('safeNextUrl', () => {
   it('allows http only on loopback, and only if allowlisted', () => {
     jest.resetModules();
     process.env.NEXT_PUBLIC_DRAW_URL = 'http://localhost:8081';
-    process.env.NEXT_PUBLIC_CLAW_URL = 'http://localhost:8082';
+    process.env.NEXT_PUBLIC_HERMES_URL = 'http://localhost:8082';
     const dev = require('./tools');
 
     expect(dev.safeNextUrl('http://localhost:8081/', ORIGIN)).toBe(

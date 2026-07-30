@@ -14,34 +14,30 @@ services:
     ports:
       - "8080:80"
 
-  openclaw:
-    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+  hermes:
+    image: ${HERMES_IMAGE:-nousresearch/hermes-agent:latest}
     restart: unless-stopped
-    # --allow-unconfigured: sem isso o gateway sai em loop exigindo
-    #   `openclaw setup` (que é interativo e não roda em container).
-    # Não passe --bind: em container o OpenClaw já detecta o ambiente e usa
-    #   bind=auto (0.0.0.0). Forçar `lan` faz ele recusar a subir.
-    # --auth token: NÃO é opcional. O OpenClaw se recusa a escutar fora do
-    #   loopback sem autenticação, e em container o bind é sempre 0.0.0.0.
-    #   O token vem de OPENCLAW_GATEWAY_TOKEN (infra/openclaw.env).
-    command:
-      - node
-      - openclaw.mjs
-      - gateway
-      - --allow-unconfigured
-      - --auth
-      - token
-      - --port
-      - "18789"
+    # `gateway run` é o modo servidor. O `setup` é interativo e não roda em
+    # container — a configuração inicial é feita à mão, ver infra/README.md.
+    # GATEWAY_AUTH_TOKEN (em infra/hermes.env) não é opcional: o Hermes se
+    # recusa a escutar fora do loopback sem autenticação, e em container o bind
+    # é sempre 0.0.0.0.
+    command: [gateway, run]
+    environment:
+      HERMES_DASHBOARD: "1"
+      HERMES_DASHBOARD_HOST: "0.0.0.0"
+      HERMES_DASHBOARD_PORT: "9119"
     ports:
-      # 127.0.0.1 no host: sem isso a porta ficaria aberta para toda a LAN, e
-      # o OpenClaw executa comandos na máquina.
-      - "127.0.0.1:18789:18789"
+      # 127.0.0.1 no host: sem isso as portas ficariam abertas para toda a LAN,
+      # e o Hermes executa comandos na máquina.
+      - "127.0.0.1:9119:9119"
+      - "127.0.0.1:8642:8642"
     env_file:
-      - path: ./openclaw.env
+      - path: ./hermes.env
         required: false
     volumes:
-      - openclaw_data:/root/.openclaw
+      - hermes_data:/opt/data
 
 volumes:
-  openclaw_data:
+  hermes_data:
+

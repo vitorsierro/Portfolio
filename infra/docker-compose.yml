@@ -5,12 +5,12 @@
 # forward-auth check.
 #
 # NETWORK SEGMENTATION — one network per zone, nginx bridging them.
-# A single shared network would let OpenClaw talk straight to api:3001,
-# which matters because OpenClaw is the one service here that runs commands
-# and processes untrusted input (messages, web pages). From there it could
-# hammer /auth/login with no rate limit, since limit_req lives in nginx and
-# a direct call skips the proxy entirely. Each service only needs to be
-# reachable BY nginx — none of them need to reach each other.
+# A single shared network would let Hermes talk straight to api:3001, which
+# matters because Hermes is the one service here that runs commands and
+# processes untrusted input (messages, web pages). From there it could hammer
+# /auth/login with no rate limit, since limit_req lives in nginx and a direct
+# call skips the proxy entirely. Each service only needs to be reachable BY
+# nginx — none of them need to reach each other.
 #
 # Run from the repo root:  docker compose -f infra/docker-compose.yml up -d
 
@@ -51,50 +51,36 @@ services:
     restart: unless-stopped
     networks: [draw]
 
-  openclaw:
-    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+  hermes:
+    image: ${HERMES_IMAGE:-nousresearch/hermes-agent:latest}
     restart: unless-stopped
-    # Sem estas flags o gateway sai em loop pedindo `openclaw setup`
-    # (interativo, não roda em container).
-    #
-    # --auth token: o OpenClaw SE RECUSA a escutar fora do loopback sem
-    #   autenticação, e em container o bind é sempre 0.0.0.0. Aqui o token é
-    #   defesa em profundidade: o nginx já barra tudo antes, mas se alguém
-    #   alcançar a porta interna, ainda precisa do token.
-    #   Ele vem de OPENCLAW_GATEWAY_TOKEN em infra/openclaw.env.
-    #
-    # Existe um modo `trusted-proxy`, que delegaria a auth ao nginx e daria
-    # login único de verdade (sem colar token na Control UI). Exige arquivo de
-    # config com trustedProxies/userHeader/allowUsers — ver infra/README.md.
-    #
-    # Servido pelo proxy, a origem deixa de ser a do próprio gateway e ele fecha
-    # o WebSocket com code=1008 `origin not allowed`. O sintoma engana: a
-    # Control UI reconecta ~2x por segundo e a página parece "recarregar
-    # sozinha", sem nada que aponte para origem. Não existe flag de CLI para
-    # isso (conferido em `gateway --help`) — só o config dentro do volume, e
-    # por isso o deploy.sh reaplica a cada deploy.
-    command:
-      - node
-      - openclaw.mjs
-      - gateway
-      - --allow-unconfigured
-      - --auth
-      - token
-      - --port
-      - "18789"
+    # `gateway run` é o modo servidor — o entrypoint da imagem é o próprio
+    # binário. O `setup` é interativo e não roda aqui: a configuração inicial é
+    # feita uma vez à mão, ver infra/README.md.
+    command: [gateway, run]
+    environment:
+      # O dashboard é a interface web, e é ele que o nginx publica em hermes.,
+      # não o gateway. Sem HERMES_DASHBOARD o serviço sobe só com a API.
+      HERMES_DASHBOARD: "1"
+      # 0.0.0.0: o nginx é outro container, então o default (loopback) o
+      # tornaria inalcançável. Quem restringe o acesso é a rede isolada abaixo
+      # somada ao auth_request — a porta não é publicada no host.
+      HERMES_DASHBOARD_HOST: "0.0.0.0"
+      HERMES_DASHBOARD_PORT: "9119"
     env_file:
-      - path: ./openclaw.env
+      # GATEWAY_AUTH_TOKEN vive aqui: o Hermes SE RECUSA a escutar fora do
+      # loopback sem autenticação, e em container o bind é sempre 0.0.0.0.
+      - path: ./hermes.env
         required: false
     volumes:
-      # /home/node, NÃO /root: a imagem roda como uid 1000 (node), então um
-      # volume em /root fica sem permissão de leitura — a config iria para
-      # /home/node/.openclaw, fora do volume, e sumiria a cada recreate
-      # (credenciais de provedor, canais conectados, memória do agente).
-      - openclaw_data:/home/node/.openclaw
-    # Rede própria: o OpenClaw não alcança api:3001 nem o Excalidraw. Ele só
+      # /opt/data é o caminho de dados da imagem oficial. Tudo que precisa
+      # sobreviver a um recreate mora aqui: config.yaml, o .env com as chaves
+      # de provedor, auth.json, sessions/.
+      - hermes_data:/opt/data
+    # Rede própria: o Hermes não alcança api:3001 nem o Excalidraw. Ele só
     # precisa ser alcançado pelo nginx. Mantém saída para a internet (as APIs
     # de IA), que é o que ele legitimamente precisa.
-    networks: [claw]
+    networks: [hermes]
 
   nginx:
     image: nginx:alpine
@@ -112,10 +98,10 @@ services:
       - certbot_www:/var/www/certbot:ro
     # nginx resolves proxy_pass hostnames at startup, so every upstream it
     # references must exist or it refuses to boot — excalidraw-room included.
-    depends_on: [api, excalidraw, excalidraw-room, openclaw]
+    depends_on: [api, excalidraw, excalidraw-room, hermes]
     # O nginx é a única peça que participa de todas as zonas — é ele quem
     # faz a ponte, e sempre passando pelo gate.
-    networks: [backend, draw, claw]
+    networks: [backend, draw, hermes]
 
   # Renews certs twice a day; nginx reloads them via its own timer below.
   certbot:
@@ -131,11 +117,11 @@ services:
 
 volumes:
   api_data:
-  openclaw_data:
+  hermes_data:
   certbot_conf:
   certbot_www:
 
 networks:
   backend: # api
   draw: # excalidraw + sala de colaboração
-  claw: # openclaw, isolado do resto
+  hermes: # hermes, isolado do resto

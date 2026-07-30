@@ -21,7 +21,7 @@ export default function AdminHeader() {
 
   async function onLogout() {
     setLeaving(true);
-    // Revokes the tool session server-side too, so draw./claw. stop opening.
+    // Revokes the tool session server-side too, so draw./chat. stop opening.
     await logout();
     router.replace(ROUTER_LOGIN);
   }
@@ -64,8 +64,8 @@ export default function AdminHeader() {
             <span className={styles.divider} aria-hidden="true" />
 
             {TOOLS.map((tool) => {
-              // O Excalidraw abre embutido em /admin/draw (mantém este
-              // header à vista). O OpenClaw proíbe iframe, então abre fora.
+              // O Excalidraw abre embutido em /admin/draw (mantém este header
+              // à vista). O Hermes abre em aba própria — ver /admin/draw.
               const embedded = tool.key === 'draw';
 
               return (
@@ -81,11 +81,6 @@ export default function AdminHeader() {
                   onClick={() => setIsOpen(false)}
                 >
                   {tool.name}
-                  {embedded ? null : (
-                    <span className={styles.external} aria-hidden="true">
-                      ↗
-                    </span>
-                  )}
                 </a>
               );
             })}

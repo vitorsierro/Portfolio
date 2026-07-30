@@ -24,7 +24,7 @@ const isProd = () => process.env.NODE_ENV === 'production';
 const SESSION_COOKIE = () =>
   isProd() ? '__Secure-admin_session' : 'admin_session';
 // Unset in dev so the cookie stays host-only on localhost; in prod, set to
-// e.g. ".vitorsierro.com" so it's shared with the draw./claw. subdomains.
+// e.g. ".vitorsierro.com" so it's shared with the draw./chat. subdomains.
 const SESSION_COOKIE_DOMAIN = () => process.env.SESSION_COOKIE_DOMAIN || undefined;
 
 @Controller('auth')
@@ -83,7 +83,7 @@ export class AuthController {
   }
 
   // Forward-auth check hit by the nginx auth_request block in front of
-  // draw./claw. — must resolve to 2xx or 401 only, never a redirect: the
+  // draw./chat. — must resolve to 2xx or 401 only, never a redirect: the
   // proxy owns the redirect-to-login decision, not the API.
   @Get('verify')
   @HttpCode(204)

@@ -9,7 +9,7 @@ import { parseAllowedOrigins } from './allowed-origins';
 
 // Guards cookie-authenticated mutating routes (/auth/refresh, /auth/logout)
 // against callers outside the web app. Once the session cookie is scoped to
-// .{domain} to reach draw./claw., those tool subdomains become same-site —
+// .{domain} to reach draw./chat., those tool subdomains become same-site —
 // so the browser will happily attach the cookie to a request from a
 // compromised tool page even though CORS blocks it from reading the
 // response. CORS alone doesn't stop the mutation from executing; this does.
