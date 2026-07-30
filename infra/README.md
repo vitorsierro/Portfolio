@@ -284,6 +284,18 @@ O preço é que a rede `hermes` passa a ser a **única** barreira — sem a defe
 extra que o basic auth daria se algo um dia contornasse o nginx. Ver o
 comentário completo no serviço `hermes-proxy` de `docker-compose.yml`.
 
+**Isso sozinho não basta — falta ajustar o `Host` que o nginx repassa.** O
+Hermes tem uma guarda anti-DNS-rebinding separada do gate de auth: ela só
+aceita `Host` de loopback e devolve `400 Bad Request` para qualquer outro,
+inclusive `chat.vitorsierro.com`. Não existe hoje uma flag para estender essa
+allowlist ([issue aberta no upstream][hermes-34390]). O vhost manda `Host:
+127.0.0.1:9119` para o Hermes (em vez de `$host`) e preserva o domínio real em
+`X-Forwarded-Host`, que é o que o Hermes lê para qualquer coisa que precise da
+URL pública. Sem esse ajuste, o dashboard nunca renderiza — sempre 400, mesmo
+com o sidecar funcionando perfeitamente.
+
+[hermes-34390]: https://github.com/NousResearch/hermes-agent/issues/34390
+
 `docker-compose.local.yml` não usa esse sidecar (publica a porta direto no
 host, sem nginx no meio) — lá o basic auth (`HERMES_DASHBOARD_BASIC_AUTH_*`
 em `infra/hermes.env`) continua sendo o único jeito de o dashboard abrir a
