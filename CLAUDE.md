@@ -179,6 +179,26 @@ Duas consequências:
   que a auth própria do Hermes daria. Não adicione mais nenhum serviço a essa
   rede sem reler o comentário em `docker-compose.yml` — ver `design.md` §7.
 
+### 16. Loopback resolve o gate de auth do Hermes, mas não a guarda anti-DNS-rebinding — são duas checagens diferentes
+Depois do sidecar (armadilha #15), o dashboard abria e devolvia `400 Bad
+Request` para toda requisição vinda do nginx. A causa não tinha nada a ver com
+autenticação: é uma guarda **separada**, contra DNS rebinding, que valida o
+header `Host` — e só aceita variantes de loopback (`127.0.0.1:9119` funciona;
+qualquer outra coisa, incluindo `chat.vitorsierro.com`, cai em 400. Não existe
+flag para estender essa allowlist hoje — issue aberta no upstream,
+[NousResearch/hermes-agent#34390](https://github.com/NousResearch/hermes-agent/issues/34390).
+
+O sintoma engana porque parece falha do sidecar (a primeira suspeita foi
+"`socat` não está encaminhando"), mas testar com `wget` direto no loopback
+compartilhado prova o contrário: sem `--header`, sucesso; forçando
+`Host: chat.vitorsierro.com`, o mesmo 400. O fix é o nginx mandar
+`Host: 127.0.0.1:9119` para o upstream (em vez de `$host`) e preservar o
+domínio real em `X-Forwarded-Host` — ver `infra/nginx/conf.d/hermes.conf`.
+
+**Para depurar isso de novo:** rode `wget` de dentro do `hermes-proxy` contra
+`127.0.0.1:9119` com e sem `--header='Host: ...'` explícito. Se o primeiro
+funciona e o segundo não, é sempre esta guarda, não a rede.
+
 ---
 
 ## Invariantes de segurança (não quebrar)
