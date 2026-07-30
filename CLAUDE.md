@@ -113,18 +113,23 @@ Três coisas que só quebram no GitHub Actions porque à mão você roda como ro
 E `API_URL` / `NEXT_PUBLIC_API_URL` são variáveis da **Vercel**: nenhum workflow
 as lê. Cadastradas nos secrets do Actions elas não fazem nada.
 
-### 11. O Hermes (`infra/hermes.env`) exige DOIS mecanismos de auth, não um
+### 11. O dashboard do Hermes exige auth própria SE o bind não for loopback
 `GATEWAY_AUTH_TOKEN` protege o gateway (`8642`). Ele **não** cobre o dashboard
-(`9119`) — o processo se recusa a escutar em `0.0.0.0` sem um provedor de auth
-próprio registrado, e o forward-auth do nginx não conta para essa checagem
-(é interna ao Hermes). Sem `HERMES_DASHBOARD_BASIC_AUTH_*` configurado, o
-dashboard nunca abre a porta e `chat.vitorsierro.com` cai em erro de upstream
-mesmo com o container "up" e saudável — o log é a única pista
-(`Refusing to bind dashboard to 0.0.0.0 ... no auth providers are
-registered`). Isso foi documentado ao contrário numa primeira versão deste
-código (achamos que o basic auth duplicava o `/admin` e quebrava o login
-único); na prática ele é obrigatório, e o custo é só um segundo prompt de
-senha por sessão de navegador. Ver `infra/hermes.env.example`.
+(`9119`) — o processo se recusa a escutar fora do loopback sem um provedor de
+auth próprio registrado, e o forward-auth do nginx não conta para essa
+checagem (é interna ao Hermes). O log é explícito quando falta:
+`Refusing to bind dashboard to 0.0.0.0 ... no auth providers are registered`.
+
+Em vez de conviver com um segundo login, `docker-compose.yml`/`docker-compose.dev.yml`
+fazem o Hermes bindar em `127.0.0.1` de verdade e usam o sidecar `hermes-proxy`
+(armadilha #15) para tornar essa porta alcançável mesmo assim — o gate nunca
+engata porque, do ponto de vista do processo, a conexão sempre vem do
+loopback. Só `docker-compose.local.yml` (publica porta direto no host, sem
+sidecar) ainda precisa de `HERMES_DASHBOARD_BASIC_AUTH_*`. Isso foi
+documentado de duas formas diferentes ao longo do desenvolvimento — primeiro
+"nunca habilite" (errado: quebra o dashboard), depois "sempre habilite"
+(correto, mas substituído pelo sidecar assim que percebemos que dava para
+eliminar o segundo login de vez). Ver `infra/hermes.env.example`.
 
 Dois detalhes que mordem ao gerar esse arquivo na VPS:
 - **Não tem `node` no host** (só dentro dos containers) — gere tokens com
@@ -157,6 +162,22 @@ O backend Docker do Hermes monta o socket do Docker no container — equivale a
 dar root no host, e anularia toda a segmentação de rede e privilégios do
 `design.md` §7. Use sempre `local` (`hermes setup terminal`): o próprio
 container do Hermes já é o sandbox.
+
+### 15. `hermes-proxy` é um sidecar que compartilha a rede do Hermes, não um serviço na rede `hermes`
+`network_mode: "service:hermes"` faz o sidecar herdar a *network namespace*
+inteira do container do Hermes — mesma interface, mesmo IP, mesmo loopback.
+Por isso ele **não** declara `networks: [hermes]` própria (Compose rejeita
+combinar as duas coisas) e, ao alcançar `127.0.0.1:9119`, está falando com o
+Hermes como um processo vizinho falaria — não pela rede Docker. É esse
+detalhe que faz o gate de auth do dashboard nunca engatar (armadilha #11):
+para o processo, a conexão sempre parece vir do loopback.
+
+Duas consequências:
+- **`depends_on: [hermes]`** no sidecar é obrigatório — ele precisa da
+  namespace do Hermes já existir para se anexar a ela.
+- **A rede `hermes` vira a única barreira do dashboard**, sem a defesa extra
+  que a auth própria do Hermes daria. Não adicione mais nenhum serviço a essa
+  rede sem reler o comentário em `docker-compose.yml` — ver `design.md` §7.
 
 ---
 

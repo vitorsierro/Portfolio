@@ -23,7 +23,9 @@ services:
     command: [gateway, run]
     environment:
       HERMES_DASHBOARD: "1"
-      HERMES_DASHBOARD_HOST: "0.0.0.0"
+      # 127.0.0.1 + hermes-proxy abaixo: mesmo mecanismo de docker-compose.yml,
+      # para exercitar aqui o que vale na VPS. Ver o comentário lá.
+      HERMES_DASHBOARD_HOST: "127.0.0.1"
       HERMES_DASHBOARD_PORT: "9119"
     env_file:
       - path: ./hermes.env
@@ -35,6 +37,13 @@ services:
     # produção — ver o comentário em docker-compose.yml.
     networks: [hermes]
 
+  hermes-proxy:
+    image: alpine:3.20
+    restart: unless-stopped
+    command: sh -c "apk add --no-cache socat && exec socat TCP-LISTEN:9120,fork,reuseaddr TCP:127.0.0.1:9119"
+    network_mode: "service:hermes"
+    depends_on: [hermes]
+
   nginx:
     image: nginx:alpine
     restart: unless-stopped
@@ -43,7 +52,7 @@ services:
       - "127.0.0.1:8082:8082"
     volumes:
       - ./nginx/dev:/etc/nginx/conf.d:ro
-    depends_on: [excalidraw, hermes]
+    depends_on: [excalidraw, hermes, hermes-proxy]
     networks: [draw, hermes]
     # Permite ao nginx alcançar a API do `yarn dev`, que roda no host.
     extra_hosts:
