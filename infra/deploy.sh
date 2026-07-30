@@ -34,12 +34,25 @@ git pull --ff-only || echo "    (já atualizado ou repositório em modo detached
 # enquanto o proxy antigo ainda serve: uma vírgula errada aqui derruba api e
 # draw de uma vez, e o healthcheck abaixo não pegaria — ele fala com a API
 # pela rede interna, sem passar pelo proxy.
+#
+# ARMADILHA: isto valida DENTRO do container de nginx que já está no ar, que
+# só está anexado às redes que existiam quando ele subiu. Um vhost novo
+# apontando para um serviço com rede própria (ex.: ao adicionar o Hermes) faz
+# o `nginx -t` falhar com "host not found in upstream" mesmo com a config
+# correta — o container velho não enxerga a rede nova, só o próximo `up -d`
+# a cria e recria o nginx já nela. Se isso acontecer, não adianta corrigir a
+# config: rode `$COMPOSE up -d --build` direto uma vez (ele resolve sozinho,
+# criando a rede e recriando o nginx anexado) e o `deploy.sh` volta a validar
+# normalmente dali em diante.
 if $COMPOSE ps --services --filter status=running 2>/dev/null | grep -qx nginx; then
   echo "==> Validando a config do nginx (antes de recarregar)"
   if ! $COMPOSE exec -T nginx nginx -t; then
     echo "" >&2
     echo "ERRO: config do nginx inválida. Nada foi reiniciado — o proxy" >&2
     echo "antigo continua no ar. Corrija antes de tentar de novo." >&2
+    echo "" >&2
+    echo "Se o erro for 'host not found in upstream' para um serviço NOVO," >&2
+    echo "veja o comentário acima desta checagem — pode não ser bug na config." >&2
     exit 1
   fi
 fi

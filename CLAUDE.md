@@ -113,6 +113,51 @@ Três coisas que só quebram no GitHub Actions porque à mão você roda como ro
 E `API_URL` / `NEXT_PUBLIC_API_URL` são variáveis da **Vercel**: nenhum workflow
 as lê. Cadastradas nos secrets do Actions elas não fazem nada.
 
+### 11. O Hermes (`infra/hermes.env`) exige DOIS mecanismos de auth, não um
+`GATEWAY_AUTH_TOKEN` protege o gateway (`8642`). Ele **não** cobre o dashboard
+(`9119`) — o processo se recusa a escutar em `0.0.0.0` sem um provedor de auth
+próprio registrado, e o forward-auth do nginx não conta para essa checagem
+(é interna ao Hermes). Sem `HERMES_DASHBOARD_BASIC_AUTH_*` configurado, o
+dashboard nunca abre a porta e `chat.vitorsierro.com` cai em erro de upstream
+mesmo com o container "up" e saudável — o log é a única pista
+(`Refusing to bind dashboard to 0.0.0.0 ... no auth providers are
+registered`). Isso foi documentado ao contrário numa primeira versão deste
+código (achamos que o basic auth duplicava o `/admin` e quebrava o login
+único); na prática ele é obrigatório, e o custo é só um segundo prompt de
+senha por sessão de navegador. Ver `infra/hermes.env.example`.
+
+Dois detalhes que mordem ao gerar esse arquivo na VPS:
+- **Não tem `node` no host** (só dentro dos containers) — gere tokens com
+  `openssl rand -hex 32`, não com o one-liner de Node que funciona em dev.
+- O handler `command-not-found` do Ubuntu, ao falhar, escreve parte do aviso
+  em **stdout**. Se você tentar `node ... >> arquivo.env` num host sem Node,
+  a mensagem de erro entra no arquivo como uma linha sem `=`, e o Compose
+  falha depois com `key cannot contain a space` — sem apontar qual linha.
+
+### 12. `docker compose -f infra/docker-compose.yml` nomeia o projeto `infra`, não `portfolio`
+O nome do projeto vem do diretório que **contém o compose file**, não de onde
+você roda o comando nem do nome do repo. Volumes e containers ficam
+`infra_hermes_data`, `infra-api-1`, etc. — nunca `portfolio_*`. Confira sempre
+com `docker volume ls`/`docker ps` antes de um `docker volume rm` ou
+`docker compose down -v`; o nome errado normalmente só devolve "no such
+volume" (inofensivo), mas não vale supor.
+
+### 13. Validar `nginx -t` num serviço com rede própria recém-criada, num container já no ar, falha
+O `deploy.sh` testa a config rodando `nginx -t` **dentro do container de nginx
+que já está rodando** — que só está anexado às redes que existiam quando ele
+subiu. Ao adicionar um serviço novo com rede isolada (caso do Hermes), o
+primeiro deploy falha com `host not found in upstream`, mesmo com a config
+correta, porque o nginx velho não enxerga a rede nova. A saída é rodar
+`docker compose ... up -d --build` diretamente uma vez — ele cria a rede e
+recria o nginx já anexado nela — e o `deploy.sh` volta a validar normalmente
+dali em diante. Comentário completo em `infra/deploy.sh`.
+
+### 14. O terminal backend do Hermes não pode ser `Docker`
+O backend Docker do Hermes monta o socket do Docker no container — equivale a
+dar root no host, e anularia toda a segmentação de rede e privilégios do
+`design.md` §7. Use sempre `local` (`hermes setup terminal`): o próprio
+container do Hermes já é o sandbox.
+
 ---
 
 ## Invariantes de segurança (não quebrar)

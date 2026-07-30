@@ -117,15 +117,18 @@ certbot standalone:
 
 ```bash
 docker run --rm -p 80:80 \
-  -v portfolio_certbot_conf:/etc/letsencrypt \
+  -v infra_certbot_conf:/etc/letsencrypt \
   certbot/certbot certonly --standalone --agree-tos --no-eff-email \
   -m seu@email.com \
   -d api.vitorsierro.com -d draw.vitorsierro.com -d chat.vitorsierro.com
 ```
 
-Confirme o nome real do volume com `docker volume ls` (o Compose prefixa com o
-nome do diretório do projeto). Depois disso, o container `certbot` do Compose
-cuida da renovação sozinho.
+O nome do volume é `infra_certbot_conf`, não `portfolio_certbot_conf`: o
+Compose deriva o nome do projeto do diretório que **contém o arquivo**
+(`infra/`), não de onde você roda o comando nem do nome do repo. O mesmo vale
+para todo volume e nome de container desta stack (`infra_hermes_data`,
+`infra-api-1`, etc.) — confirme sempre com `docker volume ls` antes de rodar
+algo destrutivo como `docker volume rm`.
 
 ### 5. Subir
 
@@ -249,28 +252,57 @@ docker compose -f infra/docker-compose.local.yml up -d
 
 **O Hermes exige token — não é opcional.** Ele se recusa a escutar fora do
 loopback sem autenticação, e em container o bind é sempre `0.0.0.0`. Sem token
-o container entra em loop de restart. Gere um em `infra/hermes.env`:
+o container entra em loop de restart. Gere um em `infra/hermes.env` — na VPS
+não conte com `node` no host (a imagem da API roda em container, o host não
+tem por que ter Node instalado), use `openssl`:
 
 ```bash
-node -e "console.log('GATEWAY_AUTH_TOKEN='+require('crypto').randomBytes(32).toString('base64url'))" >> infra/hermes.env
+printf 'GATEWAY_AUTH_TOKEN=%s\n' "$(openssl rand -hex 32)" >> infra/hermes.env
 ```
 
 **Duas portas, papéis diferentes.** O `gateway run` sobe a API em `8642` e,
 com `HERMES_DASHBOARD=1`, o dashboard em `9119`. O dashboard é a interface
 web — é ele que o nginx publica em `chat.`; o `8642` fica só na rede interna.
 
-**Não habilite o basic auth do dashboard** (`HERMES_DASHBOARD_BASIC_AUTH_*`).
-O nginx já exige a sessão do `/admin` antes de encostar no upstream; um
-segundo prompt de senha quebraria justamente o login único. Essas variáveis
-servem para quem publica o dashboard sem proxy na frente.
+**O dashboard também exige autenticação própria — não é opcional.** Ele se
+recusa a escutar fora do loopback sem um provedor de auth registrado; o log é
+explícito: `Refusing to bind dashboard to 0.0.0.0 ... no auth providers are
+registered`. O forward-auth do nginx não conta para essa checagem, que é
+interna ao processo — sem isto o dashboard nunca abre a porta, e `chat.` cai
+em erro de upstream mesmo com o container "up". O caminho suportado sem mexer
+em `config.yaml` é basic auth por variável de ambiente, em `infra/hermes.env`:
+
+```bash
+read -rsp 'Senha do dashboard: ' P
+printf 'HERMES_DASHBOARD_BASIC_AUTH_USERNAME=admin\nHERMES_DASHBOARD_BASIC_AUTH_PASSWORD=%s\nHERMES_DASHBOARD_BASIC_AUTH_SECRET=%s\n' "$P" "$(openssl rand -hex 32)" >> infra/hermes.env
+unset P
+```
+
+Use `read -rsp` (não deixa a senha no histórico do shell) e evite `+ / = "` na
+senha — um dotenv mal formado quebra o parser do Compose com `key cannot
+contain a space`, e o erro não aponta para a causa.
+
+Isso custa **um segundo prompt de senha**, além do login do `/admin` — o
+navegador guarda por origem, então na prática é uma vez por sessão. É mais
+atrito que os outros dois logins únicos deste projeto, mas não é opcional:
+o Hermes não oferece um modo "bind público sem autenticação".
 
 **Configuração inicial.** O `hermes setup` é interativo e não roda em
-container. Rode uma vez montando o volume de dados, e o `config.yaml` gerado
-fica em `/opt/data`, sobrevivendo a recreates:
+container parado — precisa do container escutando (`up -d` primeiro, ou
+`run --rm -it`). O `config.yaml` gerado fica em `/opt/data`, sobrevivendo a
+recreates:
 
 ```bash
 docker compose -f infra/docker-compose.local.yml run --rm -it hermes setup
 ```
+
+O wizard cobre provedor de modelo, backend de terminal e canais de
+mensageria. **O terminal backend precisa ser `local`, nunca `Docker`.** O
+backend Docker do Hermes exige o socket do Docker montado no container —
+equivalente a root no host, e quebraria o modelo de ameaças inteiro (ver
+[§7](../design.md#7-modelo-de-ameaças)). O `local` já roda dentro do
+container, que é o próprio sandbox: rede isolada, sem privilégios extras.
+Rode `hermes setup terminal` de novo se o wizard tiver escolhido Docker.
 
 ⚠️ **Não verificado ainda:** se o dashboard, servido por proxy, faz alguma
 checagem de origem no websocket. Se fizer, o sintoma típico é a tela
