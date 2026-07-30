@@ -221,6 +221,30 @@ rodar mesmo quando não havia nada para aplicar.
 `git pull` que só tocou `infra/nginx/`, rode `nginx -t` E `nginx -s reload`
 — o primeiro sozinho nunca é suficiente.
 
+### 18. A guarda anti-DNS-rebinding do Hermes tem uma segunda checagem, em `Origin`, só para pty/events/ws
+A armadilha #16 corrigiu o `Host` e o dashboard passou a carregar normalmente
+— login, lista de sessões, troca de modelo, tudo via HTTP comum. Só que o chat
+em si ficava preso num loop `Chat connection interrupted (code 1006).
+Reconnecting...`, com "events feed disconnected" ao lado. Parecia a mesma
+armadilha #16 de novo, mas não era: essas rotas devolviam **403**, não 400, e
+só nginx `-s reload` (armadilha #17) já tinha sido descartado como causa.
+
+A causa é uma guarda **irmã** da #16, mas separada — valida `Origin`, não
+`Host`, e só entra em ação para os endpoints realtime (`/api/pty`,
+`/api/events`, `/api/ws`; as rotas HTTP comuns do dashboard não checam
+`Origin`). O log entrega a causa direto, em
+`~/.hermes/logs/agent.log` (`hermes logs`):
+`pty refused: origin_mismatch origin=https://chat.vitorsierro.com bound=127.0.0.1`.
+O nginx reescreve `Host` mas nunca tocou em `Origin` — o navegador manda o
+`Origin` real (`https://chat.vitorsierro.com`) sem alteração, e essa guarda
+rejeita porque só aceita loopback. O fix é o mesmo padrão da #16: reescrever
+o header antes do `proxy_pass`, com `proxy_set_header Origin
+"http://127.0.0.1:9119";` — ver `infra/nginx/conf.d/hermes.conf`.
+
+**Para depurar isso de novo:** se o dashboard carrega mas o chat fica em loop
+de reconexão, é quase sempre isto — `docker exec infra-hermes-1 hermes logs
+--since 5m` e procure `origin_mismatch` antes de suspeitar de rede ou reload.
+
 ---
 
 ## Invariantes de segurança (não quebrar)
