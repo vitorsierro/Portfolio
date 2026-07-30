@@ -9,10 +9,10 @@ const DRAW = TOOLS.find((tool) => tool.key === 'draw');
 // O Excalidraw não define X-Frame-Options, então pode ser embutido — e assim
 // o header do admin fica visível junto da ferramenta.
 //
-// O OpenClaw NÃO tem página equivalente: ele manda `X-Frame-Options: DENY` e
-// `frame-ancestors 'none'` de propósito, como proteção anti-clickjacking numa
-// ferramenta que executa comandos. Remover isso no proxy seria desligar uma
-// defesa real, então lá o link abre em aba própria.
+// O Hermes NÃO tem página equivalente: o comportamento dele quanto a
+// `X-Frame-Options`/`frame-ancestors` não foi verificado, e afrouxar embed no
+// proxy é o tipo de coisa que não se faz às cegas numa ferramenta que executa
+// comandos. Lá o link abre em aba própria.
 export default function DrawPage() {
   const [status, setStatus] = useState('checking'); // checking | ready | offline
 

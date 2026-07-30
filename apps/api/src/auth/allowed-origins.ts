@@ -1,5 +1,5 @@
 // Web origins allowed to send credentialed requests: the Next.js site
-// (apex + www), comma-separated. Never add the draw./claw. tool subdomains
+// (apex + www), comma-separated. Never add the draw./chat. tool subdomains
 // here — see OriginCheckGuard for why they must stay out of this list.
 export function parseAllowedOrigins(): string[] {
   return (process.env.WEB_ORIGIN || 'http://localhost:3000')

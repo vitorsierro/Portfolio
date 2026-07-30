@@ -4,12 +4,12 @@
 // num iframe, para manter o header do admin visível. Um redirect teria
 // precedência sobre a página e a tornaria inalcançável.
 //
-// /admin/claw continua como redirect porque o OpenClaw manda
-// `X-Frame-Options: DENY` — ele não pode ser embutido, e essa proteção
-// anti-clickjacking existe por um bom motivo numa ferramenta que executa
-// comandos.
+// /admin/hermes é redirect, e não página com iframe: o comportamento do
+// dashboard do Hermes quanto a `X-Frame-Options` não foi verificado, e afrouxar
+// embed no proxy é o tipo de coisa que não se faz às cegas numa ferramenta que
+// executa comandos. O redirect funciona de todo jeito.
 const TOOL_REDIRECTS = [
-  { source: '/admin/claw', env: process.env.NEXT_PUBLIC_CLAW_URL },
+  { source: '/admin/hermes', env: process.env.NEXT_PUBLIC_HERMES_URL },
 ];
 
 const nextConfig = {

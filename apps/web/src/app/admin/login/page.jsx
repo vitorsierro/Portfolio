@@ -22,7 +22,7 @@ function LoginForm() {
       await login(email, password);
 
       // nginx sends the admin here with ?next=<tool url> when an
-      // unauthenticated navigation hits draw./claw.
+      // unauthenticated navigation hits draw./chat.
       const next = safeNextUrl(
         searchParams.get('next'),
         window.location.origin,

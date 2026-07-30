@@ -10,10 +10,10 @@ export const TOOLS = [
     url: process.env.NEXT_PUBLIC_DRAW_URL || 'https://draw.vitorsierro.com',
   },
   {
-    key: 'claw',
-    name: 'OpenClaw',
+    key: 'hermes',
+    name: 'Hermes',
     description: 'Assistente de IA pessoal multi-canal.',
-    url: process.env.NEXT_PUBLIC_CLAW_URL || 'https://claw.vitorsierro.com',
+    url: process.env.NEXT_PUBLIC_HERMES_URL || 'https://chat.vitorsierro.com',
   },
 ];
 

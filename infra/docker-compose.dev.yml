@@ -6,7 +6,7 @@
 #   docker compose -f infra/docker-compose.dev.yml up -d
 #
 #   http://localhost:8081  → Excalidraw (exige login)
-#   http://localhost:8082  → OpenClaw   (exige login)
+#   http://localhost:8082  → Hermes     (exige login)
 #
 # Diferente do docker-compose.local.yml, aqui as ferramentas NÃO publicam
 # portas: só o nginx é alcançável, então não há como driblar o gate.
@@ -17,28 +17,23 @@ services:
     restart: unless-stopped
     networks: [draw]
 
-  openclaw:
-    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+  hermes:
+    image: ${HERMES_IMAGE:-nousresearch/hermes-agent:latest}
     restart: unless-stopped
-    command:
-      - node
-      - openclaw.mjs
-      - gateway
-      - --allow-unconfigured
-      - --auth
-      - token
-      - --port
-      - "18789"
+    command: [gateway, run]
+    environment:
+      HERMES_DASHBOARD: "1"
+      HERMES_DASHBOARD_HOST: "0.0.0.0"
+      HERMES_DASHBOARD_PORT: "9119"
     env_file:
-      - path: ./openclaw.env
+      - path: ./hermes.env
         required: false
     volumes:
-      # /home/node: a imagem roda como uid 1000, um volume em /root fica
-      # inacessível e a config não persistiria. Ver docker-compose.yml.
-      - openclaw_data:/home/node/.openclaw
+      # /opt/data é o caminho de dados da imagem oficial. Ver docker-compose.yml.
+      - hermes_data:/opt/data
     # Isolado: não alcança o Excalidraw nem a API. Espelha a segmentação de
     # produção — ver o comentário em docker-compose.yml.
-    networks: [claw]
+    networks: [hermes]
 
   nginx:
     image: nginx:alpine
@@ -48,15 +43,15 @@ services:
       - "127.0.0.1:8082:8082"
     volumes:
       - ./nginx/dev:/etc/nginx/conf.d:ro
-    depends_on: [excalidraw, openclaw]
-    networks: [draw, claw]
+    depends_on: [excalidraw, hermes]
+    networks: [draw, hermes]
     # Permite ao nginx alcançar a API do `yarn dev`, que roda no host.
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
 volumes:
-  openclaw_data:
+  hermes_data:
 
 networks:
   draw:
-  claw:
+  hermes:

@@ -15,7 +15,7 @@ Três necessidades que acabaram convergindo para um sistema só:
 1. Um **portfólio** público (já existia).
 2. Um **blog com CMS** próprio, para publicar sem depender de plataforma de
    terceiros.
-3. Duas **ferramentas self-hosted** — Excalidraw e OpenClaw — acessíveis pela
+3. Duas **ferramentas self-hosted** — Excalidraw e Hermes — acessíveis pela
    internet, mas **só por mim**.
 
 O requisito que amarra tudo: **um único login** deve valer para o CMS e para as
@@ -35,14 +35,14 @@ graph TB
         N["nginx<br/>TLS + forward-auth"]
         A["NestJS + SQLite<br/>api.vitorsierro.com"]
         E["Excalidraw<br/>draw.vitorsierro.com"]
-        O["OpenClaw<br/>claw.vitorsierro.com"]
+        O["Hermes<br/>chat.vitorsierro.com"]
     end
     U --> W
     U --> N
     W -.->|"fetch com cookie"| N
     N -->|"rede backend"| A
     N -->|"rede draw"| E
-    N -->|"rede claw"| O
+    N -->|"rede hermes"| O
     N -.->|"auth_request"| A
 ```
 
@@ -74,7 +74,7 @@ introduzir um segundo sistema de estilo.
 | `/blog` | público | Lista com infinite scroll |
 | `/blog/post/[slug]` | público | Post renderizado |
 | `/admin/login` | público | Login |
-| `/admin` | sessão | Hub: Posts, Excalidraw, OpenClaw |
+| `/admin` | sessão | Hub: Posts, Excalidraw, Hermes |
 | `/admin/posts` | sessão | Gerenciador: busca + paginação |
 | `/admin/posts/[id]` | sessão | Editor (`new` cria) |
 | `/admin/draw` | sessão | Excalidraw embutido |
@@ -199,7 +199,7 @@ Quebrar qualquer um destes reabre um buraco real.
    mutações do CMS estruturalmente imunes a CSRF. Um fallback por cookie seria
    a única mudança capaz de tornar *toda* mutação forjável — e o cookie de
    sessão é same-site a partir dos subdomínios das ferramentas.
-2. **`draw.` / `claw.` nunca entram no `WEB_ORIGIN`** (allowlist de CORS e do
+2. **`draw.` / `chat.` nunca entram no `WEB_ORIGIN`** (allowlist de CORS e do
    `OriginCheckGuard`).
 3. **O cookie de refresh é host-only.** Dar-lhe `Domain=.vitorsierro.com`
    mandaria a credencial de maior valor às ferramentas a cada request.
@@ -216,13 +216,13 @@ Quebrar qualquer um destes reabre um buraco real.
 
 ## 7. Modelo de ameaças
 
-O OpenClaw é o componente mais sensível: executa comandos e processa entrada
+O Hermes é o componente mais sensível: executa comandos e processa entrada
 não confiável (mensagens, páginas). O design assume que **ele pode ser
 comprometido** e limita o estrago:
 
 - Sem acesso ao socket do Docker → não controla outros containers.
 - Sem o volume `api_data` → não alcança o arquivo do banco.
-- `uid 1000`, sem `privileged` → não escala para root.
+- Sem `privileged` e sem capabilities extras → não escala para root.
 - Rede isolada → não fala com `api:3001` nem com o Excalidraw.
 
 Esse último é o que mais importa: numa rede compartilhada, ele contornaria o
@@ -245,8 +245,8 @@ forja de JWT (`alg:none` e segredo adivinhado), replay de refresh rotacionado.
 | Markdown renderizado no servidor | Renderizar no cliente | Zero dependências novas no front e sanitização num lugar só. |
 | Paginação por cursor (público) | Offset | Estável sob inserção — offset duplica ou pula itens quando um post novo entra. |
 | Paginação por offset (admin) | Cursor | Aqui "página 3" é requisito de UI; o custo de offset é irrelevante nessa escala. |
-| Excalidraw em iframe | Também embutir o OpenClaw | O OpenClaw envia `X-Frame-Options: DENY`. Liberá-lo exigiria reescrever o CSP inteiro dele (11 diretivas) no proxy, congelando as demais proteções — má troca numa ferramenta que executa comandos. |
-| Token no OpenClaw | `trusted-proxy` | O modo ideal para nosso desenho, mas exige config file e não pôde ser testado sem a VPS. Documentado como próximo passo. |
+| Excalidraw em iframe | Também embutir o Hermes | O comportamento do dashboard quanto a `X-Frame-Options`/`frame-ancestors` não foi verificado, e afrouxar embed no proxy é o tipo de coisa que não se faz às cegas numa ferramenta que executa comandos. Ele abre em aba própria. |
+| Token só no gateway do Hermes | Basic auth também no dashboard | O nginx já exige a sessão do `/admin` antes do upstream; um segundo prompt de senha quebraria o login único. O token cobre o gateway como defesa em profundidade. |
 
 ---
 
@@ -272,6 +272,6 @@ Testes: 32 na API, 16 no web.
 | Backup no mesmo disco | Perda total se o disco falhar | Plugar rclone/S3 no ponto marcado |
 | SQLite = escritor único | Contenção sob carga alta | Suficiente na escala atual; Postgres se mudar |
 | WebSocket só autentica no handshake | Socket aberto sobrevive ao logout | `proxy_read_timeout` de 1h limita |
-| Control UI do OpenClaw pede token | Atrito extra além do login único | Migrar para `trusted-proxy` |
+| Primeira subida do Hermes não exercitada | Configurado só pela doc oficial, sem VPS à mão | Confirmar dashboard em `9119`, token e websocket no primeiro deploy |
 | Previews da Vercel não autenticam | Não dá para testar `/admin` em preview | Alias `*.preview.vitorsierro.com` |
 | Colaboração do Excalidraw inativa | Só desenho individual | Exige buildar o front com `VITE_APP_WS_SERVER_URL` |
