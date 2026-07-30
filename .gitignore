@@ -48,6 +48,12 @@ infra/hermes.env
 # vercel
 .vercel
 
+# cypress
+apps/web/cypress.env.json
+apps/web/cypress/videos
+apps/web/cypress/screenshots
+apps/web/cypress/downloads
+
 # relatorios de diagnostico (react-doctor)
 rd-report.json
 
