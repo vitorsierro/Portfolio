@@ -61,6 +61,19 @@ echo "==> Rebuild e restart"
 # As migrations rodam no start do container da API (prisma migrate deploy).
 $COMPOSE up -d --build
 
+# ARMADILHA: uma mudança SÓ em infra/nginx/ (bind mount) não faz o Compose
+# recriar o container — ele compara a definição do serviço no compose file,
+# não o conteúdo dos arquivos montados. Sem isto, o nginx que já estava no ar
+# continua servindo a config ANTIGA em memória até o reload automático de 6h
+# (ver o `command` do serviço nginx) — e testar logo após o deploy engana,
+# porque `nginx -t` acima validou o arquivo em disco, não o que o processo já
+# carregou. Já custou uma rodada inteira de diagnóstico achando que era bug
+# de rede quando na verdade o reload nunca tinha acontecido.
+if $COMPOSE ps --services --filter status=running 2>/dev/null | grep -qx nginx; then
+  echo "==> Recarregando o nginx (a config pode ter mudado só no bind mount)"
+  $COMPOSE exec -T nginx nginx -s reload
+fi
+
 echo "==> Aguardando a API ficar saudável"
 saudavel=0
 for tentativa in $(seq 1 20); do

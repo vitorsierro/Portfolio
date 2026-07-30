@@ -199,6 +199,28 @@ domínio real em `X-Forwarded-Host` — ver `infra/nginx/conf.d/hermes.conf`.
 `127.0.0.1:9119` com e sem `--header='Host: ...'` explícito. Se o primeiro
 funciona e o segundo não, é sempre esta guarda, não a rede.
 
+### 17. Mudança SÓ em `infra/nginx/` não recarrega o nginx sozinha — o `deploy.sh` só validava, nunca recarregava
+`nginx -t` lê o arquivo do disco (o bind mount já reflete o `git pull`, é por
+isso que valida "antes de recarregar"), mas isso é só validação — não aplica
+nada. O `$COMPOSE up -d --build` que vem depois só recria um container se a
+**definição do serviço** no compose mudou (imagem, env, volumes); conteúdo de
+arquivo montado é invisível para essa checagem. Resultado: o nginx que já
+estava no ar continuava servindo a config **antiga** em memória, e só pegaria
+a nova no reload automático de 6h que já existe no `command` do serviço.
+
+Isso custou uma rodada inteira de diagnóstico tentando corrigir a armadilha
+#16 (achando que era o `Host` errado, depois `X-Forwarded-Host`, depois rede)
+quando na real o arquivo certo nunca tinha sido recarregado — `cat` no
+container mostrava o conteúdo novo (lido do disco), mas o processo do nginx
+ainda respondia com o comportamento antigo. `deploy.sh` agora roda
+`nginx -s reload` explicitamente depois do `up -d --build`, sempre que o
+nginx já estava rodando — reload de config já atual é barato, não custa nada
+rodar mesmo quando não havia nada para aplicar.
+
+**Se isso acontecer nas mãos (fora do `deploy.sh`):** depois de qualquer
+`git pull` que só tocou `infra/nginx/`, rode `nginx -t` E `nginx -s reload`
+— o primeiro sozinho nunca é suficiente.
+
 ---
 
 ## Invariantes de segurança (não quebrar)
