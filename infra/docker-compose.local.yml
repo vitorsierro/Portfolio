@@ -22,6 +22,12 @@ services:
     # GATEWAY_AUTH_TOKEN (em infra/hermes.env) não é opcional: o Hermes se
     # recusa a escutar fora do loopback sem autenticação, e em container o bind
     # é sempre 0.0.0.0.
+    #
+    # SEM o sidecar hermes-proxy que docker-compose.yml/dev.yml usam — aqui a
+    # porta já publica direto no host, então o bind continua não-loopback e o
+    # dashboard continua exigindo HERMES_DASHBOARD_BASIC_AUTH_* (login próprio).
+    # Isso é aceitável só porque este arquivo já documenta acima que não há
+    # barreira de login nenhuma — não é o padrão dos outros dois compose.
     command: [gateway, run]
     environment:
       HERMES_DASHBOARD: "1"

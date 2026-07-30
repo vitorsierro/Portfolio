@@ -229,6 +229,13 @@ Esse último é o que mais importa: numa rede compartilhada, ele contornaria o
 rate limit do `/auth/login`, que vive no nginx — uma chamada interna pula o
 proxy. Pela via pública ele até alcança a API, mas aí sujeito ao limite.
 
+O sidecar `hermes-proxy` (§8) faz o dashboard do Hermes enxergar toda conexão
+como loopback, o que desliga a autenticação própria dele — o único gate que
+resta é o `auth_request` do nginx. Isso torna a rede isolada `hermes` ainda
+mais crítica do que antes: qualquer coisa que um dia entrar nela sem passar
+pelo nginx alcança o dashboard sem senha alguma. Não adicione mais nenhum
+serviço a essa rede sem revisar esse ponto.
+
 **Superfícies fechadas por verificação ativa:** injeção SQL (Prisma
 parametriza), XSS armazenado (`sanitize-html` sobre a saída do `marked`),
 forja de JWT (`alg:none` e segredo adivinhado), replay de refresh rotacionado.
@@ -246,7 +253,7 @@ forja de JWT (`alg:none` e segredo adivinhado), replay de refresh rotacionado.
 | Paginação por cursor (público) | Offset | Estável sob inserção — offset duplica ou pula itens quando um post novo entra. |
 | Paginação por offset (admin) | Cursor | Aqui "página 3" é requisito de UI; o custo de offset é irrelevante nessa escala. |
 | Excalidraw em iframe | Também embutir o Hermes | O comportamento do dashboard quanto a `X-Frame-Options`/`frame-ancestors` não foi verificado, e afrouxar embed no proxy é o tipo de coisa que não se faz às cegas numa ferramenta que executa comandos. Ele abre em aba própria. |
-| Basic auth do dashboard do Hermes | Confiar só no forward-auth do nginx | O dashboard se recusa a escutar fora do loopback sem provedor de auth próprio — não existe modo "bind público sem autenticação". Custa um segundo prompt de senha além do `/admin`, mas não é opcional: sem ele o dashboard nunca abre a porta. |
+| Sidecar `hermes-proxy` (loopback simulado) | Basic auth do dashboard do Hermes | O dashboard se recusa a escutar fora do loopback sem provedor de auth próprio — não existe modo "bind público sem autenticação". Um sidecar na mesma *network namespace* do Hermes (`network_mode: "service:hermes"`) repassa a porta pública para `127.0.0.1`, e o gate do Hermes nunca engata. Elimina o segundo prompt de senha, ao custo de a rede `hermes` virar a única barreira do dashboard. |
 
 ---
 
@@ -272,6 +279,6 @@ Testes: 32 na API, 16 no web.
 | Backup no mesmo disco | Perda total se o disco falhar | Plugar rclone/S3 no ponto marcado |
 | SQLite = escritor único | Contenção sob carga alta | Suficiente na escala atual; Postgres se mudar |
 | WebSocket só autentica no handshake | Socket aberto sobrevive ao logout | `proxy_read_timeout` de 1h limita |
-| Login duplo no Hermes | Basic auth do dashboard + sessão do `/admin` — dois prompts de senha | Investigar `HERMES_DASHBOARD_OIDC_*` com issuer próprio, se o atrito incomodar |
+| Dashboard do Hermes sem defesa própria | O `hermes-proxy` desliga a auth nativa dele; a rede `hermes` + o nginx são a única barreira, sem redundância | Aceitável enquanto só o nginx estiver nessa rede — revisar se algo mais precisar entrar nela |
 | Previews da Vercel não autenticam | Não dá para testar `/admin` em preview | Alias `*.preview.vitorsierro.com` |
 | Colaboração do Excalidraw inativa | Só desenho individual | Exige buildar o front com `VITE_APP_WS_SERVER_URL` |

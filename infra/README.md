@@ -264,28 +264,38 @@ printf 'GATEWAY_AUTH_TOKEN=%s\n' "$(openssl rand -hex 32)" >> infra/hermes.env
 com `HERMES_DASHBOARD=1`, o dashboard em `9119`. O dashboard é a interface
 web — é ele que o nginx publica em `chat.`; o `8642` fica só na rede interna.
 
-**O dashboard também exige autenticação própria — não é opcional.** Ele se
-recusa a escutar fora do loopback sem um provedor de auth registrado; o log é
-explícito: `Refusing to bind dashboard to 0.0.0.0 ... no auth providers are
-registered`. O forward-auth do nginx não conta para essa checagem, que é
-interna ao processo — sem isto o dashboard nunca abre a porta, e `chat.` cai
-em erro de upstream mesmo com o container "up". O caminho suportado sem mexer
-em `config.yaml` é basic auth por variável de ambiente, em `infra/hermes.env`:
+**O dashboard também exige autenticação própria em bind não-loopback — não é
+opcional.** Sem um provedor de auth registrado, ele se recusa a abrir a porta;
+o log é explícito: `Refusing to bind dashboard to 0.0.0.0 ... no auth
+providers are registered`. O forward-auth do nginx não conta para essa
+checagem, que é interna ao processo.
+
+Isso daria um segundo prompt de senha, além do login do `/admin`. Em vez
+disso, `docker-compose.yml`/`docker-compose.dev.yml` fazem o Hermes escutar em
+**`127.0.0.1`** (loopback de verdade — o gate nunca engata) e usam um sidecar,
+`hermes-proxy`, que compartilha a *network namespace* do container do Hermes
+(`network_mode: "service:hermes"`) e repassa a porta pública para esse
+loopback via `socat`. Do ponto de vista do processo, a conexão sempre vem de
+127.0.0.1 — é o equivalente containerizado do túnel SSH que a própria doc do
+Hermes recomenda para "auth-free dashboard". Resultado: só o `/admin`
+autentica, de verdade.
+
+O preço é que a rede `hermes` passa a ser a **única** barreira — sem a defesa
+extra que o basic auth daria se algo um dia contornasse o nginx. Ver o
+comentário completo no serviço `hermes-proxy` de `docker-compose.yml`.
+
+`docker-compose.local.yml` não usa esse sidecar (publica a porta direto no
+host, sem nginx no meio) — lá o basic auth (`HERMES_DASHBOARD_BASIC_AUTH_*`
+em `infra/hermes.env`) continua sendo o único jeito de o dashboard abrir a
+porta. Gere a senha à parte e evite `+ / = "` nela — um dotenv mal formado
+quebra o parser do Compose com `key cannot contain a space`, sem apontar a
+causa:
 
 ```bash
 read -rsp 'Senha do dashboard: ' P
 printf 'HERMES_DASHBOARD_BASIC_AUTH_USERNAME=admin\nHERMES_DASHBOARD_BASIC_AUTH_PASSWORD=%s\nHERMES_DASHBOARD_BASIC_AUTH_SECRET=%s\n' "$P" "$(openssl rand -hex 32)" >> infra/hermes.env
 unset P
 ```
-
-Use `read -rsp` (não deixa a senha no histórico do shell) e evite `+ / = "` na
-senha — um dotenv mal formado quebra o parser do Compose com `key cannot
-contain a space`, e o erro não aponta para a causa.
-
-Isso custa **um segundo prompt de senha**, além do login do `/admin` — o
-navegador guarda por origem, então na prática é uma vez por sessão. É mais
-atrito que os outros dois logins únicos deste projeto, mas não é opcional:
-o Hermes não oferece um modo "bind público sem autenticação".
 
 **Configuração inicial.** O `hermes setup` é interativo e não roda em
 container parado — precisa do container escutando (`up -d` primeiro, ou

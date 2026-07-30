@@ -59,13 +59,16 @@ services:
     # feita uma vez à mão, ver infra/README.md.
     command: [gateway, run]
     environment:
-      # O dashboard é a interface web, e é ele que o nginx publica em hermes.,
-      # não o gateway. Sem HERMES_DASHBOARD o serviço sobe só com a API.
+      # O dashboard é a interface web, e é ele que o hermes-proxy publica para
+      # o nginx. Sem HERMES_DASHBOARD o serviço sobe só com a API.
       HERMES_DASHBOARD: "1"
-      # 0.0.0.0: o nginx é outro container, então o default (loopback) o
-      # tornaria inalcançável. Quem restringe o acesso é a rede isolada abaixo
-      # somada ao auth_request — a porta não é publicada no host.
-      HERMES_DASHBOARD_HOST: "0.0.0.0"
+      # 127.0.0.1, NÃO 0.0.0.0: o Hermes se recusa a escutar fora do loopback
+      # sem um provedor de auth próprio (login separado do /admin). Bindando
+      # em loopback esse gate nunca engata, e quem alcança a porta mesmo assim
+      # é só o hermes-proxy — sidecar na MESMA network namespace (ver abaixo).
+      # É o equivalente containerizado do túnel SSH que a doc do Hermes sugere
+      # para "auth-free dashboard".
+      HERMES_DASHBOARD_HOST: "127.0.0.1"
       HERMES_DASHBOARD_PORT: "9119"
     env_file:
       # GATEWAY_AUTH_TOKEN vive aqui: o Hermes SE RECUSA a escutar fora do
@@ -78,9 +81,30 @@ services:
       # de provedor, auth.json, sessions/.
       - hermes_data:/opt/data
     # Rede própria: o Hermes não alcança api:3001 nem o Excalidraw. Ele só
-    # precisa ser alcançado pelo nginx. Mantém saída para a internet (as APIs
-    # de IA), que é o que ele legitimamente precisa.
+    # precisa ser alcançado pelo hermes-proxy. Mantém saída para a internet
+    # (as APIs de IA), que é o que ele legitimamente precisa.
     networks: [hermes]
+
+  # Sidecar que faz o dashboard do Hermes enxergar toda conexão como loopback,
+  # eliminando o segundo login (além do /admin). Sem isto o dashboard exige
+  # HERMES_DASHBOARD_BASIC_AUTH_* — ver o histórico em infra/hermes.env.example.
+  #
+  # `network_mode: "service:hermes"` faz este container compartilhar a MESMA
+  # network namespace do hermes (mesma interface, mesmo IP na rede `hermes`,
+  # mesmo loopback). Por isso ele NÃO declara `networks:` própria — herda a
+  # do hermes — e alcança 127.0.0.1:9119 de dentro dessa namespace, exatamente
+  # como um processo rodando ao lado faria.
+  #
+  # Segurança disto depende inteiramente da rede `hermes` continuar isolada:
+  # quem alcançar a porta 9120 nela passa direto pelo Hermes sem senha alguma.
+  # Hoje só o nginx está nessa rede — não adicione mais nada a ela sem revisar
+  # este comentário.
+  hermes-proxy:
+    image: alpine:3.20
+    restart: unless-stopped
+    command: sh -c "apk add --no-cache socat && exec socat TCP-LISTEN:9120,fork,reuseaddr TCP:127.0.0.1:9119"
+    network_mode: "service:hermes"
+    depends_on: [hermes]
 
   nginx:
     image: nginx:alpine
@@ -98,7 +122,9 @@ services:
       - certbot_www:/var/www/certbot:ro
     # nginx resolves proxy_pass hostnames at startup, so every upstream it
     # references must exist or it refuses to boot — excalidraw-room included.
-    depends_on: [api, excalidraw, excalidraw-room, hermes]
+    # hermes-proxy shares hermes's own hostname/IP (network_mode: service:),
+    # so listing "hermes" here already covers it — no separate entry exists.
+    depends_on: [api, excalidraw, excalidraw-room, hermes, hermes-proxy]
     # O nginx é a única peça que participa de todas as zonas — é ele quem
     # faz a ponte, e sempre passando pelo gate.
     networks: [backend, draw, hermes]
