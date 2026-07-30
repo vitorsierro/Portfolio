@@ -246,7 +246,7 @@ forja de JWT (`alg:none` e segredo adivinhado), replay de refresh rotacionado.
 | Paginação por cursor (público) | Offset | Estável sob inserção — offset duplica ou pula itens quando um post novo entra. |
 | Paginação por offset (admin) | Cursor | Aqui "página 3" é requisito de UI; o custo de offset é irrelevante nessa escala. |
 | Excalidraw em iframe | Também embutir o Hermes | O comportamento do dashboard quanto a `X-Frame-Options`/`frame-ancestors` não foi verificado, e afrouxar embed no proxy é o tipo de coisa que não se faz às cegas numa ferramenta que executa comandos. Ele abre em aba própria. |
-| Token só no gateway do Hermes | Basic auth também no dashboard | O nginx já exige a sessão do `/admin` antes do upstream; um segundo prompt de senha quebraria o login único. O token cobre o gateway como defesa em profundidade. |
+| Basic auth do dashboard do Hermes | Confiar só no forward-auth do nginx | O dashboard se recusa a escutar fora do loopback sem provedor de auth próprio — não existe modo "bind público sem autenticação". Custa um segundo prompt de senha além do `/admin`, mas não é opcional: sem ele o dashboard nunca abre a porta. |
 
 ---
 
@@ -272,6 +272,6 @@ Testes: 32 na API, 16 no web.
 | Backup no mesmo disco | Perda total se o disco falhar | Plugar rclone/S3 no ponto marcado |
 | SQLite = escritor único | Contenção sob carga alta | Suficiente na escala atual; Postgres se mudar |
 | WebSocket só autentica no handshake | Socket aberto sobrevive ao logout | `proxy_read_timeout` de 1h limita |
-| Primeira subida do Hermes não exercitada | Configurado só pela doc oficial, sem VPS à mão | Confirmar dashboard em `9119`, token e websocket no primeiro deploy |
+| Login duplo no Hermes | Basic auth do dashboard + sessão do `/admin` — dois prompts de senha | Investigar `HERMES_DASHBOARD_OIDC_*` com issuer próprio, se o atrito incomodar |
 | Previews da Vercel não autenticam | Não dá para testar `/admin` em preview | Alias `*.preview.vitorsierro.com` |
 | Colaboração do Excalidraw inativa | Só desenho individual | Exige buildar o front com `VITE_APP_WS_SERVER_URL` |
