@@ -3,6 +3,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { EnseadaAdminController } from './admin.controller';
+import {
+  ActivityDto,
+  AmenityDto,
+  Model3dDto,
+  PropertyDto,
+  RestaurantDto,
+  SpaceDto,
+} from './dto/enseada.dto';
 import { EnseadaService } from './enseada.service';
 import { UploadService } from './upload/upload.service';
 
@@ -18,10 +26,26 @@ function delegate() {
   };
 }
 
+type Delegate = ReturnType<typeof delegate>;
+
+interface PrismaMock {
+  property: Delegate;
+  space: Delegate;
+  spaceImage: Delegate;
+  amenity: Delegate;
+  restaurant: Delegate;
+  activity: Delegate;
+  faqItem: Delegate;
+  model3d: Delegate;
+  $transaction: jest.Mock;
+}
+
 describe('EnseadaAdminController', () => {
   let controller: EnseadaAdminController;
 
-  const prisma = {
+  // Cobre tanto o uso em array (listAll-style) quanto o uso com callback
+  // (updateSpace) — os dois estilos aparecem no controller.
+  const prisma: PrismaMock = {
     property: delegate(),
     space: delegate(),
     spaceImage: delegate(),
@@ -30,10 +54,9 @@ describe('EnseadaAdminController', () => {
     activity: delegate(),
     faqItem: delegate(),
     model3d: delegate(),
-    // Cobre tanto o uso em array (listAll-style) quanto o uso com callback
-    // (updateSpace) — os dois estilos aparecem no controller.
-    $transaction: jest.fn((arg: any): any =>
-      typeof arg === 'function' ? arg(prisma) : Promise.all(arg),
+    $transaction: jest.fn(
+      (arg: ((tx: PrismaMock) => Promise<unknown>) | Promise<unknown>[]) =>
+        typeof arg === 'function' ? arg(prisma) : Promise.all(arg),
     ),
   };
 
@@ -79,7 +102,7 @@ describe('EnseadaAdminController', () => {
     });
 
     it('saveProperty faz upsert e avisa o site', async () => {
-      const dto = { name: 'Casa Nova' } as any;
+      const dto: PropertyDto = { name: 'Casa Nova' };
       prisma.property.upsert.mockResolvedValue({ id: 'singleton', ...dto });
 
       const result = await controller.saveProperty(dto);
@@ -95,13 +118,13 @@ describe('EnseadaAdminController', () => {
   });
 
   describe('spaces', () => {
-    const dto = (overrides = {}) => ({
+    const dto = (overrides: Partial<SpaceDto> = {}): SpaceDto => ({
       slug: 'quarto-casal',
       category: 'quarto',
       title: 'Quarto de casal',
       images: [{ url: 'https://img/1.jpg', width: 800, height: 600 }],
       ...overrides,
-    }) as any;
+    });
 
     it('createSpace recusa um ambiente sem nenhuma imagem', async () => {
       await expect(controller.createSpace(dto({ images: [] }))).rejects.toThrow(
@@ -251,19 +274,18 @@ describe('EnseadaAdminController', () => {
     it('createAmenity recusa slug duplicado', async () => {
       prisma.amenity.findUnique.mockResolvedValue({ id: 'existing' });
 
-      await expect(
-        controller.createAmenity({ slug: 'wifi', label: 'Wi-Fi' } as any),
-      ).rejects.toThrow(BadRequestException);
+      const dto: AmenityDto = { slug: 'wifi', label: 'Wi-Fi' };
+      await expect(controller.createAmenity(dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('createAmenity cria e avisa o site', async () => {
       prisma.amenity.findUnique.mockResolvedValue(null);
       prisma.amenity.create.mockResolvedValue({ id: 'a1', slug: 'wifi' });
 
-      const result = await controller.createAmenity({
-        slug: 'wifi',
-        label: 'Wi-Fi',
-      } as any);
+      const dto: AmenityDto = { slug: 'wifi', label: 'Wi-Fi' };
+      const result = await controller.createAmenity(dto);
 
       expect(result).toEqual({ id: 'a1', slug: 'wifi' });
       expect(enseada.notifySite).toHaveBeenCalledTimes(1);
@@ -283,9 +305,10 @@ describe('EnseadaAdminController', () => {
     it('createRestaurant recusa slug duplicado', async () => {
       prisma.restaurant.findUnique.mockResolvedValue({ id: 'existing' });
 
-      await expect(
-        controller.createRestaurant({ slug: 'boteco', name: 'Boteco' } as any),
-      ).rejects.toThrow(BadRequestException);
+      const dto: RestaurantDto = { slug: 'boteco', name: 'Boteco' };
+      await expect(controller.createRestaurant(dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('removeRestaurant limpa a imagem no Cloudinary depois de excluir', async () => {
@@ -307,11 +330,12 @@ describe('EnseadaAdminController', () => {
       prisma.activity.findUnique.mockResolvedValue(null);
       prisma.activity.create.mockResolvedValue({ id: 'act1' });
 
-      await controller.createActivity({
+      const dto: ActivityDto = {
         slug: 'trilha',
         name: 'Trilha',
         seasons: ['verao', 'inverno'],
-      } as any);
+      };
+      await controller.createActivity(dto);
 
       expect(prisma.activity.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ seasons: 'verao,inverno' }),
@@ -321,10 +345,8 @@ describe('EnseadaAdminController', () => {
     it('updateActivity converte seasons ausente para CSV vazio', async () => {
       prisma.activity.update.mockResolvedValue({ id: 'act1' });
 
-      await controller.updateActivity('act1', {
-        slug: 'trilha',
-        name: 'Trilha',
-      } as any);
+      const dto: ActivityDto = { slug: 'trilha', name: 'Trilha' };
+      await controller.updateActivity('act1', dto);
 
       expect(prisma.activity.update).toHaveBeenCalledWith({
         where: { id: 'act1' },
@@ -365,7 +387,7 @@ describe('EnseadaAdminController', () => {
     });
 
     it('saveModel3d faz upsert e avisa o site', async () => {
-      const dto = { enabled: true, type: 'gltf', url: 'x.glb' } as any;
+      const dto: Model3dDto = { enabled: true, type: 'gltf', url: 'x.glb' };
       prisma.model3d.upsert.mockResolvedValue({ id: 'singleton', ...dto });
 
       await controller.saveModel3d(dto);

@@ -56,6 +56,28 @@ export default [
     languageOptions: { globals: globals.jest },
   },
 
+  // Specs e2e rodam no Cypress/Mocha, que injeta cy/Cypress/describe/it no
+  // escopo global — não vem do pacote `globals`, então declara na mão.
+  {
+    files: ['apps/web/cypress/**/*.js', 'apps/web/cypress.config.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        cy: 'readonly',
+        Cypress: 'readonly',
+        describe: 'readonly',
+        context: 'readonly',
+        it: 'readonly',
+        specify: 'readonly',
+        before: 'readonly',
+        beforeEach: 'readonly',
+        after: 'readonly',
+        afterEach: 'readonly',
+        expect: 'readonly',
+      },
+    },
+  },
+
   // API: Node puro, sem React. Precisa do parser TS — sem ele os decorators
   // do NestJS (@Controller, @Get) quebram a análise.
   ...tseslint.configs.recommended.map((config) => ({
