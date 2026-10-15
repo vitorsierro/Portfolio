@@ -1,0 +1,680 @@
+.page {
+  width: min(1240px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 42px 0 72px;
+  color: #12231d;
+}
+.pageTop {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 26px;
+}
+.pageTop h1 {
+  font-size: clamp(28px, 3vw, 38px);
+  letter-spacing: -0.045em;
+  margin: 4px 0 7px;
+  font-weight: 680;
+}
+.kicker {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: #628074;
+  font-weight: 700;
+  margin: 0;
+}
+.subtitle {
+  margin: 0;
+  color: #65776f;
+  font-size: 14px;
+}
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.primaryButton,
+.secondaryButton {
+  border: 0;
+  border-radius: 10px;
+  padding: 11px 16px;
+  font: 600 13px inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.primaryButton {
+  background: #123f31;
+  color: white;
+  box-shadow: 0 4px 10px #133f311a;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.primaryButton:hover {
+  background: #0a3326;
+}
+.primaryButton:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.secondaryButton {
+  background: #f0f5f2;
+  color: #24513e;
+  border: 1px solid #dce8e1;
+}
+.secondaryButton:hover {
+  background: #e6f0e9;
+}
+.monthPicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e2e9e5;
+  border-radius: 10px;
+  padding: 4px;
+  background: white;
+  color: #253d32;
+  white-space: nowrap;
+}
+.monthPicker span {
+  min-width: 128px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.monthPicker button {
+  border: 0;
+  background: transparent;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  color: #426052;
+  font-size: 21px;
+  line-height: 1;
+  cursor: pointer;
+}
+.monthPicker button:hover:not(:disabled) {
+  background: #eef5f1;
+}
+.monthPicker button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 15px;
+  margin-bottom: 18px;
+}
+.metricCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 21px 20px;
+  background: #fff;
+  border: 1px solid #e9efeb;
+  border-radius: 15px;
+  min-height: 152px;
+  box-shadow: 0 2px 9px #203b3010;
+}
+.metricCard > strong {
+  font-size: 25px;
+  letter-spacing: -0.04em;
+  color: #183b2e;
+  margin-top: 2px;
+}
+.metricLabel {
+  font-size: 12px;
+  color: #6c7f75;
+  font-weight: 600;
+}
+.metricIcon {
+  position: absolute;
+  right: 18px;
+  top: 17px;
+  background: #e9f6ef;
+  color: #16815a;
+  border-radius: 9px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  font-size: 17px;
+}
+.incomeIcon {
+  color: #15825c;
+  background: #e6f5ed;
+}
+.balanceIcon {
+  color: #477461;
+  background: #eef3f0;
+}
+.highlightCard {
+  background: linear-gradient(135deg, #123f31, #1d6247);
+  border-color: #123f31;
+  color: white;
+}
+.highlightCard .metricLabel,
+.highlightCard > strong {
+  color: white;
+}
+.highlightCard > strong {
+  font-size: 22px;
+}
+.highlightCard > span:last-child {
+  font-size: 13px;
+  color: #d2e8dc;
+}
+.muted {
+  font-size: 11px;
+  color: #8a9a92;
+}
+.goodChange,
+.badChange {
+  font-size: 11px;
+  font-weight: 600;
+}
+.goodChange {
+  color: #19825b;
+}
+.badChange {
+  color: #b7683c;
+}
+.negative {
+  color: #bd4d4d !important;
+}
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.panel {
+  background: #fff;
+  border: 1px solid #e9efeb;
+  border-radius: 15px;
+  padding: 21px 22px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 9px #203b300a;
+}
+.panelHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 17px;
+}
+.panelHeading h2 {
+  font-size: 16px;
+  margin: 0 0 5px;
+  letter-spacing: -0.02em;
+  color: #19372d;
+}
+.panelHeading p {
+  font-size: 12px;
+  color: #87958e;
+  margin: 0;
+}
+.panelHeading > a {
+  font-size: 12px;
+  color: #1a7452;
+  text-decoration: none;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.panelTotal {
+  font-size: 14px;
+  font-weight: 700;
+  color: #234a38;
+}
+.chartWrap {
+  height: 198px;
+  position: relative;
+  padding-top: 8px;
+}
+.chart {
+  width: 100%;
+  height: 155px;
+  overflow: visible;
+}
+.chartAxis {
+  display: flex;
+  justify-content: space-between;
+  color: #98a69f;
+  font-size: 10px;
+  padding-top: 8px;
+}
+.emptyInline {
+  color: #84938c;
+  font-size: 13px;
+  padding: 40px 0;
+  text-align: center;
+}
+.categoryBars {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+  padding-top: 2px;
+}
+.categoryLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+  font-size: 12px;
+}
+.categoryLabel > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #52685d;
+}
+.categoryLabel i,
+.categoryDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  flex: none;
+}
+.categoryLabel strong {
+  font-size: 12px;
+  color: #284437;
+}
+.track {
+  height: 6px;
+  border-radius: 99px;
+  background: #eef3f0;
+  overflow: hidden;
+}
+.track span {
+  height: 100%;
+  display: block;
+  border-radius: 99px;
+}
+.emptyState {
+  padding: 26px 12px;
+  text-align: center;
+  color: #84938c;
+  font-size: 13px;
+}
+.emptyState a,
+.emptyState button {
+  color: #16805a;
+  text-decoration: none;
+  font-weight: 600;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.transactionList {
+  display: flex;
+  flex-direction: column;
+}
+.transaction {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid #f0f3f1;
+}
+.txMark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #287353;
+  font-weight: 700;
+  flex: none;
+}
+.txDescription {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.txDescription strong {
+  font-size: 13px;
+  color: #274235;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.txDescription small {
+  font-size: 11px;
+  color: #86958d;
+}
+.transaction > strong {
+  font-size: 13px;
+  color: #334a3e;
+  white-space: nowrap;
+}
+.incomeAmount {
+  color: #148157 !important;
+}
+.loading,
+.error {
+  padding: 34px 20px;
+  text-align: center;
+  color: #76867d;
+  font-size: 14px;
+}
+.error {
+  color: #a84444;
+}
+.error button {
+  border: 0;
+  background: transparent;
+  color: #287552;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.filters .monthPicker {
+  margin-right: auto;
+}
+.filters input,
+.filters select,
+.categoryForm input,
+.transactionForm input,
+.transactionForm select {
+  border: 1px solid #dfe8e3;
+  background: #fff;
+  color: #31483d;
+  border-radius: 9px;
+  padding: 10px 11px;
+  font: inherit;
+  font-size: 12px;
+  min-height: 39px;
+}
+.filters input {
+  min-width: 190px;
+}
+.filters select {
+  max-width: 190px;
+}
+.categoryForm {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px;
+  background: #f6f9f7;
+  border-radius: 10px;
+  margin: 0 0 15px;
+}
+.categoryForm label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #425c4e;
+}
+.categoryForm input {
+  flex: 1;
+}
+.transactionTable {
+  width: 100%;
+  overflow-x: auto;
+}
+.tableHeader,
+.tableRow {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) minmax(130px, 1.2fr) minmax(
+      120px,
+      1fr
+    ) 90px minmax(125px, 1fr) 120px;
+  align-items: center;
+  gap: 12px;
+  min-width: 850px;
+}
+.tableHeader {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e9efeb;
+  color: #84938c;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+.tableRow {
+  padding: 13px 12px;
+  border-bottom: 1px solid #f0f3f1;
+  color: #52665c;
+  font-size: 12px;
+}
+.tableRow:last-child {
+  border-bottom: 0;
+}
+.tableRow > strong {
+  font-size: 12px;
+  color: #334a3e;
+  text-align: right;
+  white-space: nowrap;
+}
+.tableRow > span:nth-child(2) {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.rowActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.rowActions button {
+  border: 0;
+  background: none;
+  color: #287653;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px;
+}
+.rowActions button:last-child {
+  color: #ab5650;
+}
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  color: #7c8c83;
+  font-size: 12px;
+}
+.pagination div {
+  display: flex;
+  gap: 7px;
+}
+.pagination button {
+  border: 1px solid #dfe8e3;
+  background: white;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #476153;
+  font-size: 11px;
+  cursor: pointer;
+}
+.pagination button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+.modalBackdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  background: #0d2119a8;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  overflow: auto;
+}
+.modal {
+  width: min(500px, 100%);
+  background: white;
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: 0 20px 60px #071a1280;
+}
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.modalHeader h2 {
+  font-size: 19px;
+  margin: 0;
+  color: #193b2d;
+}
+.modalHeader > button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: #f1f5f3;
+  color: #496454;
+  font-size: 22px;
+  cursor: pointer;
+}
+.transactionForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.transactionForm label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #52675c;
+  font-size: 12px;
+  font-weight: 600;
+}
+.transactionForm input,
+.transactionForm select {
+  width: 100%;
+  font-size: 13px;
+}
+.formColumns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 7px;
+}
+.formMessage {
+  font-size: 12px;
+  color: #aa4545;
+  margin: 0;
+}
+@media (max-width: 980px) {
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dashboardGrid {
+    grid-template-columns: 1fr;
+  }
+  .filters .monthPicker {
+    margin-right: 0;
+  }
+}
+@media (max-width: 640px) {
+  .page {
+    width: calc(100% - 28px);
+    padding: 27px 0 50px;
+  }
+  .pageTop {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .pageTop h1 {
+    font-size: 30px;
+  }
+  .topActions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .metricGrid {
+    gap: 10px;
+  }
+  .metricCard {
+    padding: 16px;
+    min-height: 138px;
+  }
+  .metricCard > strong {
+    font-size: 20px;
+  }
+  .highlightCard > strong {
+    font-size: 19px;
+  }
+  .panel {
+    padding: 17px 15px;
+  }
+  .filters {
+    align-items: stretch;
+  }
+  .filters > * {
+    flex: 1;
+  }
+  .filters .monthPicker {
+    justify-content: space-between;
+  }
+  .filters input {
+    min-width: 0;
+  }
+  .filters select {
+    max-width: none;
+  }
+  .categoryForm {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .categoryForm label {
+    width: 100%;
+  }
+  .categoryForm input {
+    min-width: 100%;
+  }
+  .chartWrap {
+    height: 175px;
+  }
+  .chart {
+    height: 132px;
+  }
+  .transaction {
+    gap: 9px;
+  }
+  .transaction > strong {
+    font-size: 11px;
+  }
+  .formColumns {
+    grid-template-columns: 1fr;
+  }
+  .modal {
+    padding: 18px;
+  }
+  .pagination {
+    gap: 8px;
+  }
+  .pagination button {
+    padding: 8px;
+  }
+  .panelHeading h2 {
+    font-size: 15px;
+  }
+}

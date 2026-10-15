@@ -11,11 +11,13 @@ datasource db {
 }
 
 model Admin {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String
-  createdAt    DateTime  @default(now())
-  sessions     Session[]
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  passwordHash        String
+  createdAt           DateTime             @default(now())
+  sessions            Session[]
+  financeCategories   FinanceCategory[]
+  financeTransactions FinanceTransaction[]
 }
 
 // One row per signed-in browser. Holds BOTH credentials for that browser:
@@ -200,4 +202,36 @@ model Model3d {
   type      String  @default("gltf") // gltf | matterport | image-sequence
   url       String  @default("")
   posterUrl String  @default("")
+}
+
+model FinanceCategory {
+  id           String               @id @default(cuid())
+  userId       String
+  user         Admin                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  color        String               @default("#16a34a")
+  icon         String               @default("circle")
+  createdAt    DateTime             @default(now())
+  transactions FinanceTransaction[]
+
+  @@unique([userId, name])
+}
+
+model FinanceTransaction {
+  id          String           @id @default(cuid())
+  userId      String
+  user        Admin            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId  String?
+  category    FinanceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  description String
+  amountCents Int
+  kind        String
+  accountName String           @default("Conta principal")
+  occurredAt  DateTime
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([userId, occurredAt])
+  @@index([userId, kind, occurredAt])
+  @@index([categoryId])
 }

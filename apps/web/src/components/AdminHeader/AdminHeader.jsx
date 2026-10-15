@@ -1,17 +1,18 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { logout } from '../../lib/auth';
-import { TOOLS } from '../../lib/tools';
-import styles from '../../styles/AdminHeader.module.css';
-import { ROUTER_LOGIN } from '../../constants';
+import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { logout } from "../../lib/auth";
+import { TOOLS } from "../../lib/tools";
+import styles from "../../styles/AdminHeader.module.css";
+import { ROUTER_LOGIN } from "../../constants";
 
 const NAV = [
-  { href: '/admin', label: 'Painel' },
-  { href: '/admin/posts', label: 'Posts' },
-  { href: '/admin/enseada', label: 'Enseada' },
-  { href: '/admin/ai-memory', label: 'ai-memory' },
+  { href: "/admin", label: "Painel" },
+  { href: "/admin/posts", label: "Posts" },
+  { href: "/admin/enseada", label: "Enseada" },
+  { href: "/admin/ai-memory", label: "ai-memory" },
+  { href: "/admin/finance", label: "Finanças" },
 ];
 
 export default function AdminHeader() {
@@ -42,12 +43,12 @@ export default function AdminHeader() {
           aria-controls="admin-navigation"
           onClick={() => setIsOpen((current) => !current)}
         >
-          {isOpen ? 'Fechar menu' : 'Menu'}
+          {isOpen ? "Fechar menu" : "Menu"}
         </button>
 
         <div
           id="admin-navigation"
-          className={`${styles.panel} ${isOpen ? styles.panelOpen : ''}`}
+          className={`${styles.panel} ${isOpen ? styles.panelOpen : ""}`}
         >
           <nav className={styles.nav} aria-label="Navegacao do admin">
             {NAV.map((item) => (
@@ -55,7 +56,13 @@ export default function AdminHeader() {
                 key={item.href}
                 href={item.href}
                 className={styles.link}
-                aria-current={pathname === item.href ? 'page' : undefined}
+                aria-current={
+                  pathname === item.href ||
+                  (item.href === "/admin/finance" &&
+                    pathname.startsWith("/admin/finance/"))
+                    ? "page"
+                    : undefined
+                }
                 onClick={() => setIsOpen(false)}
               >
                 {item.label}
@@ -67,17 +74,17 @@ export default function AdminHeader() {
             {TOOLS.map((tool) => {
               // O Excalidraw abre embutido em /admin/draw (mantém este header
               // à vista). O Hermes abre em aba própria — ver /admin/draw.
-              const embedded = tool.key === 'draw';
+              const embedded = tool.key === "draw";
 
               return (
                 <a
                   key={tool.key}
-                  href={embedded ? '/admin/draw' : tool.url}
+                  href={embedded ? "/admin/draw" : tool.url}
                   className={styles.link}
-                  target={embedded ? undefined : '_blank'}
-                  rel={embedded ? undefined : 'noreferrer'}
+                  target={embedded ? undefined : "_blank"}
+                  rel={embedded ? undefined : "noreferrer"}
                   aria-current={
-                    embedded && pathname === '/admin/draw' ? 'page' : undefined
+                    embedded && pathname === "/admin/draw" ? "page" : undefined
                   }
                   onClick={() => setIsOpen(false)}
                 >
@@ -93,7 +100,7 @@ export default function AdminHeader() {
             onClick={onLogout}
             disabled={leaving}
           >
-            {leaving ? 'Saindo…' : 'Sair'}
+            {leaving ? "Saindo…" : "Sair"}
           </button>
         </div>
       </div>
