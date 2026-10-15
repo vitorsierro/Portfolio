@@ -33,3 +33,7 @@ export class CreateFinanceCategoryDto {
   @IsOptional() @IsString() @Matches(/^#[\da-fA-F]{6}$/) color?: string;
   @IsOptional() @IsString() @MaxLength(30) icon?: string;
 }
+
+export class PluggyConnectionDto {
+  @IsString() @MaxLength(100) itemId!: string;
+}

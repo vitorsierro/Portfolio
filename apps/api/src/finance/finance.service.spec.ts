@@ -1,4 +1,4 @@
-import { BadRequestException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException } from "@nestjs/common";
 import { FinanceService } from "./finance.service";
 
 describe("FinanceService", () => {
@@ -145,5 +145,39 @@ describe("FinanceService", () => {
         where: expect.objectContaining({ userId: "admin-1", kind: "expense" }),
       }),
     );
+  });
+
+  it("prevents editing the bank-sourced fields of Pluggy transactions", async () => {
+    const { service, prisma } = makeService();
+    prisma.financeTransaction.findFirst.mockResolvedValue({
+      id: "bank-tx",
+      userId: "admin-1",
+      source: "pluggy",
+      description: "Mercado",
+      amountCents: 1000,
+      kind: "expense",
+      occurredAt: new Date("2026-06-01T12:00:00.000Z"),
+    });
+
+    await expect(
+      service.updateTransaction("admin-1", "bank-tx", {
+        description: "Alterado manualmente",
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.financeTransaction.update).not.toHaveBeenCalled();
+  });
+
+  it("prevents deleting Pluggy-imported transactions", async () => {
+    const { service, prisma } = makeService();
+    prisma.financeTransaction.findFirst.mockResolvedValue({
+      id: "bank-tx",
+      userId: "admin-1",
+      source: "pluggy",
+    });
+
+    await expect(
+      service.removeTransaction("admin-1", "bank-tx"),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.financeTransaction.deleteMany).not.toHaveBeenCalled();
   });
 });

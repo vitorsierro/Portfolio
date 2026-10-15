@@ -14,28 +14,61 @@ import { AuthenticatedRequest, JwtAuthGuard } from "../auth/jwt-auth.guard";
 import {
   CreateFinanceCategoryDto,
   CreateFinanceTransactionDto,
+  PluggyConnectionDto,
   UpdateFinanceTransactionDto,
 } from "./dto/finance.dto";
 import { FinanceService } from "./finance.service";
+import { PluggyService } from "./pluggy.service";
 
 @Controller("admin/finance")
 @UseGuards(JwtAuthGuard)
 export class FinanceController {
-  constructor(private readonly finance: FinanceService) {}
+  constructor(
+    private readonly finance: FinanceService,
+    private readonly pluggy: PluggyService,
+  ) {}
+
+  @Post("pluggy/connect-token")
+  async getPluggyConnectToken(@Req() req: AuthenticatedRequest) {
+    return {
+      accessToken: await this.pluggy.createConnectToken(req.user!.sub),
+    };
+  }
+
+  @Get("pluggy/connections")
+  listPluggyConnections(@Req() req: AuthenticatedRequest) {
+    return this.pluggy.listConnections(req.user!.sub);
+  }
+
+  @Post("pluggy/connections")
+  registerPluggyConnection(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: PluggyConnectionDto,
+  ) {
+    return this.pluggy.registerConnection(req.user!.sub, dto.itemId);
+  }
+
+  @Post("pluggy/sync")
+  syncPluggyConnections(@Req() req: AuthenticatedRequest) {
+    return this.pluggy.syncUserConnections(req.user!.sub, true);
+  }
 
   @Get("overview")
-  getOverview(
+  async getOverview(
     @Req() req: AuthenticatedRequest,
     @Query() query: { month?: string },
   ) {
-    return this.finance.getOverview(
-      req.user!.sub,
+    const userId = req.user!.sub;
+    const pluggySyncUnavailable = await this.syncPluggyOrFlag(userId);
+    const overview = await this.finance.getOverview(
+      userId,
       query.month ?? new Date().toISOString().slice(0, 7),
     );
+    return { ...overview, pluggySyncUnavailable };
   }
 
   @Get("transactions")
-  listTransactions(
+  async listTransactions(
     @Req() req: AuthenticatedRequest,
     @Query()
     query: {
@@ -47,7 +80,9 @@ export class FinanceController {
       limit?: string;
     },
   ) {
-    return this.finance.listTransactions(req.user!.sub, {
+    const userId = req.user!.sub;
+    const pluggySyncUnavailable = await this.syncPluggyOrFlag(userId);
+    const result = await this.finance.listTransactions(userId, {
       month: query.month,
       kind: query.kind,
       categoryId: query.categoryId,
@@ -55,6 +90,7 @@ export class FinanceController {
       page: this.parsePositiveInt(query.page, 1),
       limit: this.parsePositiveInt(query.limit, 20),
     });
+    return { ...result, pluggySyncUnavailable };
   }
 
   @Post("transactions")
@@ -95,5 +131,15 @@ export class FinanceController {
   private parsePositiveInt(value: string | undefined, fallback: number) {
     const parsed = Number.parseInt(value ?? "", 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+  }
+
+  private async syncPluggyOrFlag(userId: string): Promise<boolean> {
+    try {
+      await this.pluggy.syncUserConnections(userId);
+      return false;
+    } catch {
+      // Keep the user's last synchronized ledger available during Pluggy outages.
+      return true;
+    }
   }
 }

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -181,6 +182,14 @@ export class FinanceService {
       where: { id, userId },
     });
     if (!current) throw new NotFoundException("Lançamento não encontrado");
+    if (
+      current.source === "pluggy" &&
+      Object.keys(data).some((field) => field !== "categoryId")
+    ) {
+      throw new ForbiddenException(
+        "Os dados de uma transação bancária não podem ser alterados",
+      );
+    }
     this.validateTransaction({
       description: data.description ?? current.description,
       amountCents: data.amountCents ?? current.amountCents,
@@ -202,6 +211,16 @@ export class FinanceService {
   }
 
   async removeTransaction(userId: string, id: string) {
+    const current = await this.prisma.financeTransaction.findFirst({
+      where: { id, userId },
+      select: { source: true },
+    });
+    if (!current) throw new NotFoundException("Lançamento não encontrado");
+    if (current.source === "pluggy") {
+      throw new ForbiddenException(
+        "Uma transação bancária importada não pode ser excluída",
+      );
+    }
     const result = await this.prisma.financeTransaction.deleteMany({
       where: { id, userId },
     });

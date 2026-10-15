@@ -18,6 +18,7 @@ model Admin {
   sessions            Session[]
   financeCategories   FinanceCategory[]
   financeTransactions FinanceTransaction[]
+  pluggyConnections   PluggyConnection[]
 }
 
 // One row per signed-in browser. Holds BOTH credentials for that browser:
@@ -218,20 +219,37 @@ model FinanceCategory {
 }
 
 model FinanceTransaction {
-  id          String           @id @default(cuid())
-  userId      String
-  user        Admin            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  categoryId  String?
-  category    FinanceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  description String
-  amountCents Int
-  kind        String
-  accountName String           @default("Conta principal")
-  occurredAt  DateTime
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id                  String           @id @default(cuid())
+  userId              String
+  user                Admin            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId          String?
+  category            FinanceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  description         String
+  amountCents         Int
+  kind                String
+  accountName         String           @default("Conta principal")
+  source              String           @default("manual")
+  pluggyTransactionId String?
+  occurredAt          DateTime
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
+  @@unique([userId, pluggyTransactionId])
   @@index([userId, occurredAt])
   @@index([userId, kind, occurredAt])
   @@index([categoryId])
+}
+
+model PluggyConnection {
+  id              String    @id @default(cuid())
+  userId          String
+  user            Admin     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId          String    @unique
+  institutionName String
+  status          String
+  lastSyncedAt    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
 }

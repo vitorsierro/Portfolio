@@ -117,6 +117,12 @@ chmod 600 infra/.env
 chmod +x infra/deploy.sh infra/backup-db.sh
 ```
 
+Para Open Finance, preencha `PLUGGY_CLIENT_ID` e `PLUGGY_CLIENT_SECRET` no
+`infra/.env` com as credenciais do servidor Pluggy. Elas são lidas somente pela
+API e nunca devem ser adicionadas ao frontend, a `NEXT_PUBLIC_*` ou ao Git.
+Sem essas variáveis, o restante da API sobe normalmente, mas a conexão bancária
+responde como indisponível.
+
 ### 4. Certificados (antes do primeiro `up`)
 
 O nginx não sobe sem os certificados existirem. Emita-os primeiro com o
