@@ -15,6 +15,13 @@ O site Next.js **não** vive aqui — fica na Vercel, apontando para
 | `draw.vitorsierro.com` | Excalidraw | **forward-auth do nginx** |
 | `chat.vitorsierro.com` | Hermes | **forward-auth do nginx** |
 
+O admin também mostra o resumo read-only do ai-memory em `/admin/ai-memory`.
+O backend da API acessa o serviço no host via `host.docker.internal:49374`; configure
+`AI_MEMORY_URL` e `AI_MEMORY_AUTH_TOKEN` em `infra/.env` na VPS e proteja esse
+arquivo com permissões restritas. O bearer fica somente na API e nunca é enviado
+ao navegador. A integração usa `/api/v1/workspaces` e o endpoint `overview` do
+ai-memory; o token deve ter permissão de leitura dos workspaces.
+
 Só o nginx publica portas. Os demais serviços existem apenas na rede interna
 do Docker — não há como acessar as ferramentas por fora, driblando o gate.
 

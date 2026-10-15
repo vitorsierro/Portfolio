@@ -7,6 +7,13 @@ import styles from '../../styles/Admin.module.css';
 // junto das ferramentas — o gerenciamento em si vive em /admin/posts.
 const DESTINATIONS = [
   {
+    key: 'ai-memory',
+    name: 'ai-memory',
+    description: 'Acompanhar memórias, sessões e saúde da wiki dos agentes.',
+    href: '/admin/ai-memory',
+    embedded: true,
+  },
+  {
     key: 'posts',
     name: 'Posts',
     description: 'Criar, buscar, publicar e editar os posts do blog.',
