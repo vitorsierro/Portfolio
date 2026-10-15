@@ -32,7 +32,11 @@ services:
       REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-7d}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      AI_MEMORY_URL: ${AI_MEMORY_URL:-http://host.docker.internal:49374}
+      AI_MEMORY_AUTH_TOKEN: ${AI_MEMORY_AUTH_TOKEN:-}
       SEED_SAMPLE_POSTS: "false"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - api_data:/data
     networks: [backend]
