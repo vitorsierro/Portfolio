@@ -1,0 +1,843 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { authFetch, ensureSession } from "../../lib/auth";
+import { ROUTER_LOGIN } from "../../constants";
+import styles from "../../styles/Finance.module.css";
+
+const currency = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
+const money = (cents = 0) => currency.format(cents / 100);
+const localDateString = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+};
+const currentMonth = () => localDateString().slice(0, 7);
+const monthLabel = (month) =>
+  new Date(`${month}-15T12:00:00`).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
+const dateLabel = (value) => {
+  const [year, month, day] = String(value).slice(0, 10).split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+  });
+};
+const percentChange = (current, previous) =>
+  previous ? ((current - previous) / previous) * 100 : null;
+
+function MonthPicker({ month, onChange }) {
+  const move = (delta) => {
+    const [year, monthIndex] = month.split("-").map(Number);
+    const date = new Date(year, monthIndex - 1 + delta, 1);
+    onChange(
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+    );
+  };
+  return (
+    <div className={styles.monthPicker}>
+      <button type="button" aria-label="Mês anterior" onClick={() => move(-1)}>
+        ‹
+      </button>
+      <span>{monthLabel(month)}</span>
+      <button
+        type="button"
+        aria-label="Próximo mês"
+        onClick={() => move(1)}
+        disabled={month >= currentMonth()}
+      >
+        ›
+      </button>
+    </div>
+  );
+}
+
+function Change({ current, previous, higherIsBetter = false }) {
+  const value = percentChange(current, previous);
+  if (value === null)
+    return <span className={styles.muted}>Sem comparação anterior</span>;
+  const favorable = higherIsBetter ? value >= 0 : value <= 0;
+  return (
+    <span className={favorable ? styles.goodChange : styles.badChange}>
+      {value > 0 ? "↑" : value < 0 ? "↓" : "→"}{" "}
+      {Math.abs(value).toFixed(1).replace(".", ",")}% vs. mês anterior
+    </span>
+  );
+}
+
+function LineChart({ values = [] }) {
+  const max = Math.max(1, ...values.map((item) => item.expensesCents));
+  const points = values
+    .map((item, index) => {
+      const x = values.length <= 1 ? 0 : (index / (values.length - 1)) * 100;
+      const y = 90 - (item.expensesCents / max) * 78;
+      return `${x},${y}`;
+    })
+    .join(" ");
+  const area = values.length ? `0,100 ${points} 100,100` : "";
+  return (
+    <div className={styles.chartWrap}>
+      {values.length ? (
+        <svg
+          className={styles.chart}
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          role="img"
+          aria-label="Despesas diárias no mês"
+        >
+          <defs>
+            <linearGradient id="financeFill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#43d9a3" stopOpacity=".28" />
+              <stop offset="100%" stopColor="#43d9a3" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <polygon points={area} fill="url(#financeFill)" />
+          <polyline
+            points={points}
+            fill="none"
+            stroke="#138a63"
+            strokeWidth="1.4"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+      ) : (
+        <p className={styles.emptyInline}>Sem despesas neste período.</p>
+      )}
+      <div className={styles.chartAxis}>
+        <span>01</span>
+        <span>10</span>
+        <span>20</span>
+        <span>{String(values.length).padStart(2, "0")}</span>
+      </div>
+    </div>
+  );
+}
+
+export function FinanceDashboard() {
+  const router = useRouter();
+  const [month, setMonth] = useState(currentMonth);
+  const [data, setData] = useState(null);
+  const [status, setStatus] = useState("loading");
+
+  const load = useCallback(async () => {
+    setStatus("loading");
+    try {
+      const authenticated = await ensureSession();
+      if (!authenticated) {
+        router.replace(ROUTER_LOGIN);
+        return;
+      }
+      const response = await authFetch(
+        `/admin/finance/overview?month=${month}`,
+      );
+      if (response.status === 401) {
+        router.replace(ROUTER_LOGIN);
+        return;
+      }
+      if (!response.ok) {
+        setStatus("error");
+        return;
+      }
+      setData(await response.json());
+      setStatus("ready");
+    } catch {
+      setStatus("error");
+    }
+  }, [month, router]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+  const totals = data?.totals;
+  const topCategory = useMemo(() => data?.categories?.[0], [data]);
+  const maxCategory = Math.max(
+    1,
+    ...(data?.categories ?? []).map((item) => item.amountCents),
+  );
+
+  return (
+    <main className={styles.page}>
+      <div className={styles.pageTop}>
+        <div>
+          <p className={styles.kicker}>VISÃO GERAL</p>
+          <h1>Finanças</h1>
+          <p className={styles.subtitle}>
+            Acompanhe suas entradas e despesas em um só lugar.
+          </p>
+        </div>
+        <div className={styles.topActions}>
+          <MonthPicker month={month} onChange={setMonth} />
+          <Link
+            className={styles.primaryButton}
+            href="/admin/finance/transactions?new=1"
+          >
+            + Novo lançamento
+          </Link>
+        </div>
+      </div>
+      {status === "loading" && (
+        <div className={styles.loading}>Carregando seu resumo…</div>
+      )}
+      {status === "error" && (
+        <div className={styles.error}>
+          Não foi possível carregar as finanças.{" "}
+          <button type="button" onClick={load}>
+            Tentar novamente
+          </button>
+        </div>
+      )}
+      {status === "ready" && (
+        <>
+          <section className={styles.metricGrid} aria-label="Resumo do mês">
+            <article className={styles.metricCard}>
+              <span className={styles.metricIcon}>↘</span>
+              <span className={styles.metricLabel}>Despesas do mês</span>
+              <strong>{money(totals.expensesCents)}</strong>
+              <Change
+                current={totals.expensesCents}
+                previous={totals.previousExpensesCents}
+              />
+            </article>
+            <article className={styles.metricCard}>
+              <span className={`${styles.metricIcon} ${styles.incomeIcon}`}>
+                ↗
+              </span>
+              <span className={styles.metricLabel}>Receitas do mês</span>
+              <strong>{money(totals.incomeCents)}</strong>
+              <Change
+                current={totals.incomeCents}
+                previous={totals.previousIncomeCents}
+                higherIsBetter
+              />
+            </article>
+            <article className={styles.metricCard}>
+              <span className={`${styles.metricIcon} ${styles.balanceIcon}`}>
+                ＝
+              </span>
+              <span className={styles.metricLabel}>Saldo do período</span>
+              <strong
+                className={totals.balanceCents < 0 ? styles.negative : ""}
+              >
+                {money(totals.balanceCents)}
+              </strong>
+              <span className={styles.muted}>Receitas menos despesas</span>
+            </article>
+            <article className={`${styles.metricCard} ${styles.highlightCard}`}>
+              <span className={styles.metricLabel}>Maior categoria</span>
+              <strong>{topCategory?.name ?? "—"}</strong>
+              <span>
+                {topCategory
+                  ? money(topCategory.amountCents)
+                  : "Adicione seus lançamentos"}
+              </span>
+            </article>
+          </section>
+          <section className={styles.dashboardGrid}>
+            <article className={styles.panel}>
+              <div className={styles.panelHeading}>
+                <div>
+                  <h2>Despesas ao longo do mês</h2>
+                  <p>Distribuição diária das saídas</p>
+                </div>
+                <span className={styles.panelTotal}>
+                  {money(totals.expensesCents)}
+                </span>
+              </div>
+              <LineChart values={data.daily} />
+            </article>
+            <article className={styles.panel}>
+              <div className={styles.panelHeading}>
+                <div>
+                  <h2>Despesas por categoria</h2>
+                  <p>Onde o dinheiro está indo</p>
+                </div>
+                <Link href="/admin/finance/transactions">Ver todas</Link>
+              </div>
+              {data.categories.length ? (
+                <div className={styles.categoryBars}>
+                  {data.categories.slice(0, 6).map((item) => (
+                    <div className={styles.categoryRow} key={item.id}>
+                      <div className={styles.categoryLabel}>
+                        <span>
+                          <i style={{ background: item.color }} />
+                          {item.name}
+                        </span>
+                        <strong>{money(item.amountCents)}</strong>
+                      </div>
+                      <div className={styles.track}>
+                        <span
+                          style={{
+                            width: `${Math.max(3, (item.amountCents / maxCategory) * 100)}%`,
+                            background: item.color,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.emptyState}>
+                  Suas categorias aparecerão aqui quando você registrar
+                  despesas.
+                </div>
+              )}
+            </article>
+          </section>
+          <section className={styles.panel}>
+            <div className={styles.panelHeading}>
+              <div>
+                <h2>Lançamentos recentes</h2>
+                <p>Atividade financeira de {monthLabel(month)}</p>
+              </div>
+              <Link href="/admin/finance/transactions">Ver lançamentos →</Link>
+            </div>
+            {data.recentTransactions.length ? (
+              <div className={styles.transactionList}>
+                {data.recentTransactions.map((item) => (
+                  <div className={styles.transaction} key={item.id}>
+                    <span
+                      className={styles.txMark}
+                      style={{ background: item.category?.color ?? "#dce8e3" }}
+                    >
+                      {item.kind === "income" ? "↗" : "↘"}
+                    </span>
+                    <span className={styles.txDescription}>
+                      <strong>{item.description}</strong>
+                      <small>
+                        {item.category?.name ?? "Sem categoria"} ·{" "}
+                        {dateLabel(item.occurredAt)}
+                      </small>
+                    </span>
+                    <strong
+                      className={
+                        item.kind === "income" ? styles.incomeAmount : ""
+                      }
+                    >
+                      {item.kind === "income" ? "+" : "−"}
+                      {money(item.amountCents)}
+                    </strong>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={styles.emptyState}>
+                Ainda não há lançamentos neste mês.{" "}
+                <Link href="/admin/finance/transactions?new=1">
+                  Adicionar primeiro lançamento
+                </Link>
+              </div>
+            )}
+          </section>
+        </>
+      )}
+    </main>
+  );
+}
+
+const emptyForm = () => ({
+  description: "",
+  amount: "",
+  kind: "expense",
+  occurredAt: localDateString(),
+  categoryId: "",
+  accountName: "Conta principal",
+});
+
+export function FinanceTransactions() {
+  const router = useRouter();
+  const [month, setMonth] = useState(currentMonth);
+  const [kind, setKind] = useState("all");
+  const [categoryId, setCategoryId] = useState("");
+  const [search, setSearch] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [items, setItems] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [status, setStatus] = useState("loading");
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [newCategory, setNewCategory] = useState("");
+  const [showCategory, setShowCategory] = useState(false);
+
+  useEffect(() => {
+    if (!editing) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setEditing(null);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [editing]);
+
+  const load = useCallback(async () => {
+    setStatus("loading");
+    try {
+      const authenticated = await ensureSession();
+      if (!authenticated) {
+        router.replace(ROUTER_LOGIN);
+        return;
+      }
+      const params = new URLSearchParams({
+        month,
+        page: String(page),
+        limit: "20",
+      });
+      if (kind !== "all") params.set("kind", kind);
+      if (categoryId) params.set("categoryId", categoryId);
+      if (search.trim()) params.set("search", search.trim());
+      const [transactionResponse, categoryResponse] = await Promise.all([
+        authFetch(`/admin/finance/transactions?${params}`),
+        authFetch("/admin/finance/categories"),
+      ]);
+      if (
+        transactionResponse.status === 401 ||
+        categoryResponse.status === 401
+      ) {
+        router.replace(ROUTER_LOGIN);
+        return;
+      }
+      if (!transactionResponse.ok || !categoryResponse.ok) {
+        setStatus("error");
+        return;
+      }
+      const [transactionData, categoryData] = await Promise.all([
+        transactionResponse.json(),
+        categoryResponse.json(),
+      ]);
+      setItems(transactionData.items);
+      setPages(Math.max(1, transactionData.totalPages));
+      setCategories(categoryData);
+      setStatus("ready");
+    } catch {
+      setStatus("error");
+    }
+  }, [month, page, kind, categoryId, search, router]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("new") === "1"
+    )
+      setEditing("new");
+  }, []);
+
+  function beginEdit(item) {
+    setForm(
+      item
+        ? {
+            description: item.description,
+            amount: (item.amountCents / 100).toFixed(2).replace(".", ","),
+            kind: item.kind,
+            occurredAt: new Date(item.occurredAt).toISOString().slice(0, 10),
+            categoryId: item.categoryId ?? "",
+            accountName: item.accountName ?? "Conta principal",
+          }
+        : emptyForm(),
+    );
+    setEditing(item ?? "new");
+    setMessage("");
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+    setSaving(true);
+    setMessage("");
+    const enteredAmount = form.amount.trim();
+    const parsedAmount = Number(
+      enteredAmount.includes(",")
+        ? enteredAmount.replace(/\./g, "").replace(",", ".")
+        : enteredAmount,
+    );
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      setMessage("Informe um valor maior que zero.");
+      setSaving(false);
+      return;
+    }
+    const body = {
+      description: form.description.trim(),
+      amountCents: Math.round(parsedAmount * 100),
+      kind: form.kind,
+      occurredAt: form.occurredAt,
+      categoryId: form.categoryId || null,
+      accountName: form.accountName.trim() || "Conta principal",
+    };
+    const response = await authFetch(
+      editing === "new"
+        ? "/admin/finance/transactions"
+        : `/admin/finance/transactions/${editing.id}`,
+      {
+        method: editing === "new" ? "POST" : "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+    );
+    if (response.ok) {
+      setEditing(null);
+      await load();
+    } else
+      setMessage(
+        "Não foi possível salvar. Confira os dados e tente novamente.",
+      );
+    setSaving(false);
+  }
+
+  async function remove(item) {
+    if (!window.confirm(`Excluir o lançamento “${item.description}”?`)) return;
+    const response = await authFetch(`/admin/finance/transactions/${item.id}`, {
+      method: "DELETE",
+    });
+    if (response.ok) await load();
+    else setMessage("Não foi possível excluir esse lançamento.");
+  }
+
+  async function addCategory(event) {
+    event.preventDefault();
+    const response = await authFetch("/admin/finance/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newCategory.trim() }),
+    });
+    if (response.ok) {
+      setNewCategory("");
+      setShowCategory(false);
+      await load();
+    } else setMessage("Não foi possível criar a categoria.");
+  }
+
+  return (
+    <main className={styles.page}>
+      <div className={styles.pageTop}>
+        <div>
+          <p className={styles.kicker}>MOVIMENTAÇÕES</p>
+          <h1>Despesas e lançamentos</h1>
+          <p className={styles.subtitle}>
+            Organize entradas, saídas e categorias.
+          </p>
+        </div>
+        <button
+          className={styles.primaryButton}
+          type="button"
+          onClick={() => beginEdit(null)}
+        >
+          + Novo lançamento
+        </button>
+      </div>
+      <section className={styles.panel}>
+        <div className={styles.filters}>
+          <MonthPicker
+            month={month}
+            onChange={(value) => {
+              setPage(1);
+              setMonth(value);
+            }}
+          />
+          <input
+            aria-label="Buscar lançamento"
+            type="search"
+            placeholder="Buscar descrição…"
+            value={search}
+            onChange={(event) => {
+              setPage(1);
+              setSearch(event.target.value);
+            }}
+          />
+          <select
+            aria-label="Tipo"
+            value={kind}
+            onChange={(event) => {
+              setPage(1);
+              setKind(event.target.value);
+            }}
+          >
+            <option value="all">Todos os tipos</option>
+            <option value="expense">Despesas</option>
+            <option value="income">Receitas</option>
+          </select>
+          <select
+            aria-label="Categoria"
+            value={categoryId}
+            onChange={(event) => {
+              setPage(1);
+              setCategoryId(event.target.value);
+            }}
+          >
+            <option value="">Todas as categorias</option>
+            {categories.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            onClick={() => setShowCategory((value) => !value)}
+          >
+            Gerenciar categorias
+          </button>
+        </div>
+        {showCategory && (
+          <form className={styles.categoryForm} onSubmit={addCategory}>
+            <label htmlFor="new-category">Nova categoria</label>
+            <input
+              id="new-category"
+              value={newCategory}
+              onChange={(event) => setNewCategory(event.target.value)}
+              maxLength={60}
+              required
+              placeholder="Ex.: Transporte"
+            />
+            <button className={styles.secondaryButton} type="submit">
+              Adicionar
+            </button>
+          </form>
+        )}
+        {message && !editing && (
+          <p className={styles.formMessage} role="alert">
+            {message}
+          </p>
+        )}
+        {status === "loading" && (
+          <div className={styles.loading}>Carregando lançamentos…</div>
+        )}
+        {status === "error" && (
+          <div className={styles.error}>
+            Erro ao carregar lançamentos.{" "}
+            <button type="button" onClick={load}>
+              Tentar novamente
+            </button>
+          </div>
+        )}
+        {status === "ready" &&
+          (items.length ? (
+            <>
+              <div className={styles.transactionTable}>
+                <div className={styles.tableHeader}>
+                  <span>Descrição</span>
+                  <span>Categoria</span>
+                  <span>Conta</span>
+                  <span>Data</span>
+                  <span>Valor</span>
+                  <span>Ações</span>
+                </div>
+                {items.map((item) => (
+                  <div className={styles.tableRow} key={item.id}>
+                    <span className={styles.txDescription}>
+                      <strong>{item.description}</strong>
+                      <small>
+                        {item.kind === "income" ? "Receita" : "Despesa"}
+                      </small>
+                    </span>
+                    <span>
+                      <i
+                        className={styles.categoryDot}
+                        style={{
+                          background: item.category?.color ?? "#a3b7ad",
+                        }}
+                      />
+                      {item.category?.name ?? "Sem categoria"}
+                    </span>
+                    <span>{item.accountName}</span>
+                    <span>{dateLabel(item.occurredAt)}</span>
+                    <strong
+                      className={
+                        item.kind === "income" ? styles.incomeAmount : ""
+                      }
+                    >
+                      {item.kind === "income" ? "+" : "−"}
+                      {money(item.amountCents)}
+                    </strong>
+                    <span className={styles.rowActions}>
+                      <button
+                        type="button"
+                        onClick={() => beginEdit(item)}
+                        aria-label={`Editar ${item.description}`}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(item)}
+                        aria-label={`Excluir ${item.description}`}
+                      >
+                        Excluir
+                      </button>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className={styles.pagination}>
+                <span>
+                  Página {page} de {pages}
+                </span>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setPage((value) => Math.max(1, value - 1))}
+                    disabled={page <= 1}
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPage((value) => Math.min(pages, value + 1))
+                    }
+                    disabled={page >= pages}
+                  >
+                    Próxima
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className={styles.emptyState}>
+              Nenhum lançamento encontrado.{" "}
+              <button type="button" onClick={() => beginEdit(null)}>
+                Adicionar lançamento
+              </button>
+            </div>
+          ))}
+      </section>
+      {editing && (
+        <div
+          className={styles.modalBackdrop}
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setEditing(null);
+          }}
+        >
+          <section
+            className={styles.modal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="transaction-title"
+          >
+            <div className={styles.modalHeader}>
+              <h2 id="transaction-title">
+                {editing === "new" ? "Novo lançamento" : "Editar lançamento"}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setEditing(null)}
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={submit} className={styles.transactionForm}>
+              <label>
+                Tipo
+                <select
+                  value={form.kind}
+                  onChange={(event) =>
+                    setForm({ ...form, kind: event.target.value })
+                  }
+                >
+                  <option value="expense">Despesa</option>
+                  <option value="income">Receita</option>
+                </select>
+              </label>
+              <label>
+                Descrição
+                <input
+                  value={form.description}
+                  onChange={(event) =>
+                    setForm({ ...form, description: event.target.value })
+                  }
+                  required
+                  maxLength={160}
+                  autoFocus
+                />
+              </label>
+              <div className={styles.formColumns}>
+                <label>
+                  Valor (R$)
+                  <input
+                    inputMode="decimal"
+                    placeholder="0,00"
+                    value={form.amount}
+                    onChange={(event) =>
+                      setForm({ ...form, amount: event.target.value })
+                    }
+                    required
+                  />
+                </label>
+                <label>
+                  Data
+                  <input
+                    type="date"
+                    value={form.occurredAt}
+                    onChange={(event) =>
+                      setForm({ ...form, occurredAt: event.target.value })
+                    }
+                    required
+                  />
+                </label>
+              </div>
+              <div className={styles.formColumns}>
+                <label>
+                  Categoria
+                  <select
+                    value={form.categoryId}
+                    onChange={(event) =>
+                      setForm({ ...form, categoryId: event.target.value })
+                    }
+                  >
+                    <option value="">Sem categoria</option>
+                    {categories.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Conta
+                  <input
+                    value={form.accountName}
+                    onChange={(event) =>
+                      setForm({ ...form, accountName: event.target.value })
+                    }
+                    maxLength={100}
+                  />
+                </label>
+              </div>
+              {message && (
+                <p className={styles.formMessage} role="alert">
+                  {message}
+                </p>
+              )}
+              <div className={styles.modalActions}>
+                <button
+                  className={styles.secondaryButton}
+                  type="button"
+                  onClick={() => setEditing(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className={styles.primaryButton}
+                  type="submit"
+                  disabled={saving}
+                >
+                  {saving ? "Salvando…" : "Salvar lançamento"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+    </main>
+  );
+}

@@ -5,6 +5,7 @@ import { EnseadaModule } from './enseada/enseada.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
 import { PostsModule } from './posts/posts.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { FinanceModule } from './finance/finance.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { PrismaModule } from './prisma/prisma.module';
     PostsModule,
     PortfolioModule,
     EnseadaModule,
+    FinanceModule,
   ],
 })
 export class AppModule {}
