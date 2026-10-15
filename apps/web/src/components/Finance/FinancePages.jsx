@@ -1,11 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authFetch, ensureSession } from "../../lib/auth";
 import { ROUTER_LOGIN } from "../../constants";
 import styles from "../../styles/Finance.module.css";
+
+const PluggyConnect = dynamic(
+  () => import("react-pluggy-connect").then((module) => module.PluggyConnect),
+  { ssr: false },
+);
 
 const currency = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -31,6 +37,10 @@ const dateLabel = (value) => {
 };
 const percentChange = (current, previous) =>
   previous ? ((current - previous) / previous) * 100 : null;
+const PLUGGY_STALE_OVERVIEW_MESSAGE =
+  "Não foi possível atualizar a Pluggy agora; exibindo os últimos dados sincronizados.";
+const PLUGGY_STALE_TRANSACTIONS_MESSAGE =
+  "Exibindo os últimos lançamentos sincronizados; a atualização da Pluggy falhou.";
 
 function MonthPicker({ month, onChange }) {
   const move = (delta) => {
@@ -124,6 +134,11 @@ export function FinanceDashboard() {
   const [month, setMonth] = useState(currentMonth);
   const [data, setData] = useState(null);
   const [status, setStatus] = useState("loading");
+  const [connections, setConnections] = useState([]);
+  const [connectToken, setConnectToken] = useState(null);
+  const [pluggyBusy, setPluggyBusy] = useState(false);
+  const [pluggyMessage, setPluggyMessage] = useState("");
+  const [pluggySyncUnavailable, setPluggySyncUnavailable] = useState(false);
 
   const load = useCallback(async () => {
     setStatus("loading");
@@ -133,18 +148,25 @@ export function FinanceDashboard() {
         router.replace(ROUTER_LOGIN);
         return;
       }
-      const response = await authFetch(
-        `/admin/finance/overview?month=${month}`,
-      );
-      if (response.status === 401) {
+      const [response, connectionsResponse] = await Promise.all([
+        authFetch(`/admin/finance/overview?month=${month}`),
+        authFetch("/admin/finance/pluggy/connections"),
+      ]);
+      if (response.status === 401 || connectionsResponse.status === 401) {
         router.replace(ROUTER_LOGIN);
         return;
       }
-      if (!response.ok) {
+      if (!response.ok || !connectionsResponse.ok) {
         setStatus("error");
         return;
       }
-      setData(await response.json());
+      const [overview, connectionData] = await Promise.all([
+        response.json(),
+        connectionsResponse.json(),
+      ]);
+      setData(overview);
+      setConnections(Array.isArray(connectionData) ? connectionData : []);
+      setPluggySyncUnavailable(Boolean(overview.pluggySyncUnavailable));
       setStatus("ready");
     } catch {
       setStatus("error");
@@ -161,6 +183,102 @@ export function FinanceDashboard() {
     ...(data?.categories ?? []).map((item) => item.amountCents),
   );
 
+  async function startPluggyConnect() {
+    setPluggyBusy(true);
+    setPluggyMessage("");
+    try {
+      const response = await authFetch("/admin/finance/pluggy/connect-token", {
+        method: "POST",
+      });
+      if (response.status === 401) {
+        router.replace(ROUTER_LOGIN);
+        return;
+      }
+      if (!response.ok) {
+        setPluggyMessage(
+          "A conexão bancária ainda não está configurada no servidor.",
+        );
+        return;
+      }
+      const result = await response.json();
+      setConnectToken(result.accessToken);
+    } catch {
+      setPluggyMessage("Não foi possível iniciar a conexão com a Pluggy.");
+    } finally {
+      setPluggyBusy(false);
+    }
+  }
+
+  async function finishPluggyConnect({ item }) {
+    setConnectToken(null);
+    setPluggyBusy(true);
+    setPluggyMessage("");
+    try {
+      const response = await authFetch("/admin/finance/pluggy/connections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId: item.id }),
+      });
+      if (response.status === 401) {
+        router.replace(ROUTER_LOGIN);
+        return;
+      }
+      if (!response.ok) {
+        setPluggyMessage("A instituição conectou, mas não foi possível vinculá-la.");
+        return;
+      }
+      const syncResponse = await authFetch("/admin/finance/pluggy/sync", {
+        method: "POST",
+      });
+      if (syncResponse.status === 401) {
+        router.replace(ROUTER_LOGIN);
+        return;
+      }
+      const syncResult = syncResponse.ok ? await syncResponse.json() : null;
+      setPluggyMessage(
+        syncResult?.pendingConnections
+          ? "Instituição conectada; ela ainda está buscando os dados. Tente atualizar em alguns instantes."
+          : syncResponse.ok
+            ? "Instituição conectada. Os lançamentos foram sincronizados."
+            : "Instituição conectada; a sincronização poderá ser repetida em seguida.",
+      );
+      await load();
+    } catch {
+      setPluggyMessage("A conexão foi concluída, mas a sincronização falhou.");
+    } finally {
+      setPluggyBusy(false);
+    }
+  }
+
+  async function syncPluggy() {
+    setPluggyBusy(true);
+    setPluggyMessage("");
+    try {
+      const response = await authFetch("/admin/finance/pluggy/sync", {
+        method: "POST",
+      });
+      if (response.status === 401) {
+        router.replace(ROUTER_LOGIN);
+        return;
+      }
+      if (!response.ok) {
+        setPluggyMessage("Não foi possível atualizar as contas agora.");
+        return;
+      }
+      const result = await response.json();
+      setPluggyMessage(
+        result.pendingConnections
+          ? "A instituição ainda está buscando os dados. Tente novamente em alguns instantes."
+          : "Contas e lançamentos atualizados pela Pluggy.",
+      );
+      await load();
+    } catch {
+      setPluggyMessage("Não foi possível atualizar as contas agora.");
+    } finally {
+      setPluggyBusy(false);
+    }
+  }
+
   return (
     <main className={styles.page}>
       <div className={styles.pageTop}>
@@ -168,19 +286,94 @@ export function FinanceDashboard() {
           <p className={styles.kicker}>VISÃO GERAL</p>
           <h1>Finanças</h1>
           <p className={styles.subtitle}>
-            Acompanhe suas entradas e despesas em um só lugar.
+            Movimentações sincronizadas das suas instituições via Open Finance.
           </p>
         </div>
         <div className={styles.topActions}>
           <MonthPicker month={month} onChange={setMonth} />
-          <Link
+          <button
             className={styles.primaryButton}
+            type="button"
+            onClick={startPluggyConnect}
+            disabled={pluggyBusy}
+          >
+            {pluggyBusy ? "Conectando…" : "+ Conectar banco"}
+          </button>
+          <Link
+            className={styles.secondaryButton}
             href="/admin/finance/transactions?new=1"
           >
-            + Novo lançamento
+            Lançamento manual
           </Link>
         </div>
       </div>
+      <section className={`${styles.panel} ${styles.pluggyPanel}`}>
+        <div className={styles.panelHeading}>
+          <div>
+            <h2>Contas conectadas</h2>
+            <p>Dados de Open Finance importados pela Pluggy</p>
+          </div>
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            onClick={syncPluggy}
+            disabled={pluggyBusy || connections.length === 0}
+          >
+            Atualizar agora
+          </button>
+        </div>
+        {connections.length ? (
+          <div className={styles.connectionList}>
+            {connections.map((connection) => (
+              <div className={styles.connectionRow} key={connection.id}>
+                <strong>{connection.institutionName}</strong>
+                <span>
+                  {connection.status === "UPDATED"
+                    ? "Conectada"
+                    : connection.status === "UPDATING"
+                      ? "Sincronizando"
+                      : "Aguardando atualização"}
+                </span>
+                <small>
+                  {connection.lastSyncedAt
+                    ? `Última sincronização: ${new Date(connection.lastSyncedAt).toLocaleString("pt-BR")}`
+                    : "Aguardando a primeira sincronização"}
+                </small>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.emptyState}>
+            Nenhum banco conectado. Conecte uma instituição para importar seus
+            lançamentos automaticamente.
+          </div>
+        )}
+        {pluggySyncUnavailable && (
+          <p className={styles.formMessage} role="status">
+            {PLUGGY_STALE_OVERVIEW_MESSAGE}
+          </p>
+        )}
+        {pluggyMessage && (
+          <p className={styles.formMessage} role="status">
+            {pluggyMessage}
+          </p>
+        )}
+        {connectToken && (
+          <PluggyConnect
+            connectToken={connectToken}
+            language="pt"
+            theme="light"
+            includeSandbox={false}
+            products={["ACCOUNTS", "CREDIT_CARDS", "TRANSACTIONS"]}
+            onSuccess={finishPluggyConnect}
+            onError={() => {
+              setConnectToken(null);
+              setPluggyMessage("A Pluggy não conseguiu concluir a conexão.");
+            }}
+            onClose={() => setConnectToken(null)}
+          />
+        )}
+      </section>
       {status === "loading" && (
         <div className={styles.loading}>Carregando seu resumo…</div>
       )}
@@ -310,6 +503,7 @@ export function FinanceDashboard() {
                     <span className={styles.txDescription}>
                       <strong>{item.description}</strong>
                       <small>
+                        {item.source === "pluggy" ? "Open Finance" : "Manual"} ·{" "}
                         {item.category?.name ?? "Sem categoria"} ·{" "}
                         {dateLabel(item.occurredAt)}
                       </small>
@@ -414,6 +608,13 @@ export function FinanceTransactions() {
       setItems(transactionData.items);
       setPages(Math.max(1, transactionData.totalPages));
       setCategories(categoryData);
+      if (transactionData.pluggySyncUnavailable) {
+        setMessage(PLUGGY_STALE_TRANSACTIONS_MESSAGE);
+      } else {
+        setMessage((message) =>
+          message === PLUGGY_STALE_TRANSACTIONS_MESSAGE ? "" : message,
+        );
+      }
       setStatus("ready");
     } catch {
       setStatus("error");
@@ -636,6 +837,7 @@ export function FinanceTransactions() {
                       <strong>{item.description}</strong>
                       <small>
                         {item.kind === "income" ? "Receita" : "Despesa"}
+                        {item.source === "pluggy" ? " · Open Finance" : " · Manual"}
                       </small>
                     </span>
                     <span>
@@ -658,20 +860,26 @@ export function FinanceTransactions() {
                       {money(item.amountCents)}
                     </strong>
                     <span className={styles.rowActions}>
-                      <button
-                        type="button"
-                        onClick={() => beginEdit(item)}
-                        aria-label={`Editar ${item.description}`}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => remove(item)}
-                        aria-label={`Excluir ${item.description}`}
-                      >
-                        Excluir
-                      </button>
+                      {item.source === "pluggy" ? (
+                        <span className={styles.muted}>Importado</span>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => beginEdit(item)}
+                            aria-label={`Editar ${item.description}`}
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => remove(item)}
+                            aria-label={`Excluir ${item.description}`}
+                          >
+                            Excluir
+                          </button>
+                        </>
+                      )}
                     </span>
                   </div>
                 ))}

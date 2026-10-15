@@ -67,6 +67,10 @@
 .secondaryButton:hover {
   background: #e6f0e9;
 }
+.secondaryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .monthPicker {
   display: inline-flex;
   align-items: center;
@@ -201,6 +205,37 @@
   padding: 21px 22px;
   margin-bottom: 16px;
   box-shadow: 0 2px 9px #203b300a;
+}
+.pluggyPanel {
+  margin-bottom: 18px;
+}
+.connectionList {
+  display: grid;
+  gap: 10px;
+}
+.connectionRow {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) auto;
+  align-items: center;
+  gap: 4px 14px;
+  padding: 12px 14px;
+  border: 1px solid #e8efeb;
+  border-radius: 10px;
+  background: #fbfdfc;
+}
+.connectionRow > strong {
+  color: #234a38;
+  font-size: 13px;
+}
+.connectionRow > span {
+  color: #16815a;
+  font-size: 12px;
+  font-weight: 600;
+}
+.connectionRow > small {
+  grid-column: 1 / -1;
+  color: #87958e;
+  font-size: 11px;
 }
 .panelHeading {
   display: flex;
