@@ -186,8 +186,10 @@ navegador que pediu.
 circula entre Vercel e VPS sem precisar de `SameSite=None`. Foi isso que
 tornou o login único viável sem cookies de terceiros.
 
-Consequência aceita: previews da Vercel em `*.vercel.app` são cross-site e
-não autenticam.
+Previews na URL compartilhada `*.vercel.app` continuam cross-site e não
+autenticam. O caminho suportado é usar um alias próprio sob
+`vitorsierro.com` (por exemplo, `preview.vitorsierro.com`), explicitamente
+permitido na API; assim o cookie permanece `SameSite=Lax` e first-party.
 
 ---
 
@@ -200,7 +202,8 @@ Quebrar qualquer um destes reabre um buraco real.
    a única mudança capaz de tornar *toda* mutação forjável — e o cookie de
    sessão é same-site a partir dos subdomínios das ferramentas.
 2. **`draw.` / `chat.` nunca entram no `WEB_ORIGIN`** (allowlist de CORS e do
-   `OriginCheckGuard`).
+   `OriginCheckGuard`). O alias de preview próprio pode entrar; nunca permita
+   `*.vercel.app`, domínio compartilhado por projetos não confiáveis.
 3. **O cookie de refresh é host-only.** Dar-lhe `Domain=.vitorsierro.com`
    mandaria a credencial de maior valor às ferramentas a cada request.
 4. **`GET /auth/verify` responde 204 ou 401, nunca 3xx.** O `auth_request` do

@@ -5,7 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { parseAllowedOrigins } from './allowed-origins';
+import { isAllowedOrigin } from './allowed-origins';
 
 // Guards cookie-authenticated mutating routes (/auth/refresh, /auth/logout)
 // against callers outside the web app. Once the session cookie is scoped to
@@ -24,7 +24,7 @@ export class OriginCheckGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request>();
     const origin = req.headers.origin;
 
-    if (!origin || parseAllowedOrigins().includes(origin)) {
+    if (!origin || isAllowedOrigin(origin)) {
       return true;
     }
 

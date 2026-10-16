@@ -255,8 +255,9 @@ completo e `infra/verify-auth.sh` para as asserções automatizadas.
 1. **`JwtAuthGuard` lê SOMENTE o header `Authorization`.** Nunca adicione fallback por
    cookie — é a única mudança capaz de tornar toda mutação do CMS vulnerável a CSRF,
    já que o cookie de sessão é same-site a partir dos subdomínios das ferramentas.
-2. **Nunca inclua `draw.` / `chat.` no `WEB_ORIGIN`** (allowlist de CORS e do
-   `OriginCheckGuard`).
+2. **Nunca inclua `draw.` / `chat.` ou `*.vercel.app` no `WEB_ORIGIN`**
+   (allowlist de CORS e do `OriginCheckGuard`). O preview próprio pode usar
+   `https://preview.vitorsierro.com` ou `https://*.preview.vitorsierro.com`.
 3. **O cookie de refresh é host-only** em `api.`, com `Path=/auth`. Nunca dê a ele
    `Domain=.vitorsierro.com` — mandaria a credencial de maior valor para as
    ferramentas a cada request.
