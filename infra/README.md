@@ -11,6 +11,7 @@ O site Next.js **não** vive aqui — fica na Vercel, apontando para
 | Host | Serviço | Autenticação |
 |---|---|---|
 | `vitorsierro.com` (+ `www`) | Next.js (Vercel) | login do CMS |
+| `preview.vitorsierro.com` (alias de Preview, a configurar) | Next.js (Vercel) | login do CMS |
 | `api.vitorsierro.com` | NestJS + SQLite | própria (JWT / cookie) |
 | `draw.vitorsierro.com` | Excalidraw | **forward-auth do nginx** |
 | `chat.vitorsierro.com` | Hermes | **forward-auth do nginx** |
@@ -29,7 +30,9 @@ do Docker — não há como acessar as ferramentas por fora, driblando o gate.
 
 Tudo vive sob o mesmo domínio registrável, então o cookie `admin_session`
 (escopo `.vitorsierro.com`) é **same-site** — vale entre Vercel e VPS com
-`SameSite=Lax`, sem cair nas restrições de cookie de terceiros.
+`SameSite=Lax`, sem cair nas restrições de cookie de terceiros. Use o alias
+`preview.vitorsierro.com` para previews autenticadas; a URL padrão `*.vercel.app`
+é cross-site e não mantém a sessão.
 
 ## Setup inicial
 
@@ -163,6 +166,38 @@ NEXT_PUBLIC_HERMES_URL=https://chat.vitorsierro.com
 ```
 
 Redeploy em seguida.
+
+Para login em previews, adicione `preview.vitorsierro.com` como domínio do
+projeto Vercel e direcione-o ao deployment/branch de Preview desejado; publique
+o registro DNS indicado pela Vercel. Configure `NEXT_PUBLIC_API_URL` também no
+ambiente Preview. Na VPS, **edite o `WEB_ORIGIN` existente em `infra/.env`** —
+preserve as origens de produção e acrescente:
+
+```text
+https://preview.vitorsierro.com
+```
+
+Depois que a API com suporte ao wildcard estiver implantada, aliases de branch
+sob `*.preview.vitorsierro.com` também podem ser permitidos acrescentando
+`https://*.preview.vitorsierro.com`. Essa regra aceita apenas HTTPS e um único
+rótulo DNS sob o domínio controlado; não use `*.vercel.app`, que é compartilhado
+por projetos de terceiros. Recrie o container da API para aplicar as mudanças
+de ambiente:
+
+```bash
+docker compose -f infra/docker-compose.yml --env-file infra/.env \
+  up -d --no-deps --force-recreate api
+```
+
+Confirme o preflight antes de testar o login (a resposta esperada é `204` com
+`Access-Control-Allow-Origin: https://preview.vitorsierro.com`):
+
+```bash
+curl -i -X OPTIONS https://api.vitorsierro.com/auth/login \
+  -H 'Origin: https://preview.vitorsierro.com' \
+  -H 'Access-Control-Request-Method: POST' \
+  -H 'Access-Control-Request-Headers: content-type'
+```
 
 ### 7. Backup no cron
 

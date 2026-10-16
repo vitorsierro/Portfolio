@@ -34,6 +34,35 @@ describe('OriginCheckGuard', () => {
     ).toBe(true);
   });
 
+  it('allows the stable preview host and its controlled branch aliases', () => {
+    process.env.WEB_ORIGIN =
+      'https://vitorsierro.com,https://preview.vitorsierro.com,https://*.preview.vitorsierro.com';
+
+    expect(
+      guard.canActivate(contextWith('https://preview.vitorsierro.com')),
+    ).toBe(true);
+    expect(
+      guard.canActivate(contextWith('https://pr-123.preview.vitorsierro.com')),
+    ).toBe(true);
+  });
+
+  it('does not trust shared Vercel origins or preview-domain lookalikes', () => {
+    process.env.WEB_ORIGIN =
+      'https://vitorsierro.com,https://preview.vitorsierro.com,https://*.preview.vitorsierro.com';
+
+    for (const origin of [
+      'https://vitorsierro-b0eaqq703-vitor-hugo-de-souza-sierros-projects.vercel.app',
+      'https://preview.vitorsierro.com.evil.com',
+      'https://pr-123.preview.vitorsierro.com.evil.com',
+      'http://pr-123.preview.vitorsierro.com',
+      'https://pr-123.preview.vitorsierro.com:8443',
+    ]) {
+      expect(() => guard.canActivate(contextWith(origin))).toThrow(
+        ForbiddenException,
+      );
+    }
+  });
+
   it('rejects an origin outside the allowlist, e.g. a tool subdomain', () => {
     expect(() =>
       guard.canActivate(contextWith('https://draw.vitorsierro.com')),
