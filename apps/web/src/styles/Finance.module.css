@@ -713,3 +713,86 @@
     font-size: 15px;
   }
 }
+
+.financeNav {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 22px;
+  border-bottom: 1px solid #e5ece8;
+}
+.financeNav a {
+  color: #687c71;
+  text-decoration: none;
+  padding: 10px 14px;
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+}
+.financeNav .navActive {
+  color: #15563e;
+  border-bottom-color: #16815a;
+}
+.categoryRowLink {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 8px;
+  padding: 5px 7px;
+  margin: -5px -7px;
+}
+.categoryRowLink:hover {
+  background: #f5f9f6;
+}
+.expenseAmount {
+  color: #bd4343 !important;
+}
+.categorySummary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  background: #fff7f6;
+  border: 1px solid #f0d9d7;
+  border-radius: 11px;
+}
+.categorySummary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #825b58;
+  font-size: 12px;
+}
+.categorySummary > div strong { color: #553632; font-size: 14px; }
+.investmentTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 17px 19px;
+  margin-bottom: 12px;
+  border-radius: 11px;
+  background: #edf6f0;
+  color: #4f6d5c;
+  font-size: 13px;
+}
+.investmentTotal strong { color: #176244; font-size: 21px; }
+.investmentList { display: grid; }
+.investmentRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 18px;
+  padding: 15px 8px;
+  border-bottom: 1px solid #edf1ee;
+}
+.investmentRow > div { display: grid; gap: 5px; }
+.investmentRow > div strong { color: #264536; font-size: 14px; }
+.investmentRow small { color: #84938c; font-size: 11px; }
+.investmentRow > strong { color: #176244; white-space: nowrap; }
+@media (max-width: 640px) {
+  .financeNav { overflow-x: auto; }
+  .financeNav a { padding: 10px 9px; white-space: nowrap; }
+  .investmentRow { grid-template-columns: 1fr auto; gap: 8px; }
+  .investmentRow .rowActions { grid-column: 1 / -1; justify-content: flex-start; }
+}

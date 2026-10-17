@@ -13,8 +13,10 @@ import {
 import { AuthenticatedRequest, JwtAuthGuard } from "../auth/jwt-auth.guard";
 import {
   CreateFinanceCategoryDto,
+  CreateFinanceInvestmentDto,
   CreateFinanceTransactionDto,
   PluggyConnectionDto,
+  UpdateFinanceInvestmentDto,
   UpdateFinanceTransactionDto,
 } from "./dto/finance.dto";
 import { FinanceService } from "./finance.service";
@@ -113,6 +115,47 @@ export class FinanceController {
   @Delete("transactions/:id")
   removeTransaction(@Req() req: AuthenticatedRequest, @Param("id") id: string) {
     return this.finance.removeTransaction(req.user!.sub, id);
+  }
+
+  @Get("investments")
+  listInvestments(
+    @Req() req: AuthenticatedRequest,
+    @Query()
+    query: {
+      category?: string;
+      search?: string;
+      page?: string;
+      limit?: string;
+    },
+  ) {
+    return this.finance.listInvestments(req.user!.sub, {
+      category: query.category,
+      search: query.search,
+      page: this.parsePositiveInt(query.page, 1),
+      limit: this.parsePositiveInt(query.limit, 20),
+    });
+  }
+
+  @Post("investments")
+  createInvestment(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: CreateFinanceInvestmentDto,
+  ) {
+    return this.finance.createInvestment(req.user!.sub, dto);
+  }
+
+  @Patch("investments/:id")
+  updateInvestment(
+    @Req() req: AuthenticatedRequest,
+    @Param("id") id: string,
+    @Body() dto: UpdateFinanceInvestmentDto,
+  ) {
+    return this.finance.updateInvestment(req.user!.sub, id, dto);
+  }
+
+  @Delete("investments/:id")
+  removeInvestment(@Req() req: AuthenticatedRequest, @Param("id") id: string) {
+    return this.finance.removeInvestment(req.user!.sub, id);
   }
 
   @Get("categories")
