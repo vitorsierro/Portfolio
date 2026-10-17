@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { authFetch, ensureSession } from "../../lib/auth";
 import { ROUTER_LOGIN } from "../../constants";
 import styles from "../../styles/Finance.module.css";
+import { FinanceInvestments } from "./FinanceInvestments";
+export { FinanceInvestments };
 
 const PluggyConnect = dynamic(
   () => import("react-pluggy-connect").then((module) => module.PluggyConnect),
@@ -23,6 +25,10 @@ const localDateString = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 };
 const currentMonth = () => localDateString().slice(0, 7);
+const queryParam = (name) =>
+  typeof window === "undefined"
+    ? null
+    : new URLSearchParams(window.location.search).get(name);
 const monthLabel = (month) =>
   new Date(`${month}-15T12:00:00`).toLocaleDateString("pt-BR", {
     month: "long",
@@ -41,6 +47,16 @@ const PLUGGY_STALE_OVERVIEW_MESSAGE =
   "Não foi possível atualizar a Pluggy agora; exibindo os últimos dados sincronizados.";
 const PLUGGY_STALE_TRANSACTIONS_MESSAGE =
   "Exibindo os últimos lançamentos sincronizados; a atualização da Pluggy falhou.";
+
+function FinanceNavigation({ active }) {
+  return (
+    <nav className={styles.financeNav} aria-label="Seções de finanças">
+      <Link className={active === "overview" ? styles.navActive : ""} href="/admin/finance">Visão geral</Link>
+      <Link className={active === "transactions" ? styles.navActive : ""} href="/admin/finance/transactions">Movimentações</Link>
+      <Link className={active === "investments" ? styles.navActive : ""} href="/admin/finance/investments">Investimentos</Link>
+    </nav>
+  );
+}
 
 function MonthPicker({ month, onChange }) {
   const move = (delta) => {
@@ -281,6 +297,7 @@ export function FinanceDashboard() {
 
   return (
     <main className={styles.page}>
+      <FinanceNavigation active="overview" />
       <div className={styles.pageTop}>
         <div>
           <p className={styles.kicker}>VISÃO GERAL</p>
@@ -307,6 +324,7 @@ export function FinanceDashboard() {
           </Link>
         </div>
       </div>
+
       <section className={`${styles.panel} ${styles.pluggyPanel}`}>
         <div className={styles.panelHeading}>
           <div>
@@ -391,7 +409,7 @@ export function FinanceDashboard() {
             <article className={styles.metricCard}>
               <span className={styles.metricIcon}>↘</span>
               <span className={styles.metricLabel}>Despesas do mês</span>
-              <strong>{money(totals.expensesCents)}</strong>
+              <strong className={styles.expenseAmount}>{money(totals.expensesCents)}</strong>
               <Change
                 current={totals.expensesCents}
                 previous={totals.previousExpensesCents}
@@ -402,7 +420,7 @@ export function FinanceDashboard() {
                 ↗
               </span>
               <span className={styles.metricLabel}>Receitas do mês</span>
-              <strong>{money(totals.incomeCents)}</strong>
+              <strong className={styles.incomeAmount}>{money(totals.incomeCents)}</strong>
               <Change
                 current={totals.incomeCents}
                 previous={totals.previousIncomeCents}
@@ -438,7 +456,7 @@ export function FinanceDashboard() {
                   <h2>Despesas ao longo do mês</h2>
                   <p>Distribuição diária das saídas</p>
                 </div>
-                <span className={styles.panelTotal}>
+                <span className={`${styles.panelTotal} ${styles.expenseAmount}`}>
                   {money(totals.expensesCents)}
                 </span>
               </div>
@@ -455,23 +473,30 @@ export function FinanceDashboard() {
               {data.categories.length ? (
                 <div className={styles.categoryBars}>
                   {data.categories.slice(0, 6).map((item) => (
-                    <div className={styles.categoryRow} key={item.id}>
-                      <div className={styles.categoryLabel}>
-                        <span>
-                          <i style={{ background: item.color }} />
-                          {item.name}
-                        </span>
-                        <strong>{money(item.amountCents)}</strong>
+                    <Link
+                      className={styles.categoryRowLink}
+                      key={item.id}
+                      href={`/admin/finance/transactions?month=${month}&kind=expense&categoryId=${encodeURIComponent(item.id)}`}
+                      aria-label={`Ver despesas de ${item.name}`}
+                    >
+                      <div className={styles.categoryRow}>
+                        <div className={styles.categoryLabel}>
+                          <span>
+                            <i style={{ background: item.color }} />
+                            {item.name}
+                          </span>
+                          <strong>{money(item.amountCents)}</strong>
+                        </div>
+                        <div className={styles.track}>
+                          <span
+                            style={{
+                              width: `${Math.max(3, (item.amountCents / maxCategory) * 100)}%`,
+                              background: item.color,
+                            }}
+                          />
+                        </div>
                       </div>
-                      <div className={styles.track}>
-                        <span
-                          style={{
-                            width: `${Math.max(3, (item.amountCents / maxCategory) * 100)}%`,
-                            background: item.color,
-                          }}
-                        />
-                      </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               ) : (
@@ -510,7 +535,7 @@ export function FinanceDashboard() {
                     </span>
                     <strong
                       className={
-                        item.kind === "income" ? styles.incomeAmount : ""
+                        item.kind === "income" ? styles.incomeAmount : styles.expenseAmount
                       }
                     >
                       {item.kind === "income" ? "+" : "−"}
@@ -545,14 +570,15 @@ const emptyForm = () => ({
 
 export function FinanceTransactions() {
   const router = useRouter();
-  const [month, setMonth] = useState(currentMonth);
-  const [kind, setKind] = useState("all");
-  const [categoryId, setCategoryId] = useState("");
+  const [month, setMonth] = useState(() => queryParam("month") ?? currentMonth());
+  const [kind, setKind] = useState(() => queryParam("kind") ?? "all");
+  const [categoryId, setCategoryId] = useState(() => queryParam("categoryId") ?? "");
   const [search, setSearch] = useState("");
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
+  const [totalAmountCents, setTotalAmountCents] = useState(0);
   const [status, setStatus] = useState("loading");
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -607,6 +633,11 @@ export function FinanceTransactions() {
       ]);
       setItems(transactionData.items);
       setPages(Math.max(1, transactionData.totalPages));
+      setTotalAmountCents(
+        kind === "income"
+          ? transactionData.totalAmountCents ?? 0
+          : transactionData.totalExpenseAmountCents ?? transactionData.totalAmountCents ?? 0,
+      );
       setCategories(categoryData);
       if (transactionData.pluggySyncUnavailable) {
         setMessage(PLUGGY_STALE_TRANSACTIONS_MESSAGE);
@@ -664,14 +695,21 @@ export function FinanceTransactions() {
       setSaving(false);
       return;
     }
-    const body = {
-      description: form.description.trim(),
-      amountCents: Math.round(parsedAmount * 100),
-      kind: form.kind,
-      occurredAt: form.occurredAt,
-      categoryId: form.categoryId || null,
-      accountName: form.accountName.trim() || "Conta principal",
-    };
+    const body =
+      editing !== "new" && editing.source === "pluggy"
+        ? {
+            description: form.description.trim(),
+            amountCents: Math.round(parsedAmount * 100),
+            categoryId: form.categoryId || null,
+          }
+        : {
+            description: form.description.trim(),
+            amountCents: Math.round(parsedAmount * 100),
+            kind: form.kind,
+            occurredAt: form.occurredAt,
+            categoryId: form.categoryId || null,
+            accountName: form.accountName.trim() || "Conta principal",
+          };
     const response = await authFetch(
       editing === "new"
         ? "/admin/finance/transactions"
@@ -717,6 +755,7 @@ export function FinanceTransactions() {
 
   return (
     <main className={styles.page}>
+      <FinanceNavigation active="transactions" />
       <div className={styles.pageTop}>
         <div>
           <p className={styles.kicker}>MOVIMENTAÇÕES</p>
@@ -733,6 +772,7 @@ export function FinanceTransactions() {
           + Novo lançamento
         </button>
       </div>
+
       <section className={styles.panel}>
         <div className={styles.filters}>
           <MonthPicker
@@ -822,6 +862,19 @@ export function FinanceTransactions() {
         {status === "ready" &&
           (items.length ? (
             <>
+              {categoryId && (
+                <section className={styles.categorySummary} aria-label="Resumo da categoria" role="region">
+                  <div>
+                    <span>{kind === "income" ? "Receitas em" : "Despesas em"}</span>
+                    <strong>{categories.find((item) => item.id === categoryId)?.name ?? "Categoria"}</strong>
+                  </div>
+                  <strong
+                    className={kind === "income" ? styles.incomeAmount : styles.expenseAmount}
+                  >
+                    {money(totalAmountCents)}
+                  </strong>
+                </section>
+              )}
               <div className={styles.transactionTable}>
                 <div className={styles.tableHeader}>
                   <span>Descrição</span>
@@ -853,7 +906,7 @@ export function FinanceTransactions() {
                     <span>{dateLabel(item.occurredAt)}</span>
                     <strong
                       className={
-                        item.kind === "income" ? styles.incomeAmount : ""
+                        item.kind === "income" ? styles.incomeAmount : styles.expenseAmount
                       }
                     >
                       {item.kind === "income" ? "+" : "−"}
@@ -861,7 +914,13 @@ export function FinanceTransactions() {
                     </strong>
                     <span className={styles.rowActions}>
                       {item.source === "pluggy" ? (
-                        <span className={styles.muted}>Importado</span>
+                        <button
+                          type="button"
+                          onClick={() => beginEdit(item)}
+                          aria-label={`Editar ${item.description}`}
+                        >
+                          Editar
+                        </button>
                       ) : (
                         <>
                           <button
@@ -944,18 +1003,18 @@ export function FinanceTransactions() {
               </button>
             </div>
             <form onSubmit={submit} className={styles.transactionForm}>
-              <label>
-                Tipo
-                <select
-                  value={form.kind}
-                  onChange={(event) =>
-                    setForm({ ...form, kind: event.target.value })
-                  }
-                >
-                  <option value="expense">Despesa</option>
-                  <option value="income">Receita</option>
-                </select>
-              </label>
+              {!(editing !== "new" && editing.source === "pluggy") && (
+                <label>
+                  Tipo
+                  <select
+                    value={form.kind}
+                    onChange={(event) => setForm({ ...form, kind: event.target.value })}
+                  >
+                    <option value="expense">Despesa</option>
+                    <option value="income">Receita</option>
+                  </select>
+                </label>
+              )}
               <label>
                 Descrição
                 <input
@@ -981,17 +1040,17 @@ export function FinanceTransactions() {
                     required
                   />
                 </label>
-                <label>
-                  Data
-                  <input
-                    type="date"
-                    value={form.occurredAt}
-                    onChange={(event) =>
-                      setForm({ ...form, occurredAt: event.target.value })
-                    }
-                    required
-                  />
-                </label>
+                {!(editing !== "new" && editing.source === "pluggy") && (
+                  <label>
+                    Data
+                    <input
+                      type="date"
+                      value={form.occurredAt}
+                      onChange={(event) => setForm({ ...form, occurredAt: event.target.value })}
+                      required
+                    />
+                  </label>
+                )}
               </div>
               <div className={styles.formColumns}>
                 <label>
@@ -1010,16 +1069,16 @@ export function FinanceTransactions() {
                     ))}
                   </select>
                 </label>
-                <label>
-                  Conta
-                  <input
-                    value={form.accountName}
-                    onChange={(event) =>
-                      setForm({ ...form, accountName: event.target.value })
-                    }
-                    maxLength={100}
-                  />
-                </label>
+                {!(editing !== "new" && editing.source === "pluggy") && (
+                  <label>
+                    Conta
+                    <input
+                      value={form.accountName}
+                      onChange={(event) => setForm({ ...form, accountName: event.target.value })}
+                      maxLength={100}
+                    />
+                  </label>
+                )}
               </div>
               {message && (
                 <p className={styles.formMessage} role="alert">

@@ -34,6 +34,22 @@ export class CreateFinanceCategoryDto {
   @IsOptional() @IsString() @MaxLength(30) icon?: string;
 }
 
+export class CreateFinanceInvestmentDto {
+  @IsString() @MaxLength(100) name!: string;
+  @IsInt() @Min(1) amountCents!: number;
+  @IsString() @MaxLength(60) category!: string;
+  @IsOptional() @Matches(/^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/)
+  acquiredAt?: string;
+}
+
+export class UpdateFinanceInvestmentDto {
+  @IsOptional() @IsString() @MaxLength(100) name?: string;
+  @IsOptional() @IsInt() @Min(1) amountCents?: number;
+  @IsOptional() @IsString() @MaxLength(60) category?: string;
+  @IsOptional() @Matches(/^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/)
+  acquiredAt?: string;
+}
+
 export class PluggyConnectionDto {
   @IsString() @MaxLength(100) itemId!: string;
 }

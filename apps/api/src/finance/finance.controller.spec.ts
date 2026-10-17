@@ -14,6 +14,10 @@ describe("FinanceController", () => {
     removeTransaction: jest.fn(),
     listCategories: jest.fn(),
     createCategory: jest.fn(),
+    listInvestments: jest.fn(),
+    createInvestment: jest.fn(),
+    updateInvestment: jest.fn(),
+    removeInvestment: jest.fn(),
   };
   const pluggyService = {
     createConnectToken: jest.fn(),
@@ -97,4 +101,5 @@ describe("FinanceController", () => {
       "2026-06",
     );
   });
+
 });
