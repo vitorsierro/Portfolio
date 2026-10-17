@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import { FinanceDashboard, FinanceTransactions } from "./FinancePages";
+import { FinanceDashboard, FinanceInvestments, FinanceTransactions } from "./FinancePages";
 import { authFetch, ensureSession } from "../../lib/auth";
 
 jest.mock("../../lib/auth", () => ({
@@ -34,6 +34,7 @@ const row = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  window.history.replaceState({}, "", "/");
   ensureSession.mockResolvedValue(true);
   authFetch.mockImplementation(async (url) => ({
     status: 200,
@@ -358,4 +359,162 @@ test("closes the transaction editor when Escape is pressed", async () => {
   await waitFor(() =>
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
   );
+});
+
+test("shows category-specific expense total when opening a category link", async () => {
+  const response = (data) => ({ status: 200, ok: true, json: async () => data });
+  window.history.replaceState(
+    {},
+    "",
+    "/admin/finance/transactions?month=2026-06&categoryId=food-1",
+  );
+  authFetch.mockImplementation(async (url) =>
+    url.includes("/categories")
+      ? response([{ id: "food-1", name: "Alimentação" }])
+      : response({
+          items: [
+            { ...row, amountCents: 1000, categoryId: "food-1" },
+            {
+              ...row,
+              id: "income-1",
+              kind: "income",
+              amountCents: 5250,
+              categoryId: "food-1",
+            },
+          ],
+          totalAmountCents: 6250,
+          totalExpenseAmountCents: 1000,
+          totalPages: 1,
+        }),
+  );
+
+  render(<FinanceTransactions />);
+  const summary = await screen.findByRole("region", {
+    name: "Resumo da categoria",
+  });
+  expect(summary).toHaveTextContent("Alimentação");
+  expect(summary).toHaveTextContent("R$ 10,00");
+  await waitFor(() =>
+    expect(authFetch).toHaveBeenCalledWith(
+      expect.stringContaining("categoryId=food-1"),
+    ),
+  );
+});
+
+test("allows editing Pluggy transactions but sends only editable fields", async () => {
+  const response = (data) => ({ status: 200, ok: true, json: async () => data });
+  authFetch.mockImplementation(async (url) =>
+    url.includes("/categories")
+      ? response([{ id: "food-1", name: "Alimentação" }])
+      : response({
+          items: [{ ...row, source: "pluggy", categoryId: "food-1" }],
+          totalAmountCents: 4500,
+          totalPages: 1,
+        }),
+  );
+
+  render(<FinanceTransactions />);
+  fireEvent.click(await screen.findByRole("button", { name: "Editar Mercado" }));
+  fireEvent.change(screen.getByLabelText("Descrição"), {
+    target: { value: "Mercado atualizado" },
+  });
+  fireEvent.change(screen.getByLabelText("Valor (R$)"), {
+    target: { value: "99,90" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar lançamento" }));
+
+  await waitFor(() =>
+    expect(authFetch).toHaveBeenCalledWith(
+      "/admin/finance/transactions/tx-1",
+      expect.objectContaining({ method: "PATCH" }),
+    ),
+  );
+  const request = authFetch.mock.calls.find(
+    ([url, options]) => url.endsWith("/tx-1") && options?.method === "PATCH",
+  );
+  expect(JSON.parse(request[1].body)).toEqual({
+    description: "Mercado atualizado",
+    amountCents: 9990,
+    categoryId: "food-1",
+  });
+});
+
+test("displays expenses in red", async () => {
+  const { container } = render(<FinanceTransactions />);
+  const amount = await screen.findByText(/45,00/);
+  expect(amount.className).toContain("expenseAmount");
+  expect(container.querySelector(".incomeAmount")).toBeNull();
+});
+
+test("creates an investment and sends its value in cents", async () => {
+  const response = (data) => ({ status: 200, ok: true, json: async () => data });
+  authFetch.mockImplementation(async (url, options = {}) =>
+    url.endsWith("/investments") && options.method === "POST"
+      ? response({ id: "investment-1" })
+      : response({ items: [], total: 0, totalAmountCents: 0, totalPages: 1 }),
+  );
+
+  render(<FinanceInvestments />);
+  fireEvent.click(
+    await screen.findByRole("button", { name: "+ Novo investimento" }),
+  );
+  fireEvent.change(screen.getByLabelText("Nome do investimento"), {
+    target: { value: "Tesouro Selic" },
+  });
+  fireEvent.change(screen.getByLabelText("Valor (R$)"), {
+    target: { value: "1.234,56" },
+  });
+  fireEvent.change(screen.getByLabelText("Categoria do investimento"), {
+    target: { value: "Tesouro Direto" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar investimento" }));
+
+  await waitFor(() =>
+    expect(authFetch).toHaveBeenCalledWith(
+      "/admin/finance/investments",
+      expect.objectContaining({ method: "POST" }),
+    ),
+  );
+  const request = authFetch.mock.calls.find(
+    ([url, options]) => url === "/admin/finance/investments" && options?.method === "POST",
+  );
+  expect(JSON.parse(request[1].body)).toMatchObject({
+    name: "Tesouro Selic",
+    amountCents: 123456,
+    category: "Tesouro Direto",
+  });
+});
+
+test("edits an existing investment", async () => {
+  const response = (data) => ({ status: 200, ok: true, json: async () => data });
+  const item = {
+    id: "investment-1",
+    name: "Tesouro Selic",
+    amountCents: 10000,
+    category: "Tesouro Direto",
+    acquiredAt: "2026-06-05T12:00:00.000Z",
+  };
+  authFetch.mockImplementation(async (url, options = {}) =>
+    url.endsWith("/investments/investment-1") && options.method === "PATCH"
+      ? response({ ...item, name: "Tesouro IPCA" })
+      : response({ items: [item], total: 1, totalAmountCents: 10000, totalPages: 1 }),
+  );
+
+  render(<FinanceInvestments />);
+  fireEvent.click(await screen.findByRole("button", { name: "Editar Tesouro Selic" }));
+  fireEvent.change(screen.getByLabelText("Nome do investimento"), {
+    target: { value: "Tesouro IPCA" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar investimento" }));
+
+  await waitFor(() =>
+    expect(authFetch).toHaveBeenCalledWith(
+      "/admin/finance/investments/investment-1",
+      expect.objectContaining({ method: "PATCH" }),
+    ),
+  );
+  const request = authFetch.mock.calls.find(
+    ([url, options]) => url.endsWith("/investment-1") && options?.method === "PATCH",
+  );
+  expect(JSON.parse(request[1].body)).toMatchObject({ name: "Tesouro IPCA", amountCents: 10000 });
 });

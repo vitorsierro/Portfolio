@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -7,6 +8,7 @@ import {
 } from "@nestjs/common";
 import { PluggyClient } from "pluggy-sdk";
 import { PrismaService } from "../prisma/prisma.service";
+import { translateCategoryName } from "./category-localization";
 
 export const PLUGGY_CLIENT_FACTORY = Symbol("PLUGGY_CLIENT_FACTORY");
 type PluggyClientApi = Pick<
@@ -43,19 +45,50 @@ export class PluggyService {
       throw new ForbiddenException("A conexão Pluggy pertence a outro usuário");
     }
 
-    return this.prisma.pluggyConnection.upsert({
+    const existing = await this.prisma.pluggyConnection.findUnique({
       where: { itemId },
-      create: {
-        userId,
-        itemId,
-        institutionName: item.connector.name,
-        status: item.status,
-      },
-      update: {
-        institutionName: item.connector.name,
-        status: item.status,
-      },
+      select: { userId: true },
     });
+    const connectionData = {
+      institutionName: item.connector.name,
+      status: item.status,
+    };
+
+    if (existing) {
+      if (existing.userId !== userId) {
+        throw new ForbiddenException("A conexão Pluggy pertence a outro usuário");
+      }
+      const updated = await this.prisma.pluggyConnection.updateMany({
+        where: { itemId, userId },
+        data: connectionData,
+      });
+      if (updated.count === 0) {
+        throw new ConflictException("A conexão mudou durante a atualização; tente novamente");
+      }
+      const connection = await this.prisma.pluggyConnection.findUnique({
+        where: { itemId },
+      });
+      if (!connection || connection.userId !== userId) {
+        throw new ForbiddenException("A conexão Pluggy pertence a outro usuário");
+      }
+      return connection;
+    }
+
+    try {
+      return await this.prisma.pluggyConnection.create({
+        data: { userId, itemId, ...connectionData },
+      });
+    } catch (error) {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "P2002"
+      ) {
+        throw new ConflictException("A conexão foi registrada em paralelo; tente novamente");
+      }
+      throw error;
+    }
   }
 
   async listConnections(userId: string) {
@@ -138,7 +171,10 @@ export class PluggyService {
           const amountCents = Math.round(Math.abs(transaction.amount) * 100);
           if (!Number.isSafeInteger(amountCents) || amountCents === 0) continue;
 
-          const categoryName = transaction.category?.trim().slice(0, 60);
+          const rawCategoryName = transaction.category?.trim().slice(0, 60);
+          const categoryName = rawCategoryName
+            ? translateCategoryName(rawCategoryName).slice(0, 60)
+            : null;
           const category = categoryName
             ? await this.prisma.financeCategory.upsert({
                 where: { userId_name: { userId, name: categoryName } },
@@ -159,17 +195,50 @@ export class PluggyService {
             occurredAt,
           };
 
-          const { categoryId: importedCategoryId, ...refreshData } = transactionData;
-          await this.prisma.financeTransaction.upsert({
-            where: {
-              userId_pluggyTransactionId: {
-                userId,
-                pluggyTransactionId: transaction.id,
-              },
+          const where = {
+            userId_pluggyTransactionId: {
+              userId,
+              pluggyTransactionId: transaction.id,
             },
+          };
+          const {
+            categoryId: importedCategoryId,
+            description,
+            amountCents: importedAmountCents,
+            ...refreshData
+          } = transactionData;
+          await this.prisma.financeTransaction.upsert({
+            where,
             create: { ...transactionData, categoryId: importedCategoryId },
-            // Preserve a category the user may have customized after import.
             update: refreshData,
+          });
+
+          // Apply each importable field only while its override flag is false.
+          // The predicate is evaluated by SQLite at write time, so a concurrent
+          // user edit cannot be overwritten by this sync after a stale read.
+          await this.prisma.financeTransaction.updateMany({
+            where: {
+              userId,
+              pluggyTransactionId: transaction.id,
+              descriptionEdited: false,
+            },
+            data: { description },
+          });
+          await this.prisma.financeTransaction.updateMany({
+            where: {
+              userId,
+              pluggyTransactionId: transaction.id,
+              amountEdited: false,
+            },
+            data: { amountCents: importedAmountCents },
+          });
+          await this.prisma.financeTransaction.updateMany({
+            where: {
+              userId,
+              pluggyTransactionId: transaction.id,
+              categoryEdited: false,
+            },
+            data: { categoryId: importedCategoryId },
           });
           importedTransactions += 1;
         }
