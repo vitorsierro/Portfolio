@@ -401,6 +401,63 @@ test("shows category-specific expense total when opening a category link", async
   );
 });
 
+test("updates the category summary when switching from expenses to income", async () => {
+  const response = (data) => ({ status: 200, ok: true, json: async () => data });
+  window.history.replaceState(
+    {},
+    "",
+    "/admin/finance/transactions?month=2026-06&categoryId=food-1&kind=expense",
+  );
+  authFetch.mockImplementation(async (url) => {
+    if (url.includes("/categories"))
+      return response([{ id: "food-1", name: "Alimentação" }]);
+    if (url.includes("kind=income"))
+      return response({
+        items: [
+          {
+            ...row,
+            id: "income-1",
+            kind: "income",
+            amountCents: 5250,
+            categoryId: "food-1",
+          },
+        ],
+        totalAmountCents: 5250,
+        totalExpenseAmountCents: 0,
+        totalPages: 1,
+      });
+    return response({
+      items: [{ ...row, amountCents: 1000, categoryId: "food-1" }],
+      totalAmountCents: 1000,
+      totalExpenseAmountCents: 1000,
+      totalPages: 1,
+    });
+  });
+
+  render(<FinanceTransactions />);
+  const summary = await screen.findByRole("region", {
+    name: "Resumo da categoria",
+  });
+  expect(summary).toHaveTextContent("Despesas em");
+  expect(summary).toHaveTextContent(/R\$\s*10,00/);
+
+  fireEvent.change(screen.getByRole("combobox", { name: "Tipo" }), {
+    target: { value: "income" },
+  });
+
+  await waitFor(() => {
+    const updatedSummary = screen.getByRole("region", {
+      name: "Resumo da categoria",
+    });
+    expect(updatedSummary).toHaveTextContent("Receitas em");
+    expect(updatedSummary).toHaveTextContent("52,50");
+  });
+  const updatedSummary = screen.getByRole("region", {
+    name: "Resumo da categoria",
+  });
+  expect(updatedSummary.querySelector(".incomeAmount")).toBeInTheDocument();
+});
+
 test("allows editing Pluggy transactions but sends only editable fields", async () => {
   const response = (data) => ({ status: 200, ok: true, json: async () => data });
   authFetch.mockImplementation(async (url) =>

@@ -34,7 +34,7 @@ export class PluggyService {
   async createConnectToken(userId: string): Promise<string> {
     const result = await this.getClient().createConnectToken(undefined, {
       clientUserId: userId,
-      avoidDuplicates: true,
+      avoidDuplicates: false,
     });
     return result.accessToken;
   }

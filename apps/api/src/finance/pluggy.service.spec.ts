@@ -19,7 +19,7 @@ describe("PluggyService", () => {
     );
     expect(client.createConnectToken).toHaveBeenCalledWith(undefined, {
       clientUserId: "admin-1",
-      avoidDuplicates: true,
+      avoidDuplicates: false,
     });
   });
 
@@ -117,6 +117,60 @@ describe("PluggyService", () => {
     });
   });
 
+  it("registers separate items from the same institution as distinct connections", async () => {
+    const client = {
+      fetchItem: jest
+        .fn()
+        .mockResolvedValueOnce({
+          id: "item-1",
+          clientUserId: "admin-1",
+          connector: { name: "Banco Exemplo" },
+          status: "UPDATED",
+        })
+        .mockResolvedValueOnce({
+          id: "item-2",
+          clientUserId: "admin-1",
+          connector: { name: "Banco Exemplo" },
+          status: "UPDATED",
+        }),
+    };
+    const prisma = {
+      pluggyConnection: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        create: jest
+          .fn()
+          .mockResolvedValueOnce({ id: "connection-1" })
+          .mockResolvedValueOnce({ id: "connection-2" }),
+      },
+    };
+    const service = new PluggyService(prisma as never, () => client as never);
+
+    await expect(
+      service.registerConnection("admin-1", "item-1"),
+    ).resolves.toEqual({ id: "connection-1" });
+    await expect(
+      service.registerConnection("admin-1", "item-2"),
+    ).resolves.toEqual({ id: "connection-2" });
+
+    expect(prisma.pluggyConnection.create).toHaveBeenCalledTimes(2);
+    expect(prisma.pluggyConnection.create).toHaveBeenNthCalledWith(1, {
+      data: {
+        userId: "admin-1",
+        itemId: "item-1",
+        institutionName: "Banco Exemplo",
+        status: "UPDATED",
+      },
+    });
+    expect(prisma.pluggyConnection.create).toHaveBeenNthCalledWith(2, {
+      data: {
+        userId: "admin-1",
+        itemId: "item-2",
+        institutionName: "Banco Exemplo",
+        status: "UPDATED",
+      },
+    });
+  });
+
   it("updates a registered connection only for its owner", async () => {
     const client = {
       fetchItem: jest.fn().mockResolvedValue({
@@ -167,6 +221,66 @@ describe("PluggyService", () => {
       ConflictException,
     );
     expect(prisma.pluggyConnection.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("syncs every connection when one institution has multiple connected accounts", async () => {
+    const occurredAt = new Date("2026-10-15T12:00:00.000Z");
+    const client = {
+      fetchItem: jest.fn().mockImplementation(async (itemId: string) => ({
+        id: itemId,
+        clientUserId: "admin-1",
+        connector: { name: "Banco Exemplo" },
+        status: "UPDATED",
+      })),
+      fetchAccounts: jest.fn().mockImplementation(async (itemId: string) => ({
+        results: [
+          {
+            id: `account-${itemId}`,
+            type: "BANK",
+            name: `Conta ${itemId}`,
+            currencyCode: "BRL",
+          },
+        ],
+      })),
+      fetchAllTransactions: jest.fn().mockImplementation(async (accountId: string) => [
+        {
+          id: `transaction-${accountId}`,
+          date: occurredAt,
+          description: `Compra ${accountId}`,
+          amount: 10,
+          type: "DEBIT",
+          status: "POSTED",
+        },
+      ]),
+    };
+    const prisma = {
+      pluggyConnection: {
+        findMany: jest.fn().mockResolvedValue([
+          { id: "connection-1", itemId: "item-1", lastSyncedAt: null },
+          { id: "connection-2", itemId: "item-2", lastSyncedAt: null },
+        ]),
+        update: jest.fn(),
+      },
+      financeTransaction: {
+        upsert: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn(),
+      },
+    };
+    const service = new PluggyService(prisma as never, () => client as never);
+
+    await expect(service.syncUserConnections("admin-1", true)).resolves.toMatchObject({
+      connections: 2,
+      syncedConnections: 2,
+      importedTransactions: 2,
+    });
+    expect(client.fetchItem).toHaveBeenCalledTimes(2);
+    expect(client.fetchAccounts).toHaveBeenCalledTimes(2);
+    expect(prisma.financeTransaction.upsert).toHaveBeenCalledTimes(2);
+    expect(
+      prisma.financeTransaction.upsert.mock.calls.map(
+        ([arguments_]) => arguments_.create.accountName,
+      ),
+    ).toEqual(["Conta item-1", "Conta item-2"]);
   });
 
   it("imports BRL transactions but excludes credit-card bill payments", async () => {

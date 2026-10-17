@@ -634,7 +634,9 @@ export function FinanceTransactions() {
       setItems(transactionData.items);
       setPages(Math.max(1, transactionData.totalPages));
       setTotalAmountCents(
-        transactionData.totalExpenseAmountCents ?? transactionData.totalAmountCents ?? 0,
+        kind === "income"
+          ? transactionData.totalAmountCents ?? 0
+          : transactionData.totalExpenseAmountCents ?? transactionData.totalAmountCents ?? 0,
       );
       setCategories(categoryData);
       if (transactionData.pluggySyncUnavailable) {
@@ -863,10 +865,14 @@ export function FinanceTransactions() {
               {categoryId && (
                 <section className={styles.categorySummary} aria-label="Resumo da categoria" role="region">
                   <div>
-                    <span>Despesas em</span>
+                    <span>{kind === "income" ? "Receitas em" : "Despesas em"}</span>
                     <strong>{categories.find((item) => item.id === categoryId)?.name ?? "Categoria"}</strong>
                   </div>
-                  <strong className={styles.expenseAmount}>{money(totalAmountCents)}</strong>
+                  <strong
+                    className={kind === "income" ? styles.incomeAmount : styles.expenseAmount}
+                  >
+                    {money(totalAmountCents)}
+                  </strong>
                 </section>
               )}
               <div className={styles.transactionTable}>
