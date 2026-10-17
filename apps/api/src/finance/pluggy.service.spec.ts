@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   ServiceUnavailableException,
 } from "@nestjs/common";
@@ -51,16 +52,42 @@ describe("PluggyService", () => {
         status: "UPDATED",
       }),
     };
-    const prisma = { pluggyConnection: { upsert: jest.fn() } };
+    const prisma = { pluggyConnection: { create: jest.fn(), updateMany: jest.fn() } };
     const service = new PluggyService(prisma as never, () => client as never);
 
     await expect(
       service.registerConnection("admin-1", "foreign-item"),
     ).rejects.toBeInstanceOf(ForbiddenException);
-    expect(prisma.pluggyConnection.upsert).not.toHaveBeenCalled();
+    expect(prisma.pluggyConnection.create).not.toHaveBeenCalled();
+    expect(prisma.pluggyConnection.updateMany).not.toHaveBeenCalled();
   });
 
-  it("stores a Pluggy item only after verifying its clientUserId", async () => {
+  it("rejects a database item conflict owned by another user", async () => {
+    const client = {
+      fetchItem: jest.fn().mockResolvedValue({
+        id: "shared-item",
+        clientUserId: "admin-1",
+        connector: { name: "Banco Exemplo" },
+        status: "UPDATED",
+      }),
+    };
+    const prisma = {
+      pluggyConnection: {
+        findUnique: jest.fn().mockResolvedValue({ userId: "other-admin" }),
+        updateMany: jest.fn(),
+        create: jest.fn(),
+      },
+    };
+    const service = new PluggyService(prisma as never, () => client as never);
+
+    await expect(
+      service.registerConnection("admin-1", "shared-item"),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(prisma.pluggyConnection.updateMany).not.toHaveBeenCalled();
+    expect(prisma.pluggyConnection.create).not.toHaveBeenCalled();
+  });
+
+  it("creates a new connection after verifying its Pluggy owner", async () => {
     const client = {
       fetchItem: jest.fn().mockResolvedValue({
         id: "item-1",
@@ -71,7 +98,8 @@ describe("PluggyService", () => {
     };
     const prisma = {
       pluggyConnection: {
-        upsert: jest.fn().mockResolvedValue({ id: "connection-1" }),
+        findUnique: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue({ id: "connection-1" }),
       },
     };
     const service = new PluggyService(prisma as never, () => client as never);
@@ -79,16 +107,66 @@ describe("PluggyService", () => {
     await expect(
       service.registerConnection("admin-1", "item-1"),
     ).resolves.toEqual({ id: "connection-1" });
-    expect(prisma.pluggyConnection.upsert).toHaveBeenCalledWith({
-      where: { itemId: "item-1" },
-      create: {
+    expect(prisma.pluggyConnection.create).toHaveBeenCalledWith({
+      data: {
         userId: "admin-1",
         itemId: "item-1",
         institutionName: "Banco Exemplo",
         status: "UPDATED",
       },
-      update: { institutionName: "Banco Exemplo", status: "UPDATED" },
     });
+  });
+
+  it("updates a registered connection only for its owner", async () => {
+    const client = {
+      fetchItem: jest.fn().mockResolvedValue({
+        id: "item-1",
+        clientUserId: "admin-1",
+        connector: { name: "Banco Atualizado" },
+        status: "UPDATED",
+      }),
+    };
+    const connection = { id: "connection-1", userId: "admin-1" };
+    const prisma = {
+      pluggyConnection: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce({ userId: "admin-1" })
+          .mockResolvedValueOnce(connection),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+    };
+    const service = new PluggyService(prisma as never, () => client as never);
+
+    await expect(service.registerConnection("admin-1", "item-1")).resolves.toEqual(connection);
+    expect(prisma.pluggyConnection.updateMany).toHaveBeenCalledWith({
+      where: { itemId: "item-1", userId: "admin-1" },
+      data: { institutionName: "Banco Atualizado", status: "UPDATED" },
+    });
+  });
+
+  it("rejects a unique-item race instead of updating another user's row", async () => {
+    const client = {
+      fetchItem: jest.fn().mockResolvedValue({
+        id: "racing-item",
+        clientUserId: "admin-1",
+        connector: { name: "Banco Exemplo" },
+        status: "UPDATED",
+      }),
+    };
+    const prisma = {
+      pluggyConnection: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockRejectedValue(Object.assign(new Error("unique"), { code: "P2002" })),
+        updateMany: jest.fn(),
+      },
+    };
+    const service = new PluggyService(prisma as never, () => client as never);
+
+    await expect(service.registerConnection("admin-1", "racing-item")).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(prisma.pluggyConnection.updateMany).not.toHaveBeenCalled();
   });
 
   it("imports BRL transactions but excludes credit-card bill payments", async () => {
@@ -166,7 +244,7 @@ describe("PluggyService", () => {
         upsert: jest.fn().mockResolvedValue({ id: "category-1" }),
       },
       financeTransaction: {
-        findUnique: jest.fn().mockResolvedValue(null),
+        updateMany: jest.fn(),
         upsert: jest.fn().mockResolvedValue({}),
       },
     };
@@ -195,6 +273,10 @@ describe("PluggyService", () => {
         }),
       }),
     );
+    const firstSync = prisma.financeTransaction.upsert.mock.calls[0][0];
+    expect(firstSync.update).not.toHaveProperty("description");
+    expect(firstSync.update).not.toHaveProperty("amountCents");
+    expect(firstSync.update).not.toHaveProperty("categoryId");
     expect(prisma.financeTransaction.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {

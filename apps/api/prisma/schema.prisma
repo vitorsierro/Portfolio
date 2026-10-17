@@ -18,6 +18,7 @@ model Admin {
   sessions            Session[]
   financeCategories   FinanceCategory[]
   financeTransactions FinanceTransaction[]
+  financeInvestments  FinanceInvestment[]
   pluggyConnections   PluggyConnection[]
 }
 
@@ -230,6 +231,9 @@ model FinanceTransaction {
   accountName         String           @default("Conta principal")
   source              String           @default("manual")
   pluggyTransactionId String?
+  descriptionEdited   Boolean          @default(false)
+  amountEdited        Boolean          @default(false)
+  categoryEdited      Boolean          @default(false)
   occurredAt          DateTime
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
@@ -238,6 +242,21 @@ model FinanceTransaction {
   @@index([userId, occurredAt])
   @@index([userId, kind, occurredAt])
   @@index([categoryId])
+}
+
+model FinanceInvestment {
+  id          String   @id @default(cuid())
+  userId      String
+  user        Admin    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  amountCents Int
+  category    String   @default("Outros")
+  acquiredAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, acquiredAt])
+  @@index([userId, category])
 }
 
 model PluggyConnection {
