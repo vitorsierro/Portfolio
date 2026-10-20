@@ -20,6 +20,7 @@ model Admin {
   financeTransactions FinanceTransaction[]
   financeInvestments  FinanceInvestment[]
   pluggyConnections   PluggyConnection[]
+  savedThreads        SavedThread[]
 }
 
 // One row per signed-in browser. Holds BOTH credentials for that browser:
@@ -271,4 +272,19 @@ model PluggyConnection {
   updatedAt       DateTime  @updatedAt
 
   @@index([userId])
+}
+
+model SavedThread {
+  id           String   @id @default(cuid())
+  userId       String
+  user         Admin    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  sourceUrl    String
+  authorName   String   @default("")
+  authorHandle String   @default("")
+  postsJson    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId, updatedAt])
 }
