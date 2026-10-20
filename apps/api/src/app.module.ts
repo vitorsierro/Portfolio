@@ -6,6 +6,7 @@ import { PortfolioModule } from './portfolio/portfolio.module';
 import { PostsModule } from './posts/posts.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { FinanceModule } from './finance/finance.module';
+import { ThreadsModule } from './threads/threads.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { FinanceModule } from './finance/finance.module';
     PortfolioModule,
     EnseadaModule,
     FinanceModule,
+    ThreadsModule,
   ],
 })
 export class AppModule {}

@@ -21,6 +21,13 @@ const DESTINATIONS = [
     embedded: true,
   },
   {
+    key: 'threads',
+    name: 'Threads',
+    description: 'Importar, ler e organizar threads públicas do X para leitura posterior.',
+    href: '/admin/threads',
+    embedded: true,
+  },
+  {
     key: 'enseada',
     name: 'Enseada',
     description: 'Conteúdo do site de temporada: ambientes, guia e fotos.',

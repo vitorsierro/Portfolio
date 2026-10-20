@@ -10,6 +10,7 @@ import { ROUTER_LOGIN } from "../../constants";
 const NAV = [
   { href: "/admin", label: "Painel" },
   { href: "/admin/posts", label: "Posts" },
+  { href: "/admin/threads", label: "Threads" },
   { href: "/admin/enseada", label: "Enseada" },
   { href: "/admin/ai-memory", label: "ai-memory" },
   { href: "/admin/finance", label: "Finanças" },
@@ -58,8 +59,7 @@ export default function AdminHeader() {
                 className={styles.link}
                 aria-current={
                   pathname === item.href ||
-                  (item.href === "/admin/finance" &&
-                    pathname.startsWith("/admin/finance/"))
+                  (item.href !== "/admin" && pathname.startsWith(`${item.href}/`))
                     ? "page"
                     : undefined
                 }
