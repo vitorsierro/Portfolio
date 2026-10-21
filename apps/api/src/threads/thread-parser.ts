@@ -203,6 +203,41 @@ function readScriptString(script: string, property: string): string | null {
   return null;
 }
 
+function findMetadataObject(script: string, marker: string): string | null {
+  const markerIndex = script.indexOf(marker);
+  if (markerIndex < 0) return null;
+  const pattern = /metadata:(?:\$R\[\d+\]=)?\{/g;
+  let openingBrace = -1;
+  for (const match of script.matchAll(pattern)) {
+    if ((match.index ?? Infinity) >= markerIndex) break;
+    openingBrace = (match.index ?? 0) + match[0].lastIndexOf('{');
+  }
+  if (openingBrace < 0) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = openingBrace; index < script.length; index += 1) {
+    const char = script[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') inString = true;
+    else if (char === '{') depth += 1;
+    else if (char === '}') {
+      depth -= 1;
+      if (!depth) {
+        const metadata = script.slice(openingBrace, index + 1);
+        return metadata.includes(marker) ? metadata : null;
+      }
+    }
+  }
+  return null;
+}
+
 export function parseXStatusHtml(
   html: string,
   normalized: NormalizedThreadUrl,
@@ -212,13 +247,14 @@ export function parseXStatusHtml(
     .filter((node) => node.name === 'script')
     .map(textContent);
   const targetMarker = `focalTweetId:"${normalized.tweetId}"`;
-  const script = scripts.find((content) => content.includes(targetMarker) && content.includes('bodyText:'));
-  if (!script) throw new Error('A página do X não contém o post público solicitado.');
+  const script = scripts.find((content) => content.includes(targetMarker));
+  const metadata = script ? findMetadataObject(script, targetMarker) : null;
+  if (!metadata) throw new Error('A página do X não contém o post público solicitado.');
 
-  const text = readScriptString(script, 'bodyText');
+  const text = readScriptString(metadata, 'bodyText');
   if (!text || !cleanText(text)) throw new Error('O post do X não possui texto legível.');
-  const authorName = readScriptString(script, 'authorName') ?? '';
-  const handle = readScriptString(script, 'screenName') ?? '';
+  const authorName = readScriptString(metadata, 'authorName') ?? '';
+  const handle = readScriptString(metadata, 'screenName') ?? '';
   if (!/^[A-Za-z0-9_]{1,15}$/.test(handle)) {
     throw new Error('Não foi possível identificar o autor do post.');
   }
