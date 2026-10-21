@@ -179,3 +179,59 @@ export function parseThreadHtml(
     posts,
   };
 }
+
+function readScriptString(script: string, property: string): string | null {
+  const token = `${property}:"`;
+  const start = script.indexOf(token);
+  if (start < 0) return null;
+  let raw = '';
+  for (let index = start + token.length; index < script.length; index += 1) {
+    const char = script[index];
+    if (char === '"') {
+      try {
+        return JSON.parse(`"${raw}"`) as string;
+      } catch {
+        return null;
+      }
+    }
+    raw += char;
+    if (char === '\\' && index + 1 < script.length) {
+      index += 1;
+      raw += script[index];
+    }
+  }
+  return null;
+}
+
+export function parseXStatusHtml(
+  html: string,
+  normalized: NormalizedThreadUrl,
+): ImportedThread {
+  const document = parseDocument(html);
+  const scripts = descendants(document as unknown as HtmlNode)
+    .filter((node) => node.name === 'script')
+    .map(textContent);
+  const targetMarker = `focalTweetId:"${normalized.tweetId}"`;
+  const script = scripts.find((content) => content.includes(targetMarker) && content.includes('bodyText:'));
+  if (!script) throw new Error('A página do X não contém o post público solicitado.');
+
+  const text = readScriptString(script, 'bodyText');
+  if (!text || !cleanText(text)) throw new Error('O post do X não possui texto legível.');
+  const authorName = readScriptString(script, 'authorName') ?? '';
+  const handle = readScriptString(script, 'screenName') ?? '';
+  if (!/^[A-Za-z0-9_]{1,15}$/.test(handle)) {
+    throw new Error('Não foi possível identificar o autor do post.');
+  }
+
+  const sourceUrl = normalized.sourceUrl.startsWith('https://x.com/')
+    ? normalized.sourceUrl
+    : `https://x.com/${handle}/status/${normalized.tweetId}`;
+  const postText = cleanText(text);
+  return {
+    title: postText.slice(0, 300),
+    sourceUrl,
+    authorName: cleanText(authorName).slice(0, 200),
+    authorHandle: `@${handle}`,
+    posts: [{ text: postText, mediaUrls: [] }],
+  };
+}
