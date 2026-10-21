@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import type { SavedThread } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { normalizeThreadUrl, parseThreadHtml } from './thread-parser';
+import { normalizeThreadUrl, parseThreadHtml, parseXStatusHtml } from './thread-parser';
 import type { ImportedThread, ThreadPost } from './thread-parser';
 import type { CreateThreadDto, ThreadPostDto, UpdateThreadDto } from './dto/threads.dto';
 
@@ -45,6 +45,30 @@ async function readReaderHtml(response: Response): Promise<string> {
   }
 }
 
+async function fetchPublicHtml(url: string): Promise<string | null> {
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'GET',
+      redirect: 'manual',
+      headers: {
+        Accept: 'text/html,application/xhtml+xml',
+        'User-Agent': 'Mozilla/5.0 (compatible; PortfolioThreadReader/1.0)',
+      },
+      signal: AbortSignal.timeout(12_000),
+    });
+  } catch {
+    return null;
+  }
+
+  if (!response.ok) return null;
+  const contentLength = Number(response.headers.get('content-length'));
+  if (Number.isFinite(contentLength) && contentLength > MAX_READER_HTML_BYTES) {
+    throw new BadGatewayException('A página da thread excede o limite de tamanho permitido.');
+  }
+  return readReaderHtml(response);
+}
+
 export interface SavedThreadDetail {
   id: string;
   title: string;
@@ -73,41 +97,33 @@ export class ThreadsService {
       throw new BadRequestException(error instanceof Error ? error.message : 'Link inválido.');
     }
 
-    let response: Response;
-    try {
-      response = await fetch(normalized.readerUrl, {
-        method: 'GET',
-        redirect: 'manual',
-        headers: {
-          Accept: 'text/html,application/xhtml+xml',
-          'User-Agent': 'Mozilla/5.0 (compatible; PortfolioThreadReader/1.0)',
-        },
-        signal: AbortSignal.timeout(12_000),
-      });
-    } catch {
-      throw new BadGatewayException('Não foi possível acessar o leitor público de threads. Tente novamente mais tarde.');
-    }
-
-    if (!response.ok) {
-      throw new BadGatewayException(`O leitor público de threads respondeu com status ${response.status}.`);
-    }
-
-    const contentLength = Number(response.headers.get('content-length'));
-    if (Number.isFinite(contentLength) && contentLength > MAX_READER_HTML_BYTES) {
-      throw new BadGatewayException('A página da thread excede o limite de tamanho permitido.');
-    }
-
-    const html = await readReaderHtml(response);
-
-    try {
-      const thread = parseThreadHtml(html, normalized);
-      if (!thread.posts.length || thread.posts.length > MAX_IMPORTED_POSTS) {
-        throw new Error('A thread não contém uma quantidade válida de posts.');
+    const readerHtml = await fetchPublicHtml(normalized.readerUrl);
+    if (readerHtml) {
+      try {
+        const thread = parseThreadHtml(readerHtml, normalized);
+        if (!thread.posts.length || thread.posts.length > MAX_IMPORTED_POSTS) {
+          throw new Error('A thread não contém uma quantidade válida de posts.');
+        }
+        return thread;
+      } catch {
+        // The thread-reader service may not recognize long-form X posts.
       }
-      return thread;
-    } catch {
-      throw new BadGatewayException('Não consegui extrair essa thread. Confira se o link é público e tente novamente.');
     }
+
+    const xPageUrl = normalized.sourceUrl.startsWith('https://x.com/')
+      ? normalized.sourceUrl
+      : `https://x.com/i/status/${normalized.tweetId}`;
+    const xHtml = await fetchPublicHtml(xPageUrl);
+    if (xHtml) {
+      try {
+        const post = parseXStatusHtml(xHtml, normalized);
+        if (post.posts.length && post.posts.length <= MAX_IMPORTED_POSTS) return post;
+      } catch {
+        // Report one actionable error after both supported sources have been tried.
+      }
+    }
+
+    throw new BadGatewayException('Não consegui extrair essa thread. Confira se o link é público e tente novamente.');
   }
 
   async listThreads(userId: string, search?: string): Promise<SavedThreadSummary[]> {
