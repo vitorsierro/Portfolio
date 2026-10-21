@@ -203,37 +203,61 @@ function readScriptString(script: string, property: string): string | null {
   return null;
 }
 
-function findMetadataObject(script: string, marker: string): string | null {
-  const markerIndex = script.indexOf(marker);
-  if (markerIndex < 0) return null;
-  const pattern = /metadata:(?:\$R\[\d+\]=)?\{/g;
-  let openingBrace = -1;
-  for (const match of script.matchAll(pattern)) {
-    if ((match.index ?? Infinity) >= markerIndex) break;
-    openingBrace = (match.index ?? 0) + match[0].lastIndexOf('{');
-  }
-  if (openingBrace < 0) return null;
-
-  let depth = 0;
-  let inString = false;
+function findUnquotedToken(source: string, token: string, startAt = 0): number {
+  let quote: string | null = null;
   let escaped = false;
-  for (let index = openingBrace; index < script.length; index += 1) {
-    const char = script[index];
-    if (inString) {
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index];
+    if (quote) {
       if (escaped) escaped = false;
       else if (char === '\\') escaped = true;
-      else if (char === '"') inString = false;
+      else if (char === quote) quote = null;
       continue;
     }
-    if (char === '"') inString = true;
+    if (index >= startAt && source.startsWith(token, index)) return index;
+    if (char === '"' || char === "'" || char === '`') quote = char;
+  }
+  return -1;
+}
+
+function readBalancedObject(source: string, openingBrace: number): string | null {
+  let depth = 0;
+  let quote: string | null = null;
+  let escaped = false;
+  for (let index = openingBrace; index < source.length; index += 1) {
+    const char = source[index];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'" || char === '`') quote = char;
     else if (char === '{') depth += 1;
     else if (char === '}') {
       depth -= 1;
-      if (!depth) {
-        const metadata = script.slice(openingBrace, index + 1);
-        return metadata.includes(marker) ? metadata : null;
-      }
+      if (!depth) return source.slice(openingBrace, index + 1);
     }
+  }
+  return null;
+}
+
+function findMetadataObject(script: string, tweetId: string): string | null {
+  const marker = `focalTweetId:"${tweetId}"`;
+  let searchFrom = 0;
+  while (searchFrom < script.length) {
+    const metadataIndex = findUnquotedToken(script, 'metadata:', searchFrom);
+    if (metadataIndex < 0) return null;
+    const assignment = /^metadata:\s*(?:\$R\[\d+\]=\s*)?\{/.exec(script.slice(metadataIndex));
+    if (!assignment) {
+      searchFrom = metadataIndex + 'metadata:'.length;
+      continue;
+    }
+    const openingBrace = metadataIndex + assignment[0].lastIndexOf('{');
+    const metadata = readBalancedObject(script, openingBrace);
+    if (!metadata) return null;
+    if (findUnquotedToken(metadata, marker) >= 0) return metadata;
+    searchFrom = openingBrace + metadata.length;
   }
   return null;
 }
@@ -247,8 +271,8 @@ export function parseXStatusHtml(
     .filter((node) => node.name === 'script')
     .map(textContent);
   const targetMarker = `focalTweetId:"${normalized.tweetId}"`;
-  const script = scripts.find((content) => content.includes(targetMarker));
-  const metadata = script ? findMetadataObject(script, targetMarker) : null;
+  const script = scripts.find((content) => findUnquotedToken(content, targetMarker) >= 0);
+  const metadata = script ? findMetadataObject(script, normalized.tweetId) : null;
   if (!metadata) throw new Error('A página do X não contém o post público solicitado.');
 
   const text = readScriptString(metadata, 'bodyText');

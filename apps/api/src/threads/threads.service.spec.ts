@@ -15,6 +15,7 @@ const threadHtml = `
 const xNoteHtml = `
   <script data-tsr-stream-part>
     bodyText:"Texto de outro item",
+    other:'focalTweetId:"2112928258538815887"',
     metadata:$R[9]={authorName:"Lucas Leite",screenName:"lucasableite",
       focalTweetId:"2112928258538815887",
       bodyText:"Parágrafo inicial.\\n\\nParágrafo final."}
