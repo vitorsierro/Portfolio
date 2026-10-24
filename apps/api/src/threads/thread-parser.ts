@@ -179,3 +179,119 @@ export function parseThreadHtml(
     posts,
   };
 }
+
+function readScriptString(script: string, property: string): string | null {
+  const token = `${property}:"`;
+  const start = script.indexOf(token);
+  if (start < 0) return null;
+  let raw = '';
+  for (let index = start + token.length; index < script.length; index += 1) {
+    const char = script[index];
+    if (char === '"') {
+      try {
+        return JSON.parse(`"${raw}"`) as string;
+      } catch {
+        return null;
+      }
+    }
+    raw += char;
+    if (char === '\\' && index + 1 < script.length) {
+      index += 1;
+      raw += script[index];
+    }
+  }
+  return null;
+}
+
+function findUnquotedToken(source: string, token: string, startAt = 0): number {
+  let quote: string | null = null;
+  let escaped = false;
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (index >= startAt && source.startsWith(token, index)) return index;
+    if (char === '"' || char === "'" || char === '`') quote = char;
+  }
+  return -1;
+}
+
+function readBalancedObject(source: string, openingBrace: number): string | null {
+  let depth = 0;
+  let quote: string | null = null;
+  let escaped = false;
+  for (let index = openingBrace; index < source.length; index += 1) {
+    const char = source[index];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === '"' || char === "'" || char === '`') quote = char;
+    else if (char === '{') depth += 1;
+    else if (char === '}') {
+      depth -= 1;
+      if (!depth) return source.slice(openingBrace, index + 1);
+    }
+  }
+  return null;
+}
+
+function findMetadataObject(script: string, tweetId: string): string | null {
+  const marker = `focalTweetId:"${tweetId}"`;
+  let searchFrom = 0;
+  while (searchFrom < script.length) {
+    const metadataIndex = findUnquotedToken(script, 'metadata:', searchFrom);
+    if (metadataIndex < 0) return null;
+    const assignment = /^metadata:\s*(?:\$R\[\d+\]=\s*)?\{/.exec(script.slice(metadataIndex));
+    if (!assignment) {
+      searchFrom = metadataIndex + 'metadata:'.length;
+      continue;
+    }
+    const openingBrace = metadataIndex + assignment[0].lastIndexOf('{');
+    const metadata = readBalancedObject(script, openingBrace);
+    if (!metadata) return null;
+    if (findUnquotedToken(metadata, marker) >= 0) return metadata;
+    searchFrom = openingBrace + metadata.length;
+  }
+  return null;
+}
+
+export function parseXStatusHtml(
+  html: string,
+  normalized: NormalizedThreadUrl,
+): ImportedThread {
+  const document = parseDocument(html);
+  const scripts = descendants(document as unknown as HtmlNode)
+    .filter((node) => node.name === 'script')
+    .map(textContent);
+  const targetMarker = `focalTweetId:"${normalized.tweetId}"`;
+  const script = scripts.find((content) => findUnquotedToken(content, targetMarker) >= 0);
+  const metadata = script ? findMetadataObject(script, normalized.tweetId) : null;
+  if (!metadata) throw new Error('A página do X não contém o post público solicitado.');
+
+  const text = readScriptString(metadata, 'bodyText');
+  if (!text || !cleanText(text)) throw new Error('O post do X não possui texto legível.');
+  const authorName = readScriptString(metadata, 'authorName') ?? '';
+  const handle = readScriptString(metadata, 'screenName') ?? '';
+  if (!/^[A-Za-z0-9_]{1,15}$/.test(handle)) {
+    throw new Error('Não foi possível identificar o autor do post.');
+  }
+
+  const sourceUrl = normalized.sourceUrl.startsWith('https://x.com/')
+    ? normalized.sourceUrl
+    : `https://x.com/${handle}/status/${normalized.tweetId}`;
+  const postText = cleanText(text);
+  return {
+    title: postText.slice(0, 300),
+    sourceUrl,
+    authorName: cleanText(authorName).slice(0, 200),
+    authorHandle: `@${handle}`,
+    posts: [{ text: postText, mediaUrls: [] }],
+  };
+}

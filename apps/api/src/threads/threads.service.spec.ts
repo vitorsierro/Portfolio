@@ -12,6 +12,14 @@ const threadHtml = `
       </div>
     </div>
   </div>`;
+const xNoteHtml = `
+  <script data-tsr-stream-part>
+    bodyText:"Texto de outro item",
+    other:'focalTweetId:"2112928258538815887"',
+    metadata:$R[9]={authorName:"Lucas Leite",screenName:"lucasableite",
+      focalTweetId:"2112928258538815887",
+      bodyText:"Parágrafo inicial.\\n\\nParágrafo final."}
+  </script>`;
 const posts = [
   { text: 'Uma thread legível', mediaUrls: [] },
   { text: 'Continuação', mediaUrls: [] },
@@ -47,6 +55,25 @@ describe('ThreadsService', () => {
     await expect(service.importThread('https://x.com/teste/status/2112184574721548387'))
       .resolves.toMatchObject({ title: 'Uma thread legível', authorHandle: '@teste', posts });
     expect(fetchMock).toHaveBeenCalledWith('https://twitter-thread.com/t/2112184574721548387', expect.objectContaining({ redirect: 'manual' }));
+  });
+
+  it('falls back to the public X page for long-form posts missing from the thread reader', async () => {
+    const { service } = makeService();
+    const fetchMock = jest.spyOn(global, 'fetch')
+      .mockResolvedValueOnce(new Response('<h1>Thread Not Found</h1>', { status: 200 }))
+      .mockResolvedValueOnce(new Response(xNoteHtml, { status: 200 }));
+
+    await expect(service.importThread('https://x.com/lucasableite/status/2112928258538815887'))
+      .resolves.toMatchObject({
+        title: 'Parágrafo inicial.\n\nParágrafo final.',
+        authorName: 'Lucas Leite',
+        authorHandle: '@lucasableite',
+        posts: [{ text: 'Parágrafo inicial.\n\nParágrafo final.', mediaUrls: [] }],
+      });
+    expect(fetchMock).toHaveBeenNthCalledWith(2,
+      'https://x.com/lucasableite/status/2112928258538815887',
+      expect.objectContaining({ redirect: 'manual' }),
+    );
   });
 
   it('does not fetch arbitrary URLs during import', async () => {
