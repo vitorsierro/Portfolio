@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  NotFoundException,
   Optional,
   ServiceUnavailableException,
 } from "@nestjs/common";
@@ -13,12 +14,51 @@ import { translateCategoryName } from "./category-localization";
 export const PLUGGY_CLIENT_FACTORY = Symbol("PLUGGY_CLIENT_FACTORY");
 type PluggyClientApi = Pick<
   PluggyClient,
-  "createConnectToken" | "fetchItem" | "fetchAccounts" | "fetchAllTransactions"
+  "createConnectToken" | "fetchItem" | "deleteItem" | "fetchAccounts" | "fetchAllTransactions"
 >;
 type PluggyClientFactory = () => PluggyClientApi;
 
-const SYNC_INTERVAL_MS = 15 * 60 * 1000;
+const SYNC_INTERVAL_MS = 60 * 60 * 1000;
 const OPEN_FINANCE_HISTORY_MONTHS = 12;
+
+type ImportedTransactionFingerprint = {
+  id: string;
+  description: string;
+  amountCents: number;
+  kind: string;
+  accountName: string;
+  occurredAt: Date;
+  categoryEdited: boolean;
+  descriptionEdited: boolean;
+  amountEdited: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+function normalizeDuplicateField(value: string) {
+  return value
+    .normalize("NFKC")
+    .trim()
+    .toLocaleLowerCase("pt-BR")
+    .replace(/\s+/g, " ");
+}
+
+function duplicateFingerprint(transaction: ImportedTransactionFingerprint) {
+  const timestamp = transaction.occurredAt.getTime();
+  if (!Number.isFinite(timestamp)) return null;
+  const minute = Math.floor(timestamp / 60_000);
+  return [
+    normalizeDuplicateField(transaction.description),
+    transaction.amountCents,
+    transaction.kind,
+    normalizeDuplicateField(transaction.accountName),
+    minute,
+  ].join("|");
+}
+
+function editedFieldCount(transaction: ImportedTransactionFingerprint) {
+  return Number(transaction.descriptionEdited) + Number(transaction.amountEdited) + Number(transaction.categoryEdited);
+}
 
 @Injectable()
 export class PluggyService {
@@ -105,12 +145,41 @@ export class PluggyService {
     });
   }
 
+  async removeConnection(userId: string, id: string) {
+    const connection = await this.prisma.pluggyConnection.findFirst({
+      where: { id, userId },
+      select: { id: true, itemId: true },
+    });
+    if (!connection) throw new NotFoundException("Conexão bancária não encontrada");
+
+    const item = await this.getClient().fetchItem(connection.itemId);
+    if (item.clientUserId !== userId) {
+      throw new ForbiddenException("A conexão Pluggy pertence a outro usuário");
+    }
+
+    await this.getClient().deleteItem(connection.itemId);
+    const deleted = await this.prisma.pluggyConnection.deleteMany({
+      where: { id, userId },
+    });
+    if (deleted.count === 0) {
+      throw new NotFoundException("Conexão bancária não encontrada");
+    }
+    return { success: true, historyPreserved: true };
+  }
+
   async syncUserConnections(userId: string, force = false) {
     const connections = await this.prisma.pluggyConnection.findMany({
       where: { userId },
     });
     if (connections.length === 0) {
-      return { connections: 0, syncedConnections: 0, pendingConnections: 0, importedTransactions: 0 };
+      const removedDuplicateTransactions = await this.deduplicateImportedTransactions(userId);
+      return {
+        connections: 0,
+        syncedConnections: 0,
+        pendingConnections: 0,
+        importedTransactions: 0,
+        removedDuplicateTransactions,
+      };
     }
 
     const now = new Date();
@@ -138,7 +207,7 @@ export class PluggyService {
       if (item.status !== "UPDATED") {
         await this.prisma.pluggyConnection.update({
           where: { id: connection.id },
-          data: { status: item.status },
+          data: { status: item.status, lastSyncedAt: now },
         });
         pendingConnections += 1;
         continue;
@@ -251,12 +320,66 @@ export class PluggyService {
       syncedConnections += 1;
     }
 
+    const removedDuplicateTransactions = await this.deduplicateImportedTransactions(userId);
     return {
       connections: connections.length,
       syncedConnections,
       pendingConnections,
       importedTransactions,
+      removedDuplicateTransactions,
     };
+  }
+
+  async deduplicateImportedTransactions(userId: string) {
+    const transactions = (await this.prisma.financeTransaction.findMany({
+      where: { userId, source: "pluggy" },
+      select: {
+        id: true,
+        description: true,
+        amountCents: true,
+        kind: true,
+        accountName: true,
+        occurredAt: true,
+        categoryEdited: true,
+        descriptionEdited: true,
+        amountEdited: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    })) as ImportedTransactionFingerprint[];
+
+    const groups = new Map<string, ImportedTransactionFingerprint[]>();
+    for (const transaction of transactions) {
+      const fingerprint = duplicateFingerprint(transaction);
+      if (!fingerprint) continue;
+      const group = groups.get(fingerprint) ?? [];
+      group.push(transaction);
+      groups.set(fingerprint, group);
+    }
+
+    const deletions: string[][] = [];
+    for (const group of groups.values()) {
+      if (group.length < 2) continue;
+      group.sort((left, right) => {
+        const editedDifference = editedFieldCount(right) - editedFieldCount(left);
+        if (editedDifference) return editedDifference;
+        const updatedDifference = right.updatedAt.getTime() - left.updatedAt.getTime();
+        if (updatedDifference) return updatedDifference;
+        const createdDifference = left.createdAt.getTime() - right.createdAt.getTime();
+        return createdDifference || left.id.localeCompare(right.id);
+      });
+      deletions.push(group.slice(1).map(({ id }) => id));
+    }
+
+    if (deletions.length === 0) return 0;
+    const results = await this.prisma.$transaction(
+      deletions.map((ids) =>
+        this.prisma.financeTransaction.deleteMany({
+          where: { userId, source: "pluggy", id: { in: ids } },
+        }),
+      ),
+    );
+    return results.reduce((total, result) => total + result.count, 0);
   }
 
   private getClient(): PluggyClientApi {

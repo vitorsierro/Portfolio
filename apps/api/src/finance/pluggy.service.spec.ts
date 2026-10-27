@@ -1,6 +1,7 @@
 import {
   ConflictException,
   ForbiddenException,
+  NotFoundException,
   ServiceUnavailableException,
 } from "@nestjs/common";
 import { PluggyService } from "./pluggy.service";
@@ -223,6 +224,86 @@ describe("PluggyService", () => {
     expect(prisma.pluggyConnection.updateMany).not.toHaveBeenCalled();
   });
 
+  it("revokes a Pluggy item and removes only the owner's local connection", async () => {
+    const client = {
+      fetchItem: jest.fn().mockResolvedValue({ id: "item-1", clientUserId: "admin-1" }),
+      deleteItem: jest.fn().mockResolvedValue(undefined),
+    };
+    const prisma = {
+      pluggyConnection: {
+        findFirst: jest.fn().mockResolvedValue({ id: "connection-1", itemId: "item-1" }),
+        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      financeTransaction: { deleteMany: jest.fn() },
+    };
+    const service = new PluggyService(prisma as never, () => client as never);
+
+    await expect(service.removeConnection("admin-1", "connection-1")).resolves.toEqual({
+      success: true,
+      historyPreserved: true,
+    });
+    expect(client.deleteItem).toHaveBeenCalledWith("item-1");
+    expect(prisma.pluggyConnection.deleteMany).toHaveBeenCalledWith({
+      where: { id: "connection-1", userId: "admin-1" },
+    });
+    expect(prisma.financeTransaction.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("does not revoke or remove a connection that does not belong to the user", async () => {
+    const client = { fetchItem: jest.fn(), deleteItem: jest.fn() };
+    const prisma = {
+      pluggyConnection: { findFirst: jest.fn().mockResolvedValue(null), deleteMany: jest.fn() },
+    };
+    const service = new PluggyService(prisma as never, () => client as never);
+
+    await expect(service.removeConnection("admin-1", "other-connection")).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(client.fetchItem).not.toHaveBeenCalled();
+    expect(client.deleteItem).not.toHaveBeenCalled();
+    expect(prisma.pluggyConnection.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("removes only duplicate Pluggy rows with the same normalized description, amount, type, account and minute", async () => {
+    const now = new Date("2026-10-21T12:31:00.000Z");
+    const rows = [
+      {
+        id: "kept-edited", description: " mercado  central ", amountCents: 2500, kind: "expense",
+        accountName: "conta corrente", occurredAt: new Date("2026-10-21T12:31:58.000Z"),
+        categoryEdited: true, descriptionEdited: false, amountEdited: false,
+        createdAt: new Date("2026-10-20T00:00:00Z"), updatedAt: now,
+      },
+      {
+        id: "removed", description: "Mercado Central", amountCents: 2500, kind: "expense",
+        accountName: "Conta Corrente", occurredAt: new Date("2026-10-21T12:31:03.000Z"),
+        categoryEdited: false, descriptionEdited: false, amountEdited: false,
+        createdAt: new Date("2026-10-21T00:00:00Z"), updatedAt: new Date("2026-10-21T00:00:00Z"),
+      },
+      {
+        id: "different-minute", description: "Mercado Central", amountCents: 2500, kind: "expense",
+        accountName: "Conta Corrente", occurredAt: new Date("2026-10-21T12:32:01.000Z"),
+        categoryEdited: false, descriptionEdited: false, amountEdited: false,
+        createdAt: now, updatedAt: now,
+      },
+    ];
+    const prisma = {
+      financeTransaction: {
+        findMany: jest.fn().mockResolvedValue(rows),
+        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      $transaction: jest.fn().mockImplementation(async (operations) => Promise.all(operations)),
+    };
+    const service = new PluggyService(prisma as never, () => ({}) as never);
+
+    await expect(service.deduplicateImportedTransactions("admin-1")).resolves.toBe(1);
+    expect(prisma.financeTransaction.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: "admin-1", source: "pluggy" } }),
+    );
+    expect(prisma.financeTransaction.deleteMany).toHaveBeenCalledWith({
+      where: { userId: "admin-1", source: "pluggy", id: { in: ["removed"] } },
+    });
+  });
+
   it("syncs every connection when one institution has multiple connected accounts", async () => {
     const occurredAt = new Date("2026-10-15T12:00:00.000Z");
     const client = {
@@ -262,9 +343,12 @@ describe("PluggyService", () => {
         update: jest.fn(),
       },
       financeTransaction: {
+        findMany: jest.fn().mockResolvedValue([]),
         upsert: jest.fn().mockResolvedValue({}),
         updateMany: jest.fn(),
+        deleteMany: jest.fn(),
       },
+      $transaction: jest.fn().mockImplementation(async (operations) => Promise.all(operations)),
     };
     const service = new PluggyService(prisma as never, () => client as never);
 
@@ -358,9 +442,12 @@ describe("PluggyService", () => {
         upsert: jest.fn().mockResolvedValue({ id: "category-1" }),
       },
       financeTransaction: {
+        findMany: jest.fn().mockResolvedValue([]),
         updateMany: jest.fn(),
         upsert: jest.fn().mockResolvedValue({}),
+        deleteMany: jest.fn(),
       },
+      $transaction: jest.fn().mockImplementation(async (operations) => Promise.all(operations)),
     };
     const service = new PluggyService(prisma as never, () => client as never);
 

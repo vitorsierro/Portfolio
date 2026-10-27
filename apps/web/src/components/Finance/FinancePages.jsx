@@ -25,10 +25,6 @@ const localDateString = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 };
 const currentMonth = () => localDateString().slice(0, 7);
-const queryParam = (name) =>
-  typeof window === "undefined"
-    ? null
-    : new URLSearchParams(window.location.search).get(name);
 const monthLabel = (month) =>
   new Date(`${month}-15T12:00:00`).toLocaleDateString("pt-BR", {
     month: "long",
@@ -53,6 +49,7 @@ function FinanceNavigation({ active }) {
     <nav className={styles.financeNav} aria-label="Seções de finanças">
       <Link className={active === "overview" ? styles.navActive : ""} href="/admin/finance">Visão geral</Link>
       <Link className={active === "transactions" ? styles.navActive : ""} href="/admin/finance/transactions">Movimentações</Link>
+      <Link className={active === "categories" ? styles.navActive : ""} href="/admin/finance/categories">Categorias</Link>
       <Link className={active === "investments" ? styles.navActive : ""} href="/admin/finance/investments">Investimentos</Link>
     </nav>
   );
@@ -295,6 +292,29 @@ export function FinanceDashboard() {
     }
   }
 
+  async function removePluggyConnection(connection) {
+    if (!window.confirm(`Desconectar ${connection.institutionName}? O acesso bancário será revogado, mas os lançamentos já importados serão mantidos.`)) return;
+    setPluggyBusy(true);
+    setPluggyMessage("");
+    try {
+      const response = await authFetch(`/admin/finance/pluggy/connections/${connection.id}`, { method: "DELETE" });
+      if (response.status === 401) {
+        router.replace(ROUTER_LOGIN);
+        return;
+      }
+      if (!response.ok) {
+        setPluggyMessage("Não foi possível desconectar a instituição. Ela continua vinculada.");
+        return;
+      }
+      setPluggyMessage(`${connection.institutionName} desconectada; os lançamentos importados foram mantidos.`);
+      await load();
+    } catch {
+      setPluggyMessage("Não foi possível desconectar a instituição agora.");
+    } finally {
+      setPluggyBusy(false);
+    }
+  }
+
   return (
     <main className={styles.page}>
       <FinanceNavigation active="overview" />
@@ -303,7 +323,7 @@ export function FinanceDashboard() {
           <p className={styles.kicker}>VISÃO GERAL</p>
           <h1>Finanças</h1>
           <p className={styles.subtitle}>
-            Movimentações sincronizadas das suas instituições via Open Finance.
+            Movimentações atualizadas automaticamente a cada hora via Open Finance.
           </p>
         </div>
         <div className={styles.topActions}>
@@ -329,7 +349,7 @@ export function FinanceDashboard() {
         <div className={styles.panelHeading}>
           <div>
             <h2>Contas conectadas</h2>
-            <p>Dados de Open Finance importados pela Pluggy</p>
+            <p>Sincronização automática a cada hora; você também pode atualizar manualmente.</p>
           </div>
           <button
             className={styles.secondaryButton}
@@ -345,13 +365,24 @@ export function FinanceDashboard() {
             {connections.map((connection) => (
               <div className={styles.connectionRow} key={connection.id}>
                 <strong>{connection.institutionName}</strong>
-                <span>
-                  {connection.status === "UPDATED"
-                    ? "Conectada"
-                    : connection.status === "UPDATING"
-                      ? "Sincronizando"
-                      : "Aguardando atualização"}
-                </span>
+                <div className={styles.connectionActions}>
+                  <span>
+                    {connection.status === "UPDATED"
+                      ? "Conectada"
+                      : connection.status === "UPDATING"
+                        ? "Sincronizando"
+                        : "Aguardando atualização"}
+                  </span>
+                  <button
+                    className={styles.connectionRemove}
+                    type="button"
+                    onClick={() => removePluggyConnection(connection)}
+                    disabled={pluggyBusy}
+                    aria-label={`Remover conexão com ${connection.institutionName}`}
+                  >
+                    Remover
+                  </button>
+                </div>
                 <small>
                   {connection.lastSyncedAt
                     ? `Última sincronização: ${new Date(connection.lastSyncedAt).toLocaleString("pt-BR")}`
@@ -570,9 +601,11 @@ const emptyForm = () => ({
 
 export function FinanceTransactions() {
   const router = useRouter();
-  const [month, setMonth] = useState(() => queryParam("month") ?? currentMonth());
-  const [kind, setKind] = useState(() => queryParam("kind") ?? "all");
-  const [categoryId, setCategoryId] = useState(() => queryParam("categoryId") ?? "");
+  const [month, setMonth] = useState("");
+  const [allTime, setAllTime] = useState(false);
+  const [kind, setKind] = useState("all");
+  const [categoryId, setCategoryId] = useState("");
+  const [filtersInitialized, setFiltersInitialized] = useState(false);
   const [search, setSearch] = useState("");
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
@@ -597,6 +630,7 @@ export function FinanceTransactions() {
   }, [editing]);
 
   const load = useCallback(async () => {
+    if (!filtersInitialized) return;
     setStatus("loading");
     try {
       const authenticated = await ensureSession();
@@ -605,7 +639,7 @@ export function FinanceTransactions() {
         return;
       }
       const params = new URLSearchParams({
-        month,
+        month: allTime ? "all" : month,
         page: String(page),
         limit: "20",
       });
@@ -650,11 +684,20 @@ export function FinanceTransactions() {
     } catch {
       setStatus("error");
     }
-  }, [month, page, kind, categoryId, search, router]);
+  }, [filtersInitialized, month, allTime, page, kind, categoryId, search, router]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const params = new URLSearchParams(window.location.search);
+    setMonth(params.get("month") ?? currentMonth());
+    setAllTime(params.get("period") === "all");
+    setKind(params.get("kind") ?? "all");
+    setCategoryId(params.get("categoryId") ?? "");
+    setFiltersInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    if (filtersInitialized) load();
+  }, [load, filtersInitialized]);
   useEffect(() => {
     if (
       typeof window !== "undefined" &&
@@ -775,13 +818,27 @@ export function FinanceTransactions() {
 
       <section className={styles.panel}>
         <div className={styles.filters}>
-          <MonthPicker
-            month={month}
-            onChange={(value) => {
+          {allTime ? (
+            <span className={styles.allPeriodLabel}>Todo o período</span>
+          ) : (
+            <MonthPicker
+              month={month}
+              onChange={(value) => {
+                setPage(1);
+                setMonth(value);
+              }}
+            />
+          )}
+          <button
+            className={styles.periodToggle}
+            type="button"
+            onClick={() => {
               setPage(1);
-              setMonth(value);
+              setAllTime((value) => !value);
             }}
-          />
+          >
+            {allTime ? "Filtrar por mês" : "Ver todo o período"}
+          </button>
           <input
             aria-label="Buscar lançamento"
             type="search"
@@ -813,6 +870,7 @@ export function FinanceTransactions() {
             }}
           >
             <option value="">Todas as categorias</option>
+            <option value="uncategorized">Sem categoria</option>
             {categories.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.name}
@@ -824,8 +882,11 @@ export function FinanceTransactions() {
             type="button"
             onClick={() => setShowCategory((value) => !value)}
           >
-            Gerenciar categorias
+            Criar categoria rápida
           </button>
+          <Link className={styles.secondaryButton} href="/admin/finance/categories">
+            Gerenciador completo
+          </Link>
         </div>
         {showCategory && (
           <form className={styles.categoryForm} onSubmit={addCategory}>
@@ -866,7 +927,14 @@ export function FinanceTransactions() {
                 <section className={styles.categorySummary} aria-label="Resumo da categoria" role="region">
                   <div>
                     <span>{kind === "income" ? "Receitas em" : "Despesas em"}</span>
-                    <strong>{categories.find((item) => item.id === categoryId)?.name ?? "Categoria"}</strong>
+                    <strong>
+                      {categories.find((item) => item.id === categoryId)?.name ??
+                        (categoryId === "uncategorized" ? "Sem categoria" : "Categoria")}
+                      {allTime ? " · Todo o período" : ` · ${monthLabel(month)}`}
+                    </strong>
+                    {categories.find((item) => item.id === categoryId)?.excludedFromTotals && (
+                      <small>Esta categoria não entra nos totais gerais.</small>
+                    )}
                   </div>
                   <strong
                     className={kind === "income" ? styles.incomeAmount : styles.expenseAmount}
