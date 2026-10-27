@@ -50,6 +50,14 @@ export class FinanceController {
     return this.pluggy.registerConnection(req.user!.sub, dto.itemId);
   }
 
+  @Delete("pluggy/connections/:id")
+  removePluggyConnection(
+    @Req() req: AuthenticatedRequest,
+    @Param("id") id: string,
+  ) {
+    return this.pluggy.removeConnection(req.user!.sub, id);
+  }
+
   @Post("pluggy/sync")
   syncPluggyConnections(@Req() req: AuthenticatedRequest) {
     return this.pluggy.syncUserConnections(req.user!.sub, true);
@@ -156,6 +164,19 @@ export class FinanceController {
   @Delete("investments/:id")
   removeInvestment(@Req() req: AuthenticatedRequest, @Param("id") id: string) {
     return this.finance.removeInvestment(req.user!.sub, id);
+  }
+
+  @Get("categories/annual-summary")
+  getAnnualCategorySummary(
+    @Req() req: AuthenticatedRequest,
+    @Query() query: { fromYear?: string; toYear?: string },
+  ) {
+    const currentYear = new Date().getUTCFullYear();
+    return this.finance.getAnnualCategorySummary(
+      req.user!.sub,
+      this.parsePositiveInt(query.fromYear, currentYear - 4),
+      this.parsePositiveInt(query.toYear, currentYear),
+    );
   }
 
   @Get("categories")

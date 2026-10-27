@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { AiMemoryModule } from './ai-memory/ai-memory.module';
 import { EnseadaModule } from './enseada/enseada.module';
@@ -10,6 +11,7 @@ import { ThreadsModule } from './threads/threads.module';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     AiMemoryModule,

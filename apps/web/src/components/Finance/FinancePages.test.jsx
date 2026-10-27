@@ -575,3 +575,38 @@ test("edits an existing investment", async () => {
   );
   expect(JSON.parse(request[1].body)).toMatchObject({ name: "Tesouro IPCA", amountCents: 10000 });
 });
+
+test("disconnect action revokes the Pluggy link and keeps history", async () => {
+  const response = (data) => ({ status: 200, ok: true, json: async () => data });
+  const connection = { id: "connection-1", institutionName: "Banco Exemplo", status: "UPDATED" };
+  const confirmSpy = jest.spyOn(window, "confirm").mockReturnValue(true);
+  authFetch.mockImplementation(async (url, options = {}) => {
+    if (url.endsWith("/pluggy/connections/connection-1") && options.method === "DELETE")
+      return response({ success: true, historyPreserved: true });
+    if (url.endsWith("/pluggy/connections")) return response([connection]);
+    if (url.includes("/overview")) return response({ totals: {}, categories: [], daily: [], recentTransactions: [] });
+    return response({ items: [], totalPages: 1 });
+  });
+  render(<FinanceDashboard />);
+  fireEvent.click(await screen.findByRole("button", { name: "Remover conexão com Banco Exemplo" }));
+  await waitFor(() => expect(authFetch).toHaveBeenCalledWith(
+    "/admin/finance/pluggy/connections/connection-1", { method: "DELETE" },
+  ));
+  expect(confirmSpy).toHaveBeenCalled();
+  expect(await screen.findByRole("status")).toHaveTextContent("lançamentos importados foram mantidos");
+  confirmSpy.mockRestore();
+});
+
+test("loads the all-time view for a category", async () => {
+  const response = (data) => ({ status: 200, ok: true, json: async () => data });
+  window.history.replaceState({}, "", "/admin/finance/transactions?categoryId=housing&period=all");
+  authFetch.mockImplementation(async (url) =>
+    url.includes("/categories")
+      ? response([{ id: "housing", name: "Moradia", color: "#176244" }])
+      : response({ items: [row], totalPages: 1, totalExpenseAmountCents: 4500 }),
+  );
+  render(<FinanceTransactions />);
+  expect(await screen.findByText("Mercado")).toBeInTheDocument();
+  expect(screen.getByText("Todo o período")).toBeInTheDocument();
+  expect(authFetch).toHaveBeenCalledWith(expect.stringContaining("month=all"));
+});

@@ -48,7 +48,7 @@ describe("FinanceService", () => {
         deleteMany: jest.fn(),
       },
       financeCategory: {
-        findMany: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
         findFirst: jest.fn(),
         create: jest.fn(),
       },
@@ -102,6 +102,91 @@ describe("FinanceService", () => {
         where: expect.objectContaining({ userId: "admin-1" }),
       }),
     );
+  });
+
+  it("excludes the Lixo category from general overview totals but keeps its records stored", async () => {
+    const { service, prisma } = makeService();
+    prisma.financeTransaction.findMany.mockResolvedValue([
+      ...transactions,
+      {
+        id: "ignored-expense",
+        amountCents: 90000,
+        kind: "expense",
+        category: { id: "trash", name: "  lixo ", color: "#000000" },
+        occurredAt: new Date("2026-06-05T12:00:00Z"),
+        description: "Desconsiderar",
+      },
+    ] as never);
+
+    const result = await service.getOverview("admin-1", "2026-06");
+
+    expect(result.totals.expensesCents).toBe(16000);
+    expect(result.categories.map((category) => category.id)).not.toContain("trash");
+    expect(result.daily.find((day) => day.day === 5)?.expensesCents).toBe(0);
+    expect(result.recentTransactions.map((item) => item.id)).not.toContain("ignored-expense");
+  });
+
+  it("returns annual expenses grouped by category and excludes Lixo and income", async () => {
+    const { service, prisma } = makeService();
+    prisma.financeTransaction.findMany.mockResolvedValue([
+      { id: "food-24", kind: "expense", amountCents: 5000, occurredAt: new Date("2024-02-01T12:00:00Z"), category: { id: "food", name: "Alimentação", color: "#f97316" } },
+      { id: "food-25", kind: "expense", amountCents: 7000, occurredAt: new Date("2025-02-01T12:00:00Z"), category: { id: "food", name: "Alimentação", color: "#f97316" } },
+      { id: "trash-24", kind: "expense", amountCents: 90000, occurredAt: new Date("2024-02-01T12:00:00Z"), category: { id: "trash", name: "Lixo", color: "#000000" } },
+      { id: "income-25", kind: "income", amountCents: 100000, occurredAt: new Date("2025-02-01T12:00:00Z"), category: { id: "salary", name: "Salário", color: "#22c55e" } },
+    ] as never);
+
+    await expect(
+      service.getAnnualCategorySummary("admin-1", 2024, 2026),
+    ).resolves.toEqual({
+      fromYear: 2024,
+      toYear: 2026,
+      years: [2024, 2025, 2026],
+      categories: [
+        {
+          id: "food",
+          name: "Alimentação",
+          color: "#f97316",
+          totals: [
+            { year: 2024, amountCents: 5000 },
+            { year: 2025, amountCents: 7000 },
+            { year: 2026, amountCents: 0 },
+          ],
+        },
+      ],
+    });
+    expect(prisma.financeTransaction.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ userId: "admin-1", kind: "expense" }),
+      }),
+    );
+  });
+
+  it("lists all periods for a category while excluding Lixo from the expense total", async () => {
+    const { service, prisma } = makeService();
+    prisma.financeCategory.findMany.mockResolvedValue([
+      { id: "trash", name: "Lixo" },
+    ] as never);
+    prisma.financeTransaction.aggregate
+      .mockResolvedValueOnce({ _sum: { amountCents: 0 } } as never)
+      .mockResolvedValueOnce({ _sum: { amountCents: 0 } } as never);
+
+    const result = await service.listTransactions("admin-1", {
+      month: "all",
+      categoryId: "trash",
+      kind: "all",
+    });
+
+    expect(prisma.financeTransaction.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ userId: "admin-1", categoryId: "trash" }),
+      }),
+    );
+    expect(prisma.financeTransaction.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ categoryId: "trash", kind: "expense" }),
+      }),
+    );
+    expect(result.totalExpenseAmountCents).toBe(0);
   });
 
   it("rejects impossible calendar dates instead of normalizing them into another month", async () => {

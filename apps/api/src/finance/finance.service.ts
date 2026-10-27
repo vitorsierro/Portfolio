@@ -25,6 +25,10 @@ function monthBounds(month: string) {
   };
 }
 
+function isExcludedFromTotals(categoryName?: string | null) {
+  return categoryName?.normalize("NFKC").trim().toLocaleLowerCase("pt-BR") === "lixo";
+}
+
 function localizeTransactionCategory<T extends { category?: { name: string } | null }>(
   transaction: T,
 ) {
@@ -44,14 +48,16 @@ export class FinanceService {
 
   async getOverview(userId: string, month: string) {
     const bounds = monthBounds(month);
-    const transactions = await this.prisma.financeTransaction.findMany({
-      where: {
-        userId,
-        occurredAt: { gte: bounds.previousStart, lt: bounds.nextStart },
-      },
-      include: { category: true },
-      orderBy: { occurredAt: "desc" },
-    });
+    const transactions = (
+      await this.prisma.financeTransaction.findMany({
+        where: {
+          userId,
+          occurredAt: { gte: bounds.previousStart, lt: bounds.nextStart },
+        },
+        include: { category: true },
+        orderBy: { occurredAt: "desc" },
+      })
+    ).filter((item) => !isExcludedFromTotals(item.category?.name));
     const current = transactions.filter(
       (item) => item.occurredAt >= bounds.currentStart,
     );
@@ -130,18 +136,45 @@ export class FinanceService {
     },
   ) {
     const month = query.month ?? new Date().toISOString().slice(0, 7);
-    const bounds = monthBounds(month);
+    const allTime = month === "all";
+    const bounds = allTime ? null : monthBounds(month);
     const page = Math.max(1, query.page ?? 1);
     const limit = Math.min(100, Math.max(1, query.limit ?? 20));
     const where = {
       userId,
-      occurredAt: { gte: bounds.currentStart, lt: bounds.nextStart },
+      ...(bounds
+        ? { occurredAt: { gte: bounds.currentStart, lt: bounds.nextStart } }
+        : {}),
       ...(query.kind === "expense" || query.kind === "income"
         ? { kind: query.kind }
         : {}),
-      ...(query.categoryId ? { categoryId: query.categoryId } : {}),
+      ...(query.categoryId === "uncategorized"
+        ? { categoryId: null }
+        : query.categoryId
+          ? { categoryId: query.categoryId }
+          : {}),
       ...(query.search ? { description: { contains: query.search } } : {}),
     };
+    const categories = await this.prisma.financeCategory.findMany({
+      where: { userId },
+      select: { id: true, name: true },
+    });
+    const excludedCategoryIds = categories
+      .filter((category) => isExcludedFromTotals(category.name))
+      .map((category) => category.id);
+    const totalsWhere = excludedCategoryIds.length
+      ? {
+          ...where,
+          AND: [
+            {
+              OR: [
+                { categoryId: null },
+                { categoryId: { notIn: excludedCategoryIds } },
+              ],
+            },
+          ],
+        }
+      : where;
     const [items, total, aggregate, expenseAggregate] = await this.prisma.$transaction([
       this.prisma.financeTransaction.findMany({
         where,
@@ -152,11 +185,11 @@ export class FinanceService {
       }),
       this.prisma.financeTransaction.count({ where }),
       this.prisma.financeTransaction.aggregate({
-        where,
+        where: totalsWhere,
         _sum: { amountCents: true },
       }),
       this.prisma.financeTransaction.aggregate({
-        where: { ...where, kind: "expense" },
+        where: { ...totalsWhere, kind: "expense" },
         _sum: { amountCents: true },
       }),
     ]);
@@ -381,7 +414,81 @@ export class FinanceService {
     return categories.map((category) => ({
       ...category,
       name: translateCategoryName(category.name),
+      excludedFromTotals: isExcludedFromTotals(category.name),
     }));
+  }
+
+  async getAnnualCategorySummary(userId: string, fromYear: number, toYear: number) {
+    const currentYear = new Date().getUTCFullYear();
+    if (
+      !Number.isInteger(fromYear) ||
+      !Number.isInteger(toYear) ||
+      fromYear < 2000 ||
+      toYear > currentYear + 1 ||
+      fromYear > toYear ||
+      toYear - fromYear > 9
+    ) {
+      throw new BadRequestException("Intervalo de anos inválido");
+    }
+
+    const years = Array.from({ length: toYear - fromYear + 1 }, (_, index) => fromYear + index);
+    const transactions = await this.prisma.financeTransaction.findMany({
+      where: {
+        userId,
+        kind: "expense",
+        occurredAt: {
+          gte: new Date(Date.UTC(fromYear, 0, 1)),
+          lt: new Date(Date.UTC(toYear + 1, 0, 1)),
+        },
+      },
+      select: {
+        kind: true,
+        amountCents: true,
+        occurredAt: true,
+        category: { select: { id: true, name: true, color: true } },
+      },
+    });
+
+    const grouped = new Map<
+      string,
+      { id: string; name: string; color: string; amounts: Map<number, number> }
+    >();
+    for (const transaction of transactions) {
+      if (transaction.kind !== "expense") continue;
+      const sourceCategory = transaction.category;
+      if (isExcludedFromTotals(sourceCategory?.name)) continue;
+      const id = sourceCategory?.id ?? "uncategorized";
+      const category = grouped.get(id) ?? {
+        id,
+        name: sourceCategory
+          ? translateCategoryName(sourceCategory.name)
+          : "Sem categoria",
+        color: sourceCategory?.color ?? "#a3b7ad",
+        amounts: new Map<number, number>(),
+      };
+      const year = transaction.occurredAt.getUTCFullYear();
+      category.amounts.set(
+        year,
+        (category.amounts.get(year) ?? 0) + transaction.amountCents,
+      );
+      grouped.set(id, category);
+    }
+
+    return {
+      fromYear,
+      toYear,
+      years,
+      categories: Array.from(grouped.values())
+        .map(({ amounts, ...category }) => ({
+          ...category,
+          totals: years.map((year) => ({ year, amountCents: amounts.get(year) ?? 0 })),
+        }))
+        .sort(
+          (left, right) =>
+            right.totals.reduce((sum, item) => sum + item.amountCents, 0) -
+            left.totals.reduce((sum, item) => sum + item.amountCents, 0),
+        ),
+    };
   }
 
   async createCategory(

@@ -795,4 +795,122 @@
   .financeNav a { padding: 10px 9px; white-space: nowrap; }
   .investmentRow { grid-template-columns: 1fr auto; gap: 8px; }
   .investmentRow .rowActions { grid-column: 1 / -1; justify-content: flex-start; }
+  .categoryManagerGrid { grid-template-columns: 1fr; }
+  .managedCategory { grid-template-columns: 10px minmax(0, 1fr) auto; }
+  .managedCategoryTotal { grid-column: 2; }
+  .managedCategory a { grid-column: 2 / -1; }
+  .annualBarRow { grid-template-columns: 42px minmax(50px, 1fr) 98px; gap: 7px; }
+  .annualBarValue { font-size: 10px; }
+  .connectionActions { gap: 7px; }
+  .connectionRemove { padding: 6px 8px; }
+  .yearRange { width: 100%; }
+}
+
+.connectionActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.connectionActions > span { color: #16815a; font-size: 12px; font-weight: 600; }
+.connectionRemove {
+  border: 1px solid #efd6d4;
+  background: #fff8f7;
+  color: #a84640;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.connectionRemove:disabled { opacity: .55; cursor: wait; }
+.yearRange { display: flex; gap: 10px; align-items: flex-end; }
+.yearRange label {
+  display: grid;
+  gap: 5px;
+  color: #718279;
+  font-size: 11px;
+  font-weight: 600;
+}
+.yearRange select {
+  min-width: 90px;
+  border: 1px solid #dfe8e3;
+  border-radius: 8px;
+  background: #fff;
+  padding: 9px 10px;
+  color: #274638;
+  font: inherit;
+}
+.annualChart { display: grid; gap: 20px; }
+.annualCategory { padding-bottom: 17px; border-bottom: 1px solid #edf1ee; }
+.annualCategory:last-child { padding-bottom: 0; border-bottom: 0; }
+.annualCategoryHeading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  color: #284b3a;
+  font-size: 13px;
+}
+.annualBarRow {
+  display: grid;
+  grid-template-columns: 48px minmax(80px, 1fr) 116px;
+  align-items: center;
+  gap: 10px;
+  margin: 7px 0;
+  color: #728178;
+  font-size: 11px;
+}
+.annualBarTrack { height: 10px; border-radius: 999px; background: #eef2ef; overflow: hidden; }
+.annualBar { display: block; height: 100%; min-width: 0; border-radius: inherit; transition: width .25s ease; }
+.annualBarValue { text-align: right; color: #4d6256; font-variant-numeric: tabular-nums; }
+.categoryManagerGrid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(230px, .75fr); gap: 16px; align-items: start; }
+.managedCategoryList { display: grid; }
+.managedCategory {
+  display: grid;
+  grid-template-columns: 10px minmax(110px, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 2px;
+  border-bottom: 1px solid #edf1ee;
+  color: #315141;
+  font-size: 12px;
+}
+.managedCategory:last-child { border-bottom: 0; }
+.managedCategory > div { display: grid; gap: 4px; }
+.managedCategory > div small { color: #87958e; font-size: 10px; }
+.managedCategoryTotal { white-space: nowrap; color: #435d4e; font-variant-numeric: tabular-nums; }
+.managedCategory a { color: #18744e; font-size: 11px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.managedCategory a:hover { text-decoration: underline; }
+.categoryManagerForm { display: grid; gap: 9px; }
+.categoryManagerForm label { color: #52675c; font-size: 12px; font-weight: 600; }
+.categoryManagerForm input:not([type="color"]) {
+  width: 100%;
+  border: 1px solid #dfe8e3;
+  border-radius: 8px;
+  padding: 10px 11px;
+  color: #264536;
+  font: inherit;
+}
+.categoryManagerForm .colorInput { width: 58px; height: 38px; padding: 3px; border: 1px solid #dfe8e3; border-radius: 8px; background: #fff; cursor: pointer; }
+.categoryManagerForm .primaryButton { justify-self: start; margin-top: 6px; }
+.periodToggle {
+  border: 1px solid #dfe8e3;
+  background: #fff;
+  color: #3d6650;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.allPeriodLabel { color: #476153; font-size: 12px; font-weight: 600; padding: 8px 4px; }
+@media (max-width: 640px) {
+  .categoryManagerGrid { grid-template-columns: 1fr; }
+  .managedCategory { grid-template-columns: 10px minmax(0, 1fr) auto; }
+  .managedCategoryTotal { grid-column: 2; }
+  .managedCategory a { grid-column: 2 / -1; }
+  .annualBarRow { grid-template-columns: 42px minmax(50px, 1fr) 98px; gap: 7px; }
+  .annualBarValue { font-size: 10px; }
+  .connectionActions { gap: 7px; }
+  .connectionRemove { padding: 6px 8px; }
+  .yearRange { width: 100%; }
 }
