@@ -25,10 +25,6 @@ const localDateString = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 };
 const currentMonth = () => localDateString().slice(0, 7);
-const queryParam = (name) =>
-  typeof window === "undefined"
-    ? null
-    : new URLSearchParams(window.location.search).get(name);
 const monthLabel = (month) =>
   new Date(`${month}-15T12:00:00`).toLocaleDateString("pt-BR", {
     month: "long",
@@ -605,10 +601,11 @@ const emptyForm = () => ({
 
 export function FinanceTransactions() {
   const router = useRouter();
-  const [month, setMonth] = useState(() => queryParam("month") ?? currentMonth());
-  const [allTime, setAllTime] = useState(() => queryParam("period") === "all");
-  const [kind, setKind] = useState(() => queryParam("kind") ?? "all");
-  const [categoryId, setCategoryId] = useState(() => queryParam("categoryId") ?? "");
+  const [month, setMonth] = useState("");
+  const [allTime, setAllTime] = useState(false);
+  const [kind, setKind] = useState("all");
+  const [categoryId, setCategoryId] = useState("");
+  const [filtersInitialized, setFiltersInitialized] = useState(false);
   const [search, setSearch] = useState("");
   const [categories, setCategories] = useState([]);
   const [items, setItems] = useState([]);
@@ -633,6 +630,7 @@ export function FinanceTransactions() {
   }, [editing]);
 
   const load = useCallback(async () => {
+    if (!filtersInitialized) return;
     setStatus("loading");
     try {
       const authenticated = await ensureSession();
@@ -686,11 +684,20 @@ export function FinanceTransactions() {
     } catch {
       setStatus("error");
     }
-  }, [month, allTime, page, kind, categoryId, search, router]);
+  }, [filtersInitialized, month, allTime, page, kind, categoryId, search, router]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    const params = new URLSearchParams(window.location.search);
+    setMonth(params.get("month") ?? currentMonth());
+    setAllTime(params.get("period") === "all");
+    setKind(params.get("kind") ?? "all");
+    setCategoryId(params.get("categoryId") ?? "");
+    setFiltersInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    if (filtersInitialized) load();
+  }, [load, filtersInitialized]);
   useEffect(() => {
     if (
       typeof window !== "undefined" &&
