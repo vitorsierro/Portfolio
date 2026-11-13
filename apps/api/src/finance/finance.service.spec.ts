@@ -52,6 +52,7 @@ describe("FinanceService", () => {
         findFirst: jest.fn(),
         create: jest.fn(),
       },
+      financeCategoryRule: { upsert: jest.fn(), deleteMany: jest.fn() },
       financeInvestment: {
         findMany: jest.fn().mockResolvedValue([]),
         count: jest.fn().mockResolvedValue(0),
@@ -124,6 +125,25 @@ describe("FinanceService", () => {
     expect(result.categories.map((category) => category.id)).not.toContain("trash");
     expect(result.daily.find((day) => day.day === 5)?.expensesCents).toBe(0);
     expect(result.recentTransactions.map((item) => item.id)).not.toContain("ignored-expense");
+  });
+
+  it("não soma o pagamento da fatura novamente às compras do cartão", async () => {
+    const { service, prisma } = makeService();
+    prisma.financeTransaction.findMany.mockResolvedValue([
+      ...transactions,
+      { ...transactions[0], id: "bill-payment", amountCents: 99000,
+        category: { id: "bill", name: "Cartões — Pagamento de fatura", color: "#000000" } },
+    ] as never);
+    const overview = await service.getOverview("admin-1", "2026-06");
+    expect(overview.totals.expensesCents).toBe(16000);
+    expect(overview.recentTransactions.map((row) => row.id)).not.toContain("bill-payment");
+    prisma.financeCategory.findMany.mockResolvedValue([
+      { id: "bill", name: "Cartões — Pagamento de fatura" },
+    ] as never);
+    await service.listTransactions("admin-1", { month: "2026-06" });
+    expect(prisma.financeTransaction.aggregate).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ AND: [{ OR: [{ categoryId: null }, { categoryId: { notIn: ["bill"] } }] }] }),
+    }));
   });
 
   it("returns annual expenses grouped by category and excludes Lixo and income", async () => {

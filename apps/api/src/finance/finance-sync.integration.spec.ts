@@ -93,4 +93,22 @@ describe("sincronização financeira com SQLite real", () => {
     await expect(first).rejects.toThrow("Pluggy indisponível");
     await expect(service.syncUserConnections(userId, true)).resolves.toMatchObject({ syncedConnections: 4 });
   });
+
+  it("aprende categoria no SQLite e reaplica após reiniciar o serviço", async () => {
+    const category = await prisma.financeCategory.create({ data: { userId, name: "Compras — Casa e utilidades" } });
+    const row = await prisma.financeTransaction.create({ data: { userId, description: "Loja Central 1/3",
+      bankDescription: "Loja Central 1/3", kind: "expense", amountCents: 1500, occurredAt: date,
+      source: "pluggy", pluggyTransactionId: "learned-first" } });
+    await finance.updateTransaction(userId, row.id, { categoryId: category.id });
+    expect(await prisma.financeCategoryRule.findFirst({ where: { userId } }))
+      .toMatchObject({ merchantKey: "loja central", categoryId: category.id, amountCents: -1 });
+    client.fetchAllTransactions.mockResolvedValue([{ id: "learned-next", date, description: "LOJA CENTRAL 2/3", amount: 16,
+      type: "DEBIT", currencyCode: "BRL", category: "Shopping" }]);
+    const restarted = new PluggyService(prisma as never, () => client as never);
+    await restarted.syncUserConnections(userId, true);
+    expect(await prisma.financeTransaction.findFirst({ where: { pluggyTransactionId: "learned-next" } }))
+      .toMatchObject({ categoryId: category.id, categoryEdited: false, bankDescription: "LOJA CENTRAL 2/3" });
+    await finance.updateTransaction(userId, row.id, { categoryId: null });
+    expect(await prisma.financeCategoryRule.count({ where: { userId } })).toBe(0);
+  });
 });

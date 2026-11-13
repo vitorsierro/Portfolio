@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { translateCategoryName } from "./category-localization";
+import { categoryRuleKey } from "./category-learning";
 
 const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -26,7 +27,8 @@ function monthBounds(month: string) {
 }
 
 function isExcludedFromTotals(categoryName?: string | null) {
-  return categoryName?.normalize("NFKC").trim().toLocaleLowerCase("pt-BR") === "lixo";
+  const name = categoryName?.normalize("NFKC").trim().toLocaleLowerCase("pt-BR");
+  return name === "lixo" || name === "cartões — pagamento de fatura";
 }
 
 function localizeTransactionCategory<T extends { category?: { name: string } | null }>(
@@ -278,11 +280,24 @@ export class FinanceService {
       if ("amountCents" in data) updateData.amountEdited = true;
       if ("categoryId" in data) updateData.categoryEdited = true;
     }
-    return this.prisma.financeTransaction.update({
+    const key = current.source === "pluggy" && "categoryId" in data && data.categoryId !== current.categoryId
+      ? categoryRuleKey(current.bankDescription || current.description, current.kind, current.amountCents)
+      : null;
+    const update = this.prisma.financeTransaction.update({
       where: { id },
       data: updateData,
       include: { category: true },
     });
+    if (!key) return update;
+    const learn = data.categoryId
+      ? this.prisma.financeCategoryRule.upsert({
+          where: { userId_merchantKey_kind_amountCents: { userId, ...key } },
+          create: { userId, ...key, categoryId: data.categoryId },
+          update: { categoryId: data.categoryId },
+        })
+      : this.prisma.financeCategoryRule.deleteMany({ where: { userId, ...key } });
+    const [updated] = await this.prisma.$transaction([update, learn]);
+    return updated;
   }
 
   async removeTransaction(userId: string, id: string) {
