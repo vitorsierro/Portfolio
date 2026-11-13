@@ -10,6 +10,7 @@ import {
 import { PluggyClient } from "pluggy-sdk";
 import { PrismaService } from "../prisma/prisma.service";
 import { translateCategoryName } from "./category-localization";
+import { isOwnPix } from "./own-transfer";
 
 export const PLUGGY_CLIENT_FACTORY = Symbol("PLUGGY_CLIENT_FACTORY");
 type PluggyClientApi = Pick<
@@ -21,48 +22,10 @@ type PluggyClientFactory = () => PluggyClientApi;
 const SYNC_INTERVAL_MS = 60 * 60 * 1000;
 const OPEN_FINANCE_HISTORY_MONTHS = 12;
 
-type ImportedTransactionFingerprint = {
-  id: string;
-  description: string;
-  amountCents: number;
-  kind: string;
-  accountName: string;
-  occurredAt: Date;
-  categoryEdited: boolean;
-  descriptionEdited: boolean;
-  amountEdited: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-function normalizeDuplicateField(value: string) {
-  return value
-    .normalize("NFKC")
-    .trim()
-    .toLocaleLowerCase("pt-BR")
-    .replace(/\s+/g, " ");
-}
-
-function duplicateFingerprint(transaction: ImportedTransactionFingerprint) {
-  const timestamp = transaction.occurredAt.getTime();
-  if (!Number.isFinite(timestamp)) return null;
-  const minute = Math.floor(timestamp / 60_000);
-  return [
-    normalizeDuplicateField(transaction.description),
-    transaction.amountCents,
-    transaction.kind,
-    normalizeDuplicateField(transaction.accountName),
-    minute,
-  ].join("|");
-}
-
-function editedFieldCount(transaction: ImportedTransactionFingerprint) {
-  return Number(transaction.descriptionEdited) + Number(transaction.amountEdited) + Number(transaction.categoryEdited);
-}
-
 @Injectable()
 export class PluggyService {
   private client?: PluggyClientApi;
+  private readonly activeSyncs = new Map<string, ReturnType<PluggyService["runSync"]>>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -167,18 +130,30 @@ export class PluggyService {
     return { success: true, historyPreserved: true };
   }
 
-  async syncUserConnections(userId: string, force = false) {
+  syncUserConnections(userId: string, force = false) {
+    const active = this.activeSyncs.get(userId);
+    if (active) return active;
+    const pending = this.runSync(userId, force).finally(() => {
+      this.activeSyncs.delete(userId);
+    });
+    this.activeSyncs.set(userId, pending);
+    return pending;
+  }
+
+  private async runSync(userId: string, force: boolean) {
+    // Apply the rule to the full saved history, even without working Pluggy
+    // credentials or when a connection is within the hourly cooldown.
+    await this.excludeSavedOwnPix(userId);
     const connections = await this.prisma.pluggyConnection.findMany({
       where: { userId },
     });
     if (connections.length === 0) {
-      const removedDuplicateTransactions = await this.deduplicateImportedTransactions(userId);
       return {
         connections: 0,
         syncedConnections: 0,
         pendingConnections: 0,
         importedTransactions: 0,
-        removedDuplicateTransactions,
+        removedDuplicateTransactions: 0,
       };
     }
 
@@ -207,7 +182,7 @@ export class PluggyService {
       if (item.status !== "UPDATED") {
         await this.prisma.pluggyConnection.update({
           where: { id: connection.id },
-          data: { status: item.status, lastSyncedAt: now },
+          data: { status: item.status },
         });
         pendingConnections += 1;
         continue;
@@ -262,6 +237,8 @@ export class PluggyService {
             source: "pluggy",
             pluggyTransactionId: transaction.id,
             occurredAt,
+            ownTransferChecked: true,
+            ...(isOwnPix(transaction) ? { ownTransfer: true } : {}),
           };
 
           const where = {
@@ -320,66 +297,33 @@ export class PluggyService {
       syncedConnections += 1;
     }
 
-    const removedDuplicateTransactions = await this.deduplicateImportedTransactions(userId);
+    // IDs are the database identity. Similar descriptions/amounts/times can
+    // represent legitimate separate payments and must never trigger deletion.
     return {
       connections: connections.length,
       syncedConnections,
       pendingConnections,
       importedTransactions,
-      removedDuplicateTransactions,
+      removedDuplicateTransactions: 0,
     };
   }
 
-  async deduplicateImportedTransactions(userId: string) {
-    const transactions = (await this.prisma.financeTransaction.findMany({
-      where: { userId, source: "pluggy" },
-      select: {
-        id: true,
-        description: true,
-        amountCents: true,
-        kind: true,
-        accountName: true,
-        occurredAt: true,
-        categoryEdited: true,
-        descriptionEdited: true,
-        amountEdited: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    })) as ImportedTransactionFingerprint[];
-
-    const groups = new Map<string, ImportedTransactionFingerprint[]>();
-    for (const transaction of transactions) {
-      const fingerprint = duplicateFingerprint(transaction);
-      if (!fingerprint) continue;
-      const group = groups.get(fingerprint) ?? [];
-      group.push(transaction);
-      groups.set(fingerprint, group);
+  private async excludeSavedOwnPix(userId: string) {
+    const saved = await this.prisma.financeTransaction.findMany({
+      where: { userId, source: "pluggy", ownTransferChecked: false },
+      select: { id: true, description: true },
+    });
+    // Chunk to stay below SQLite's bound-parameter limit.
+    for (const ownTransfer of [true, false]) {
+      const ids = saved.filter((row) => isOwnPix(row) === ownTransfer).map((row) => row.id);
+      for (let index = 0; index < ids.length; index += 400) {
+        await this.prisma.financeTransaction.updateMany({
+          where: { userId, source: "pluggy", ownTransferChecked: false,
+            id: { in: ids.slice(index, index + 400) } },
+          data: { ownTransferChecked: true, ...(ownTransfer ? { ownTransfer: true } : {}) },
+        });
+      }
     }
-
-    const deletions: string[][] = [];
-    for (const group of groups.values()) {
-      if (group.length < 2) continue;
-      group.sort((left, right) => {
-        const editedDifference = editedFieldCount(right) - editedFieldCount(left);
-        if (editedDifference) return editedDifference;
-        const updatedDifference = right.updatedAt.getTime() - left.updatedAt.getTime();
-        if (updatedDifference) return updatedDifference;
-        const createdDifference = left.createdAt.getTime() - right.createdAt.getTime();
-        return createdDifference || left.id.localeCompare(right.id);
-      });
-      deletions.push(group.slice(1).map(({ id }) => id));
-    }
-
-    if (deletions.length === 0) return 0;
-    const results = await this.prisma.$transaction(
-      deletions.map((ids) =>
-        this.prisma.financeTransaction.deleteMany({
-          where: { userId, source: "pluggy", id: { in: ids } },
-        }),
-      ),
-    );
-    return results.reduce((total, result) => total + result.count, 0);
   }
 
   private getClient(): PluggyClientApi {

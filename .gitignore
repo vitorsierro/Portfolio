@@ -60,3 +60,6 @@ rd-report.json
 # banco efemero da CI
 apps/api/**/ci.db
 apps/api/ci.db
+
+# cópias de produção e relatórios financeiros locais
+/private-data/
