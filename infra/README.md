@@ -1,5 +1,8 @@
 # Infra — VPS (Hostinger KVM2)
 
+Para as regras financeiras, migração e acesso ao banco de produção, consulte
+[Finanças: sincronização e acesso à produção](finance-production.md).
+
 API NestJS + Excalidraw + Hermes atrás de **um único login**, com nginx
 fazendo forward-auth contra `GET /auth/verify` da própria API.
 

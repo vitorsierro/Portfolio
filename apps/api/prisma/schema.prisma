@@ -235,6 +235,8 @@ model FinanceTransaction {
   descriptionEdited   Boolean          @default(false)
   amountEdited        Boolean          @default(false)
   categoryEdited      Boolean          @default(false)
+  ownTransfer         Boolean          @default(false)
+  ownTransferChecked  Boolean          @default(false)
   occurredAt          DateTime
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt

@@ -52,6 +52,7 @@ export class FinanceService {
       await this.prisma.financeTransaction.findMany({
         where: {
           userId,
+          ownTransfer: false,
           occurredAt: { gte: bounds.previousStart, lt: bounds.nextStart },
         },
         include: { category: true },
@@ -142,6 +143,7 @@ export class FinanceService {
     const limit = Math.min(100, Math.max(1, query.limit ?? 20));
     const where = {
       userId,
+      ownTransfer: false,
       ...(bounds
         ? { occurredAt: { gte: bounds.currentStart, lt: bounds.nextStart } }
         : {}),
@@ -435,6 +437,7 @@ export class FinanceService {
     const transactions = await this.prisma.financeTransaction.findMany({
       where: {
         userId,
+        ownTransfer: false,
         kind: "expense",
         occurredAt: {
           gte: new Date(Date.UTC(fromYear, 0, 1)),

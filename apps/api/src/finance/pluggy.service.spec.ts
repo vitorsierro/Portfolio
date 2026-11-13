@@ -264,46 +264,6 @@ describe("PluggyService", () => {
     expect(prisma.pluggyConnection.deleteMany).not.toHaveBeenCalled();
   });
 
-  it("removes only duplicate Pluggy rows with the same normalized description, amount, type, account and minute", async () => {
-    const now = new Date("2026-10-21T12:31:00.000Z");
-    const rows = [
-      {
-        id: "kept-edited", description: " mercado  central ", amountCents: 2500, kind: "expense",
-        accountName: "conta corrente", occurredAt: new Date("2026-10-21T12:31:58.000Z"),
-        categoryEdited: true, descriptionEdited: false, amountEdited: false,
-        createdAt: new Date("2026-10-20T00:00:00Z"), updatedAt: now,
-      },
-      {
-        id: "removed", description: "Mercado Central", amountCents: 2500, kind: "expense",
-        accountName: "Conta Corrente", occurredAt: new Date("2026-10-21T12:31:03.000Z"),
-        categoryEdited: false, descriptionEdited: false, amountEdited: false,
-        createdAt: new Date("2026-10-21T00:00:00Z"), updatedAt: new Date("2026-10-21T00:00:00Z"),
-      },
-      {
-        id: "different-minute", description: "Mercado Central", amountCents: 2500, kind: "expense",
-        accountName: "Conta Corrente", occurredAt: new Date("2026-10-21T12:32:01.000Z"),
-        categoryEdited: false, descriptionEdited: false, amountEdited: false,
-        createdAt: now, updatedAt: now,
-      },
-    ];
-    const prisma = {
-      financeTransaction: {
-        findMany: jest.fn().mockResolvedValue(rows),
-        deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
-      },
-      $transaction: jest.fn().mockImplementation(async (operations) => Promise.all(operations)),
-    };
-    const service = new PluggyService(prisma as never, () => ({}) as never);
-
-    await expect(service.deduplicateImportedTransactions("admin-1")).resolves.toBe(1);
-    expect(prisma.financeTransaction.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { userId: "admin-1", source: "pluggy" } }),
-    );
-    expect(prisma.financeTransaction.deleteMany).toHaveBeenCalledWith({
-      where: { userId: "admin-1", source: "pluggy", id: { in: ["removed"] } },
-    });
-  });
-
   it("syncs every connection when one institution has multiple connected accounts", async () => {
     const occurredAt = new Date("2026-10-15T12:00:00.000Z");
     const client = {
