@@ -11,6 +11,8 @@ import { PluggyClient } from "pluggy-sdk";
 import { PrismaService } from "../prisma/prisma.service";
 import { translateCategoryName } from "./category-localization";
 import { isOwnPix } from "./own-transfer";
+import { inferFinanceCategory } from "./category-rules";
+import { findLearnedCategory } from "./category-learning";
 
 export const PLUGGY_CLIENT_FACTORY = Symbol("PLUGGY_CLIENT_FACTORY");
 type PluggyClientApi = Pick<
@@ -158,6 +160,9 @@ export class PluggyService {
     }
 
     const now = new Date();
+    const learnedRules = await this.prisma.financeCategoryRule.findMany({
+      where: { userId }, orderBy: { updatedAt: "desc" },
+    });
     const dateTo = now.toISOString().slice(0, 10);
     const dateFromDate = new Date(now);
     dateFromDate.setUTCMonth(dateFromDate.getUTCMonth() - OPEN_FINANCE_HISTORY_MONTHS);
@@ -200,9 +205,7 @@ export class PluggyService {
         for (const transaction of transactions) {
           if (
             account.type === "CREDIT" &&
-            ["PAGAMENTO", "PAGAMENTO_FATURA"].includes(
-              transaction.operationType ?? "",
-            )
+            transaction.operationType === "PAGAMENTO_FATURA"
           ) {
             // A card bill payment is not income; counting it would inflate totals
             // or double-count the debit already present on the bank account.
@@ -212,14 +215,22 @@ export class PluggyService {
           const occurredAt = new Date(transaction.date);
           if (!Number.isFinite(occurredAt.getTime())) continue;
 
-          const amountCents = Math.round(Math.abs(transaction.amount) * 100);
+          // Card purchases can be denominated in USD even on a BRL account.
+          // Use the bank's settled BRL amount; never relabel dollars as reais.
+          const amount = transaction.currencyCode && transaction.currencyCode !== "BRL"
+            ? transaction.amountInAccountCurrency
+            : transaction.amount;
+          if (amount == null) continue;
+          const amountCents = Math.round(Math.abs(amount) * 100);
           if (!Number.isSafeInteger(amountCents) || amountCents === 0) continue;
 
           const rawCategoryName = transaction.category?.trim().slice(0, 60);
-          const categoryName = rawCategoryName
+          const kind = transaction.type === "CREDIT" ? "income" : "expense";
+          const categoryName = inferFinanceCategory({ ...transaction, kind, amountCents }) ?? (rawCategoryName
             ? translateCategoryName(rawCategoryName).slice(0, 60)
-            : null;
-          const category = categoryName
+            : null);
+          const learnedId = findLearnedCategory(learnedRules, transaction.description ?? "", kind, amountCents);
+          const category = learnedId ? { id: learnedId } : categoryName
             ? await this.prisma.financeCategory.upsert({
                 where: { userId_name: { userId, name: categoryName } },
                 create: { userId, name: categoryName },
@@ -231,8 +242,9 @@ export class PluggyService {
             userId,
             categoryId: category?.id ?? null,
             description: (transaction.description || "Transação bancária").slice(0, 160),
+            bankDescription: (transaction.description || "").slice(0, 160),
             amountCents,
-            kind: transaction.type === "CREDIT" ? "income" : "expense",
+            kind,
             accountName: account.name.slice(0, 100),
             source: "pluggy",
             pluggyTransactionId: transaction.id,

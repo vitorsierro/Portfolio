@@ -39,6 +39,46 @@ indisponibilidade do provedor não apaga os dados já salvos.
 A regra de titular acima é específica desta instalação pessoal. Antes de usar
 o sistema para outros titulares, ela deve se tornar configuração por usuário.
 
+## Categorias e aprendizado
+
+`category-rules.ts` separa os gastos de moradia, assinaturas, compras,
+alimentação e transporte. O Pix para Luciana Sousa dos Santos Vilhanueva só
+é financiamento quando é uma saída de exatamente R$ 1.200. Outros valores
+não recebem essa classificação. Os boletos PM/PREF MUN GUARUJA foram
+confirmados pelo titular como IPTU; os de condomínio e Elektro têm regras
+próprias. Telefônica fica em Internet e telefonia sem presumir a modalidade.
+
+O cartão importa operações `PAGAMENTO` (compras e estornos), excluindo apenas
+`PAGAMENTO_FATURA`. Compras internacionais usam `amountInAccountCurrency`
+em BRL; sem conversão fornecida pelo banco, o valor não é importado como reais.
+O débito de pagamento da fatura na conta corrente fica registrado em
+`Cartões — Pagamento de fatura`, categoria excluída dos totais para evitar
+contar a mesma despesa duas vezes.
+
+Quando o titular muda uma categoria em um lançamento Pluggy, o sistema salva
+um exemplo em `FinanceCategoryRule`, junto com o usuário, estabelecimento,
+direção e, quando necessário, valor. A alteração do lançamento e a regra são
+salvas na mesma transação. A descrição original fica em `bankDescription`,
+para que editar a descrição visível não estrague a identificação do fornecedor.
+
+As regras aprendidas têm prioridade sobre as regras automáticas e a categoria
+do provedor, mas não substituem lançamentos já editados manualmente. Uma nova
+escolha para o mesmo exemplo atualiza sua regra; limpar a categoria remove
+o exemplo correspondente. Regras pertencem a um único usuário e sobrevivem
+a reinícios. Excluir uma categoria também remove seus exemplos por chave estrangeira.
+
+A comparação ignora acentos, caixa, pontuação e parcelas como `4/12`.
+Fornecedores conhecidos têm nomes canônicos. Outros nomes aceitam alta
+similaridade de palavras (mínimo 0,9 e três palavras compartilhadas), sem
+escolher entre categorias conflitantes com a mesma pontuação. Pix pessoais e
+marketplaces exigem nome normalizado exato e o mesmo valor; descrições
+genéricas como “Pagamento de pix” não geram aprendizado. O valor `-1` na regra
+representa estabelecimento sem restrição de valor.
+
+Não se presume o produto de uma compra genérica em marketplace: utiliza-se
+o tipo informado pelo banco, quando disponível, ou `Compras — Outros`.
+Assinaturas parceladas continuam nessa categoria, separadas por finalidade.
+
 ## Como disponibilizar o banco para análise
 
 O Compose configura SQLite em `/data/prod.db`, no volume `infra_api_data`.

@@ -142,6 +142,7 @@ export function translateCategoryName(value?: string | null): string {
   const label = value?.trim();
   if (!label) return "Outros";
   const normalized = normalizeCategory(label);
+  if (/^(Moradia|Compras|Assinaturas|Transporte|Alimentação|Lazer|Saúde|Educação) — \S/.test(label)) return label;
   const knownTranslation = CATEGORY_TRANSLATIONS[normalized];
   if (knownTranslation) return knownTranslation;
   if (

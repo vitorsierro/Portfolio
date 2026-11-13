@@ -21,6 +21,7 @@ model Admin {
   financeInvestments  FinanceInvestment[]
   pluggyConnections   PluggyConnection[]
   savedThreads        SavedThread[]
+  financeCategoryRules FinanceCategoryRule[]
 }
 
 // One row per signed-in browser. Holds BOTH credentials for that browser:
@@ -216,6 +217,7 @@ model FinanceCategory {
   icon         String               @default("circle")
   createdAt    DateTime             @default(now())
   transactions FinanceTransaction[]
+  rules        FinanceCategoryRule[]
 
   @@unique([userId, name])
 }
@@ -227,6 +229,7 @@ model FinanceTransaction {
   categoryId          String?
   category            FinanceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   description         String
+  bankDescription     String           @default("")
   amountCents         Int
   kind                String
   accountName         String           @default("Conta principal")
@@ -245,6 +248,22 @@ model FinanceTransaction {
   @@index([userId, occurredAt])
   @@index([userId, kind, occurredAt])
   @@index([categoryId])
+}
+
+model FinanceCategoryRule {
+  id          String          @id @default(cuid())
+  userId      String
+  user        Admin           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    FinanceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  merchantKey String
+  kind        String
+  amountCents Int             @default(-1)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([userId, merchantKey, kind, amountCents])
+  @@index([userId, kind])
 }
 
 model FinanceInvestment {

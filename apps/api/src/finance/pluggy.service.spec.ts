@@ -295,6 +295,7 @@ describe("PluggyService", () => {
       ]),
     };
     const prisma = {
+      financeCategoryRule: { findMany: jest.fn().mockResolvedValue([]) },
       pluggyConnection: {
         findMany: jest.fn().mockResolvedValue([
           { id: "connection-1", itemId: "item-1", lastSyncedAt: null },
@@ -381,13 +382,31 @@ describe("PluggyService", () => {
                 description: "Compra no cartão",
                 amount: 20,
                 type: "DEBIT",
-                operationType: "OUTROS",
+                operationType: "PAGAMENTO",
                 category: "Compras",
+              },
+              {
+                id: "foreign-purchase", date: occurredAt,
+                description: "Openai *Chatgpt Subscr", amount: 18.46,
+                amountInAccountCurrency: 103.4, currencyCode: "USD",
+                type: "DEBIT", operationType: "PAGAMENTO",
+              },
+              {
+                id: "foreign-without-conversion", date: occurredAt,
+                description: "Compra internacional", amount: 20,
+                amountInAccountCurrency: null, currencyCode: "USD",
+                type: "DEBIT", operationType: "PAGAMENTO",
+              },
+              {
+                id: "card-refund", date: occurredAt,
+                description: "Estorno de Uber - NuPay", amount: -25.99,
+                currencyCode: "BRL", type: "CREDIT", operationType: "PAGAMENTO",
               },
             ],
       ),
     };
     const prisma = {
+      financeCategoryRule: { findMany: jest.fn().mockResolvedValue([]) },
       pluggyConnection: {
         findMany: jest.fn().mockResolvedValue([
           {
@@ -413,8 +432,15 @@ describe("PluggyService", () => {
 
     await expect(service.syncUserConnections("admin-1", true)).resolves.toMatchObject({
       connections: 1,
-      importedTransactions: 2,
+      importedTransactions: 4,
     });
+    expect(prisma.financeTransaction.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      create: expect.objectContaining({ pluggyTransactionId: "foreign-purchase", amountCents: 10340 }),
+    }));
+    expect(prisma.financeTransaction.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      create: expect.objectContaining({ pluggyTransactionId: "card-refund", kind: "income", amountCents: 2599 }),
+    }));
+    expect(prisma.financeTransaction.upsert).toHaveBeenCalledTimes(4);
     expect(prisma.financeTransaction.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {

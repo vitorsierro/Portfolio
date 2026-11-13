@@ -1136,6 +1136,9 @@ export function FinanceTransactions() {
                       </option>
                     ))}
                   </select>
+                  {editing !== "new" && editing.source === "pluggy" && (
+                    <small>Ao mudar a categoria, próximas transações semelhantes usarão sua escolha. Pix e marketplaces também considerarão o valor.</small>
+                  )}
                 </label>
                 {!(editing !== "new" && editing.source === "pluggy") && (
                   <label>
