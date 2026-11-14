@@ -37,7 +37,8 @@ function inferCategory(input: CategoryInput): string | null {
   const description = normalize(input.description);
   const category = normalize(input.category ?? "");
   const receiver = normalize(input.paymentData?.receiver?.name ?? "");
-  if (/^pagamento (de |da )?fatura\b/.test(description) || category === "credit card payment") {
+  if (/^pagamento (de |da )?fatura\b/.test(description) || category === "credit card payment" ||
+      /^pagamento efetuado banco ibi s a\b/.test(description)) {
     return "Cartões — Pagamento de fatura";
   }
   if (input.amountCents === 120000 && /\bpix\b/.test(description) &&
@@ -45,8 +46,9 @@ function inferCategory(input: CategoryInput): string | null {
       description.endsWith("luciana sousa dos santos vilhanueva"))) {
     return "Moradia — Financiamento";
   }
-  if (/\b(pref mun guaruja|pm guaruja|iptu)\b/.test(description)) return "Moradia — IPTU";
-  if (/\b(cond edif resid itaparica iii|condominio)\b/.test(description)) return "Moradia — Condomínio";
+  if (input.kind === "expense" && /\bclaudia regina de olive(?:ira)?\b/.test(description)) return "Moradia — Geral";
+  if (/\b(pref mun guaruja|pm guaruja|iptu)\b/.test(description)) return "Moradia — Geral";
+  if (/\b(cond edif resid itaparica iii|condominio)\b/.test(description)) return "Moradia — Geral";
   if (/\b(elektro|eletricidade|energia eletrica)\b/.test(description)) return "Moradia — Eletricidade";
   if (/\btelefonica brasil\b/.test(description)) return "Moradia — Internet e telefonia";
 
