@@ -1,0 +1,256 @@
+# Hostinger KVM2 stack: API + self-hosted tools behind one login.
+#
+# Only nginx publishes ports. Every other service is reachable solely on the
+# internal Docker network, so the tools can't be hit directly, bypassing the
+# forward-auth check.
+#
+# NETWORK SEGMENTATION — one network per zone, nginx bridging them.
+# A single shared network would let Hermes talk straight to api:3001, which
+# matters because Hermes is the one service here that runs commands and
+# processes untrusted input (messages, web pages). From there it could hammer
+# /auth/login with no rate limit, since limit_req lives in nginx and a direct
+# call skips the proxy entirely. Each service only needs to be reachable BY
+# nginx — none of them need to reach each other.
+#
+# Run from the repo root:  docker compose -f infra/docker-compose.yml up -d
+
+name: infra
+x-coolify-labels: &coolify-labels
+  coolify.managed: 'true'
+  coolify.applicationUuid: ${COOLIFY_RESOURCE_UUID}
+  coolify.type: application
+  coolify.pullRequestId: '0'
+
+services:
+  api:
+    labels: *coolify-labels
+    init: true
+    mem_limit: 768m
+    pids_limit: 128
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: file:/data/prod.db
+      WEB_ORIGIN: ${WEB_ORIGIN}
+      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
+      REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-7d}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      PLUGGY_CLIENT_ID: ${PLUGGY_CLIENT_ID:-}
+      PLUGGY_CLIENT_SECRET: ${PLUGGY_CLIENT_SECRET:-}
+      AI_MEMORY_URL: ${AI_MEMORY_URL:-http://ai-memory:49374}
+      AI_MEMORY_AUTH_TOKEN: ${AI_MEMORY_AUTH_TOKEN:-}
+      SEED_SAMPLE_POSTS: "false"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - api_data:/data
+    networks: [backend, memory]
+
+  excalidraw:
+    labels: *coolify-labels
+    build: ./infra/excalidraw
+    mem_limit: 128m
+    pids_limit: 64
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    networks: [draw]
+
+  # Collaboration backend (socket.io). NOTE: the public excalidraw image bakes
+  # its WS server URL in at build time, so live collaboration only engages if
+  # you build the frontend yourself with VITE_APP_WS_SERVER_URL set. Solo
+  # drawing works regardless.
+  excalidraw-room:
+    labels: *coolify-labels
+    build: ./infra/excalidraw-room
+    init: true
+    read_only: true
+    mem_limit: 256m
+    pids_limit: 64
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+    networks: [draw]
+
+  hermes:
+    labels: *coolify-labels
+    # s6-overlay precisa ser PID 1; `init: true` desativaria o dashboard.
+    mem_limit: 3g
+    pids_limit: 256
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    # O init oficial s6 precisa ajustar o volume e depois abandona root.
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID, KILL]
+    build:
+      context: ./infra/hermes
+      args:
+        HERMES_BASE_IMAGE: ${HERMES_BASE_IMAGE:-nousresearch/hermes-agent@sha256:276d44685c65c0cb2a25f190b63c65c8906f9dc76486fb1c05ae71b5826bda08}
+    image: ${HERMES_IMAGE:-portfolio-hermes:security}
+    restart: unless-stopped
+    # `gateway run` é o modo servidor — o entrypoint da imagem é o próprio
+    # binário. O `setup` é interativo e não roda aqui: a configuração inicial é
+    # feita uma vez à mão, ver infra/README.md.
+    command: [gateway, run]
+    environment:
+      # O dashboard é a interface web, e é ele que o hermes-proxy publica para
+      # o nginx. Sem HERMES_DASHBOARD o serviço sobe só com a API.
+      HERMES_DASHBOARD: "1"
+      # 127.0.0.1, NÃO 0.0.0.0: o Hermes se recusa a escutar fora do loopback
+      # sem um provedor de auth próprio (login separado do /admin). Bindando
+      # em loopback esse gate nunca engata, e quem alcança a porta mesmo assim
+      # é só o hermes-proxy — sidecar na MESMA network namespace (ver abaixo).
+      # É o equivalente containerizado do túnel SSH que a doc do Hermes sugere
+      # para "auth-free dashboard".
+      HERMES_DASHBOARD_HOST: "127.0.0.1"
+      HERMES_DASHBOARD_PORT: "9119"
+    env_file:
+      # GATEWAY_AUTH_TOKEN vive aqui: o Hermes SE RECUSA a escutar fora do
+      # loopback sem autenticação, e em container o bind é sempre 0.0.0.0.
+      - path: /opt/portfolio/infra/hermes.env
+        required: false
+    volumes:
+      # /opt/data é o caminho de dados da imagem oficial. Tudo que precisa
+      # sobreviver a um recreate mora aqui: config.yaml, o .env com as chaves
+      # de provedor, auth.json, sessions/.
+      - hermes_data:/opt/data
+    # Rede própria: o Hermes não alcança api:3001 nem o Excalidraw. Ele só
+    # precisa ser alcançado pelo hermes-proxy. Mantém saída para a internet
+    # (as APIs de IA), que é o que ele legitimamente precisa.
+    networks: [hermes]
+
+  # Sidecar que faz o dashboard do Hermes enxergar toda conexão como loopback,
+  # eliminando o segundo login (além do /admin). Sem isto o dashboard exige
+  # HERMES_DASHBOARD_BASIC_AUTH_* — ver o histórico em infra/hermes.env.example.
+  #
+  # `network_mode: "service:hermes"` faz este container compartilhar a MESMA
+  # network namespace do hermes (mesma interface, mesmo IP na rede `hermes`,
+  # mesmo loopback). Por isso ele NÃO declara `networks:` própria — herda a
+  # do hermes — e alcança 127.0.0.1:9119 de dentro dessa namespace, exatamente
+  # como um processo rodando ao lado faria.
+  #
+  # Segurança disto depende inteiramente da rede `hermes` continuar isolada:
+  # quem alcançar a porta 9120 nela passa direto pelo Hermes sem senha alguma.
+  # Nginx e tool-sockets são as pontes autorizadas. O gateway de sockets
+  # autentica novamente e só aceita dois destinos fixos.
+  hermes-proxy:
+    labels: *coolify-labels
+    build:
+      context: ./infra/hermes
+      args:
+        HERMES_BASE_IMAGE: ${HERMES_BASE_IMAGE:-nousresearch/hermes-agent@sha256:276d44685c65c0cb2a25f190b63c65c8906f9dc76486fb1c05ae71b5826bda08}-proxy
+    read_only: true
+    mem_limit: 64m
+    pids_limit: 64
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    restart: unless-stopped
+    network_mode: "service:hermes"
+    depends_on: [hermes]
+
+  # Única ponte adicional entre zonas: encaminha apenas upgrades autenticados
+  # para dois destinos fixos e encerra os canais quando a sessão é revogada.
+  tool-sockets:
+    labels: *coolify-labels
+    build: ./infra/tool-sockets
+    init: true
+    restart: unless-stopped
+    read_only: true
+    mem_limit: 96m
+    pids_limit: 64
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    networks: [backend, draw, hermes]
+    depends_on: [api, excalidraw-room, hermes-proxy]
+
+  nginx:
+    labels: *coolify-labels
+    mem_limit: 256m
+    pids_limit: 128
+    security_opt: [no-new-privileges:true]
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    # Periodic reload so renewed certs are picked up without a restart.
+    command: >
+      sh -c "while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
+    volumes:
+      - ${COOLIFY_REPO_DIR}/infra/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ${COOLIFY_REPO_DIR}/infra/nginx/snippets:/etc/nginx/snippets:ro
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    # nginx resolves proxy_pass hostnames at startup, so every upstream it
+    # references must exist or it refuses to boot — excalidraw-room included.
+    # hermes-proxy shares hermes's own hostname/IP (network_mode: service:),
+    # so listing "hermes" here already covers it — no separate entry exists.
+    depends_on: [api, excalidraw, excalidraw-room, hermes, hermes-proxy, tool-sockets]
+    # HTTP passa pelo nginx; upgrades passam também pelo gateway autenticado,
+    # que observa a sessão até o canal fechar.
+    networks: [backend, draw, hermes]
+
+  # Renews certs twice a day; nginx reloads them via its own timer below.
+  certbot:
+    labels: *coolify-labels
+    mem_limit: 256m
+    pids_limit: 64
+    security_opt: [no-new-privileges:true]
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    entrypoint: >
+      sh -c "trap exit TERM;
+      while :; do certbot renew --webroot -w /var/www/certbot --quiet;
+      sleep 12h & wait $${!}; done"
+
+  ai-memory:
+    labels: *coolify-labels
+    container_name: ai-memory
+    image: ${AI_MEMORY_IMAGE:-akitaonrails/ai-memory@sha256:fbd33e2137869db40905de252d41c88c883a8d1f6d24d329b07751694669601d}
+    restart: unless-stopped
+    mem_limit: 1g
+    pids_limit: 128
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    command: [serve, --transport, http, --bind, '0.0.0.0:49374', --enable-web]
+    env_file:
+      - path: /opt/portfolio/infra/ai-memory.env
+        required: false
+    volumes:
+      - /var/opt/docker/utils/ai-memory/data:/data
+      - /var/backups/portfolio/ai-memory-migration:/migration-backup
+    ports:
+      - '49374:49374'
+    networks: [memory]
+
+volumes:
+  api_data:
+    external: true
+    name: infra_api_data
+  hermes_data:
+    external: true
+    name: infra_hermes_data
+  certbot_conf:
+    external: true
+    name: infra_certbot_conf
+  certbot_www:
+    external: true
+    name: infra_certbot_www
+
+networks:
+  backend: # api
+  draw: # excalidraw + sala de colaboração
+  hermes: # hermes, isolado do resto
+
+  memory: # ai-memory e API, separado do Hermes
