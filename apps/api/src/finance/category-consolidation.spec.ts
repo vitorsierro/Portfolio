@@ -4,6 +4,8 @@ import { translateCategoryName } from "./category-localization";
 
 describe("consolidação das categorias", () => {
   it.each([
+    ["Moradia — Condomínio", "Moradia — Geral"],
+    ["Moradia — IPTU", "Moradia — Geral"],
     ["Moradia — Internet e telefonia", "Outros"],
     ["Compras — Brinquedos", "Compras — Outros"],
     ["Educação", "Educação — Cursos"],

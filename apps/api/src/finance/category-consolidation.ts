@@ -1,4 +1,6 @@
 const REDIRECTS: Record<string, string> = {
+  "moradia condominio": "Moradia — Geral",
+  "moradia iptu": "Moradia — Geral",
   "moradia internet e telefonia": "Outros",
   "compras brinquedos": "Compras — Outros",
   educacao: "Educação — Cursos",
