@@ -1,0 +1,10 @@
+[Unit]
+Description=Backup do painel Coolify e configuracoes
+After=docker.service network-online.target
+Wants=network-online.target
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash /opt/portfolio/infra/coolify/backup-coolify.sh
+TimeoutStartSec=45min
+Nice=10
+UMask=0077

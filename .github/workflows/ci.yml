@@ -31,6 +31,7 @@ jobs:
           cache: yarn
       - run: yarn install --frozen-lockfile
       - run: python3 infra/coolify/check-compose.py
+      - run: python3 -m unittest discover -s infra/coolify -p 'test_*.py'
       - run: node infra/audit-dependencies.cjs
       - run: node --test infra/audit-dependencies.test.cjs infra/tool-sockets/proxy.test.cjs
       - run: npm audit --omit=dev
