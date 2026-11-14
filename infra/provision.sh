@@ -97,11 +97,19 @@ systemctl enable --now fail2ban >/dev/null 2>&1 || true
 dpkg-reconfigure -f noninteractive unattended-upgrades >/dev/null 2>&1 || true
 
 log "Gerando a chave SSH que o GitHub Actions vai usar"
+install -o root -g root -m 755 "$APP_DIR/infra/ssh/portfolio-deploy-ssh" /usr/local/sbin/portfolio-deploy-ssh
+install -o root -g root -m 755 "$APP_DIR/infra/ssh/portfolio-hermes-ops" /usr/local/sbin/portfolio-hermes-ops
 KEY_PATH="/root/deploy_key_${DEPLOY_USER}"
 if [ ! -f "$KEY_PATH" ]; then
   ssh-keygen -t ed25519 -N "" -C "github-actions-deploy" -f "$KEY_PATH" >/dev/null
-  cat "${KEY_PATH}.pub" >> "/home/$DEPLOY_USER/.ssh/authorized_keys"
 fi
+AUTHORIZED="/home/$DEPLOY_USER/.ssh/authorized_keys"
+KEY_BLOB="$(cut -d ' ' -f2 "${KEY_PATH}.pub")"
+AUTHORIZED_TMP="$(mktemp)"
+awk -v key="$KEY_BLOB" 'index($0,key)==0' "$AUTHORIZED" > "$AUTHORIZED_TMP"
+printf 'restrict,command="/usr/local/sbin/portfolio-deploy-ssh" %s\n' "$(cat "${KEY_PATH}.pub")" >> "$AUTHORIZED_TMP"
+install -o "$DEPLOY_USER" -g "$DEPLOY_USER" -m 600 "$AUTHORIZED_TMP" "$AUTHORIZED"
+rm -- "$AUTHORIZED_TMP"
 
 cat <<EOF
 

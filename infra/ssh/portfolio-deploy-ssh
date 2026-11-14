@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Comando forçado, instalado como root: a chave do CI só publica a main atual.
+set -euo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+if [[ "${SSH_ORIGINAL_COMMAND:-}" =~ ^portfolio-ops\ hermes\ (status|logs|discord|restart|gateway-restart)(\ ([0-9]{1,4}))?$ ]]; then
+  exec /usr/local/sbin/portfolio-hermes-ops "${BASH_REMATCH[1]}" "${BASH_REMATCH[3]:-200}"
+fi
+if [[ ! "${SSH_ORIGINAL_COMMAND:-}" =~ ^bash\ -s\ --\ ([0-9a-f]{40})$ ]]; then
+  echo 'Comando não autorizado para a chave de deploy.' >&2
+  exit 126
+fi
+deploy_commit="${BASH_REMATCH[1]}"
+exec </dev/null
+exec 9>/home/deploy/.portfolio-deploy.lock
+flock -n 9 || { echo 'Outro deploy está em andamento.' >&2; exit 1; }
+cd /opt/portfolio
+git fetch origin main
+test "$(git rev-parse origin/main)" = "$deploy_commit" || {
+  echo 'A chave de deploy só pode publicar a main atual.' >&2
+  exit 126
+}
+git reset --hard "$deploy_commit"
+chmod +x infra/*.sh
+DEPLOY_COMMIT="$deploy_commit" ./infra/deploy.sh

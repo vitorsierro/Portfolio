@@ -4,6 +4,9 @@ import {
   Get,
   HttpCode,
   Post,
+  Sse,
+  Headers,
+  Header,
   Req,
   Res,
   UnauthorizedException,
@@ -102,6 +105,15 @@ export class AuthController {
     }
 
     res.setHeader('X-Auth-User', session.adminId);
+    res.setHeader('X-Tool-Session-Watch', this.sessionService.socketTicket(session.sessionId));
+  }
+
+  @Sse('socket-events')
+  @Header('Cache-Control', 'no-store')
+  socketEvents(@Headers('authorization') authorization?: string) {
+    if (!authorization?.startsWith('Bearer ')) throw new UnauthorizedException();
+    // Credencial somente para observar esta sessão; não é um JWT de admin.
+    return this.sessionService.watchSocketSession(authorization.slice(7));
   }
 
   private setAuthCookies(

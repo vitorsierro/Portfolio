@@ -125,8 +125,8 @@ services:
   #
   # Segurança disto depende inteiramente da rede `hermes` continuar isolada:
   # quem alcançar a porta 9120 nela passa direto pelo Hermes sem senha alguma.
-  # Hoje só o nginx está nessa rede — não adicione mais nada a ela sem revisar
-  # este comentário.
+  # Nginx e tool-sockets são as pontes autorizadas. O gateway de sockets
+  # autentica novamente e só aceita dois destinos fixos.
   hermes-proxy:
     build: ./hermes-proxy
     read_only: true
@@ -137,6 +137,20 @@ services:
     restart: unless-stopped
     network_mode: "service:hermes"
     depends_on: [hermes]
+
+  # Única ponte adicional entre zonas: encaminha apenas upgrades autenticados
+  # para dois destinos fixos e encerra os canais quando a sessão é revogada.
+  tool-sockets:
+    build: ./tool-sockets
+    init: true
+    restart: unless-stopped
+    read_only: true
+    mem_limit: 96m
+    pids_limit: 64
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    networks: [backend, draw, hermes]
+    depends_on: [api, excalidraw-room, hermes-proxy]
 
   nginx:
     mem_limit: 256m
@@ -159,9 +173,9 @@ services:
     # references must exist or it refuses to boot — excalidraw-room included.
     # hermes-proxy shares hermes's own hostname/IP (network_mode: service:),
     # so listing "hermes" here already covers it — no separate entry exists.
-    depends_on: [api, excalidraw, excalidraw-room, hermes, hermes-proxy]
-    # O nginx é a única peça que participa de todas as zonas — é ele quem
-    # faz a ponte, e sempre passando pelo gate.
+    depends_on: [api, excalidraw, excalidraw-room, hermes, hermes-proxy, tool-sockets]
+    # HTTP passa pelo nginx; upgrades passam também pelo gateway autenticado,
+    # que observa a sessão até o canal fechar.
     networks: [backend, draw, hermes]
 
   # Renews certs twice a day; nginx reloads them via its own timer below.

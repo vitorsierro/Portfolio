@@ -11,7 +11,16 @@ RUN yarn install --frozen-lockfile
 
 COPY apps/api ./apps/api
 RUN yarn workspace api prisma:generate \
-  && yarn workspace api build
+  && yarn workspace api build \
+  && yarn tsc apps/api/prisma/seed.ts --target es2021 --module commonjs --esModuleInterop --skipLibCheck --outDir /app/seed
+
+FROM node:22-alpine AS production-deps
+WORKDIR /app
+ENV NODE_ENV=production
+COPY package.json yarn.lock ./
+COPY apps/api/package.json ./apps/api/
+RUN yarn install --production=true --frozen-lockfile \
+  && mkdir -p /app/apps/api/node_modules
 
 # ---
 
@@ -24,24 +33,19 @@ ENV NODE_ENV=production
 RUN apk add --no-cache openssl sqlite
 RUN mkdir -p /data && chown node:node /data
 
-# Copy node_modules wholesale rather than reinstalling with --production:
-# the start command runs `prisma migrate deploy`, and the Prisma CLI is a
-# devDependency. A production-only install would drop it (and its engines),
-# leaving migrations to a network fetch at boot. Costs image size, buys a
-# deterministic startup.
-COPY --from=builder /app/node_modules ./node_modules
+# Apenas dependências de produção; Prisma CLI é necessário para migrations.
+COPY --from=production-deps /app/node_modules ./node_modules
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 # Os dois níveis são necessários: em yarn workspaces nem tudo sobe para a raiz.
 # O @nestjs, por exemplo, fica em apps/api/node_modules, e copiar só a raiz
 # deixa o container subindo em loop com "Cannot find module '@nestjs/common'".
-COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=production-deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY apps/api/prisma ./apps/api/prisma
-# tsconfig is needed at runtime too: `prisma db seed` runs prisma/seed.ts
-# through ts-node, which reads it. Without this the admin seed fails in the
-# container.
-COPY apps/api/tsconfig.json ./apps/api/tsconfig.json
+COPY --from=builder /app/seed/seed.js ./apps/api/prisma/seed.js
+RUN node -e "const fs=require('fs');const path='apps/api/package.json';const p=JSON.parse(fs.readFileSync(path));p.prisma.seed='node prisma/seed.js';fs.writeFileSync(path,JSON.stringify(p));"
 
 # The SQLite file lives on a mounted volume so it survives redeploys.
 VOLUME /data

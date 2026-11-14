@@ -26,7 +26,7 @@ function mockRes(): Response & { headers: Record<string, string> } {
 describe('AuthController /auth/verify', () => {
   let controller: AuthController;
   const authService = { login: jest.fn(), refresh: jest.fn(), logout: jest.fn() };
-  const sessionService = { issue: jest.fn(), verify: jest.fn(), renew: jest.fn(), revoke: jest.fn() };
+  const sessionService = { issue: jest.fn(), verify: jest.fn(), renew: jest.fn(), revoke: jest.fn(), socketTicket: jest.fn().mockReturnValue('watch-ticket') };
 
   beforeEach(async () => {
     jest.clearAllMocks();

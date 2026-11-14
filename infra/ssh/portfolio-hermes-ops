@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Interface operacional limitada; instalada como root e executada por deploy.
+set -euo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+operation="${1:-status}"
+case "$operation" in
+  status)
+    docker ps -a --filter name=infra-hermes --format '{{.Names}}|{{.Status}}|{{.Image}}'
+    docker exec infra-hermes-1 ps -eo user,pid,args | grep -E '(^USER|s6|hermes.*(gateway|dashboard))'
+    ;;
+  logs)
+    lines="${2:-200}"
+    [[ "$lines" =~ ^[0-9]{1,4}$ ]] && (( lines >= 1 && lines <= 1000 )) || exit 126
+    docker logs --tail "$lines" --since 2h infra-hermes-1 2>&1
+    docker exec --user 10000 infra-hermes-1 sh -c '
+      for file in /opt/data/logs/agent.log /opt/data/logs/gateway.log /opt/data/logs/errors.log /opt/data/logs/gateways/default/current; do
+        if [ -f "$file" ]; then printf "\n== %s ==\n" "$file"; tail -n "$1" "$file"; fi
+      done' sh "$lines"
+    ;;
+  discord)
+    docker exec --user 10000 infra-hermes-1 /opt/hermes/.venv/bin/python -c '
+import json, os, importlib.metadata, socket
+from pathlib import Path
+from dotenv import dotenv_values
+values={**dotenv_values("/opt/data/.env"), **os.environ}
+keys=[key for key in values if "DISCORD" in key.upper()]
+result={"discord_py":importlib.metadata.version("discord.py"),"configured_variables":{key:bool(values[key]) for key in keys},"config_present":Path("/opt/data/config.yaml").is_file()}
+result["discord_settings"]={key:values[key] for key in ("DISCORD_ALLOWED_USERS","DISCORD_HOME_CHANNEL","DISCORD_ENABLED","DISCORD_REQUIRE_MENTION","DISCORD_ALLOWED_GUILDS") if key in values}
+try:
+    socket.getaddrinfo("discord.com",443)
+    result["discord_dns"]="ok"
+except OSError as error:
+    result["discord_dns"]=type(error).__name__
+print(json.dumps(result,ensure_ascii=False,indent=2))'
+    ;;
+  gateway-restart)
+    docker exec --user 10000 infra-hermes-1 /command/s6-svc -r /run/hermes-service/gateway-default
+    ;;
+  restart)
+    docker compose -f /opt/portfolio/infra/docker-compose.yml --env-file /opt/portfolio/infra/.env restart hermes hermes-proxy
+    ;;
+  *) echo 'Operação não autorizada.' >&2; exit 126 ;;
+esac

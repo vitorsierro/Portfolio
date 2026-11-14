@@ -13,8 +13,11 @@ describe('Revogação e concorrência com SQLite real', () => {
   let prisma: PrismaClient;
   let sessions: SessionService;
   let adminId: string;
+  let previousSecret: string | undefined;
 
   beforeAll(async () => {
+    previousSecret = process.env.JWT_ACCESS_SECRET;
+    process.env.JWT_ACCESS_SECRET = 'socket-test-only-secret';
     directory = mkdtempSync(join(tmpdir(), 'portfolio-auth-'));
     writeFileSync(join(directory, 'test.db'), '');
     const url = `file:${join(directory, 'test.db').replace(/\\/g, '/')}`;
@@ -27,6 +30,8 @@ describe('Revogação e concorrência com SQLite real', () => {
   }, 30000);
 
   afterAll(async () => {
+    if (previousSecret === undefined) delete process.env.JWT_ACCESS_SECRET;
+    else process.env.JWT_ACCESS_SECRET = previousSecret;
     await prisma?.$disconnect();
     if (directory && resolve(directory).startsWith(resolve(tmpdir(), 'portfolio-auth-'))) {
       rmSync(directory, { recursive: true, force: true });
@@ -60,5 +65,34 @@ describe('Revogação e concorrência com SQLite real', () => {
       if (previous === undefined) delete process.env.JWT_ACCESS_SECRET;
       else process.env.JWT_ACCESS_SECRET = previous;
     }
+  });
+
+  it('observa a sessão estável durante refresh e notifica logout imediatamente', async () => {
+    const session = await sessions.create(adminId);
+    const ticket = sessions.socketTicket(session.id);
+    const events: string[] = [];
+    let subscription: { unsubscribe(): void } | undefined;
+    await new Promise<void>((resolve) => {
+      subscription = sessions.watchSocketSession(ticket).subscribe((event) => {
+        events.push(event.type);
+        if (event.type === 'ready') resolve();
+      });
+    });
+    await sessions.rotateToken(session.id);
+    expect(events).not.toContain('revoked');
+    await sessions.revokeById(session.id);
+    expect(events).toContain('revoked');
+    subscription?.unsubscribe();
+  });
+
+  it('rejeita ticket adulterado e encerra a observação ao expirar', async () => {
+    const session = await sessions.create(adminId);
+    const ticket = sessions.socketTicket(session.id);
+    expect(() => sessions.watchSocketSession(ticket.replace(session.id, 'other-id'))).toThrow(UnauthorizedException);
+    const revoked = new Promise<void>((resolve) => {
+      sessions.watchSocketSession(ticket).subscribe((event) => { if (event.type === 'revoked') resolve(); });
+    });
+    await prisma.session.update({ where: { id: session.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
+    await revoked;
   });
 });

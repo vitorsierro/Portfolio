@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "resolutions": {
-    "postcss": "^8.5.23"
+    "postcss": "^8.5.23",
+    "**/@typescript-eslint/typescript-estree/minimatch": "11.0.8",
+    "**/@nestjs/cli/glob": "14.0.6",
+    "deepmerge-ts": "8.0.2"
   },
   "workspaces": [
     "apps/*"
@@ -20,6 +23,7 @@
     "verify": "yarn lint && yarn typecheck && yarn test && yarn build"
   },
   "devDependencies": {
+    "@yarnpkg/lockfile": "^1.1.0",
     "@eslint/eslintrc": "^3.3.6",
     "concurrently": "^9.1.0",
     "eslint": "^9",
