@@ -296,6 +296,7 @@ describe("PluggyService", () => {
     };
     const prisma = {
       financeCategoryRule: { findMany: jest.fn().mockResolvedValue([]) },
+      financePixAccountRule: { findMany: jest.fn().mockResolvedValue([]) },
       pluggyConnection: {
         findMany: jest.fn().mockResolvedValue([
           { id: "connection-1", itemId: "item-1", lastSyncedAt: null },
@@ -407,6 +408,7 @@ describe("PluggyService", () => {
     };
     const prisma = {
       financeCategoryRule: { findMany: jest.fn().mockResolvedValue([]) },
+      financePixAccountRule: { findMany: jest.fn().mockResolvedValue([]) },
       pluggyConnection: {
         findMany: jest.fn().mockResolvedValue([
           {
