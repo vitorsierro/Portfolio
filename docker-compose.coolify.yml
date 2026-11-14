@@ -16,13 +16,14 @@
 
 name: infra
 x-coolify-labels: &coolify-labels
-  coolify.managed: 'true'
-  coolify.applicationUuid: ${COOLIFY_RESOURCE_UUID}
-  coolify.type: application
-  coolify.pullRequestId: '0'
+  - coolify.managed=true
+  - coolify.applicationUuid=${COOLIFY_RESOURCE_UUID}
+  - coolify.type=application
+  - coolify.pullRequestId=0
 
 services:
   api:
+    image: infra-api
     labels: *coolify-labels
     init: true
     mem_limit: 768m
@@ -57,6 +58,7 @@ services:
     networks: [backend, memory]
 
   excalidraw:
+    image: infra-excalidraw
     labels: *coolify-labels
     build: ./infra/excalidraw
     mem_limit: 128m
@@ -70,6 +72,7 @@ services:
   # you build the frontend yourself with VITE_APP_WS_SERVER_URL set. Solo
   # drawing works regardless.
   excalidraw-room:
+    image: infra-excalidraw-room
     labels: *coolify-labels
     build: ./infra/excalidraw-room
     init: true
@@ -142,6 +145,7 @@ services:
   # Nginx e tool-sockets são as pontes autorizadas. O gateway de sockets
   # autentica novamente e só aceita dois destinos fixos.
   hermes-proxy:
+    image: infra-hermes-proxy
     labels: *coolify-labels
     build:
       context: ./infra/hermes
@@ -159,6 +163,7 @@ services:
   # Única ponte adicional entre zonas: encaminha apenas upgrades autenticados
   # para dois destinos fixos e encerra os canais quando a sessão é revogada.
   tool-sockets:
+    image: infra-tool-sockets
     labels: *coolify-labels
     build: ./infra/tool-sockets
     init: true
