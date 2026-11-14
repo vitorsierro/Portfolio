@@ -282,6 +282,17 @@ describe("FinanceService", () => {
     );
   });
 
+  it("filtra o ano completo, inclusive dezembro, sem misturar o ano seguinte", async () => {
+    const { service, prisma } = makeService();
+    await service.listTransactions("admin-1", { year: "2025", categoryId: "food", search: "Mercado" });
+    expect(prisma.financeTransaction.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({
+      userId: "admin-1", categoryId: "food", description: { contains: "Mercado" },
+      occurredAt: { gte: new Date("2025-01-01T00:00:00Z"), lt: new Date("2026-01-01T00:00:00Z") },
+    }) }));
+    await expect(service.listTransactions("admin-1", { year: "2025-06" })).rejects.toBeInstanceOf(BadRequestException);
+    await expect(service.listTransactions("admin-1", { year: "abc" })).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   it("reports category expense totals without including income rows", async () => {
     const { service, prisma } = makeService();
     const result = await service.listTransactions("admin-1", {

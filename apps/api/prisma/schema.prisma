@@ -215,6 +215,7 @@ model FinanceCategory {
   name         String
   color        String               @default("#16a34a")
   icon         String               @default("circle")
+  excludedFromTotals Boolean        @default(false)
   createdAt    DateTime             @default(now())
   transactions FinanceTransaction[]
   rules        FinanceCategoryRule[]

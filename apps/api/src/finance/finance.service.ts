@@ -27,9 +27,9 @@ function monthBounds(month: string) {
   };
 }
 
-function isExcludedFromTotals(categoryName?: string | null) {
+function isExcludedFromTotals(categoryName?: string | null, excludedFromTotals = false) {
   const name = categoryName?.normalize("NFKC").trim().toLocaleLowerCase("pt-BR");
-  return name === "lixo" || name === "cartões — pagamento de fatura";
+  return excludedFromTotals || name === "lixo" || name === "cartões — pagamento de fatura";
 }
 
 function localizeTransactionCategory<T extends { category?: { name: string } | null }>(
@@ -61,7 +61,7 @@ export class FinanceService {
         include: { category: true },
         orderBy: { occurredAt: "desc" },
       })
-    ).filter((item) => !isExcludedFromTotals(item.category?.name));
+    ).filter((item) => !isExcludedFromTotals(item.category?.name, item.category?.excludedFromTotals));
     const current = transactions.filter(
       (item) => item.occurredAt >= bounds.currentStart,
     );
@@ -132,6 +132,7 @@ export class FinanceService {
     userId: string,
     query: {
       month?: string;
+      year?: string;
       kind?: string;
       categoryId?: string;
       search?: string;
@@ -141,7 +142,13 @@ export class FinanceService {
   ) {
     const month = query.month ?? new Date().toISOString().slice(0, 7);
     const allTime = month === "all";
-    const bounds = allTime ? null : monthBounds(month);
+    const year = query.year === undefined ? null : Number(query.year);
+    if (query.year !== undefined && (!/^\d{4}$/.test(query.year) || year === null || year < 2000 || year > new Date().getUTCFullYear() + 1)) {
+      throw new BadRequestException("Ano inválido; use YYYY");
+    }
+    const bounds = year !== null
+      ? { currentStart: new Date(Date.UTC(year, 0, 1)), nextStart: new Date(Date.UTC(year + 1, 0, 1)) }
+      : allTime ? null : monthBounds(month);
     const page = Math.max(1, query.page ?? 1);
     const limit = Math.min(100, Math.max(1, query.limit ?? 20));
     const where = {
@@ -162,10 +169,10 @@ export class FinanceService {
     };
     const categories = await this.prisma.financeCategory.findMany({
       where: { userId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, excludedFromTotals: true },
     });
     const excludedCategoryIds = categories
-      .filter((category) => isExcludedFromTotals(category.name))
+      .filter((category) => isExcludedFromTotals(category.name, category.excludedFromTotals))
       .map((category) => category.id);
     const totalsWhere = excludedCategoryIds.length
       ? {
@@ -432,7 +439,7 @@ export class FinanceService {
     return categories.map((category) => ({
       ...category,
       name: translateCategoryName(category.name),
-      excludedFromTotals: isExcludedFromTotals(category.name),
+      excludedFromTotals: isExcludedFromTotals(category.name, category.excludedFromTotals),
     }));
   }
 
@@ -465,7 +472,7 @@ export class FinanceService {
         kind: true,
         amountCents: true,
         occurredAt: true,
-        category: { select: { id: true, name: true, color: true } },
+        category: { select: { id: true, name: true, color: true, excludedFromTotals: true } },
       },
     });
 
@@ -476,7 +483,7 @@ export class FinanceService {
     >();
     for (const transaction of transactions) {
       const sourceCategory = transaction.category;
-      if (isExcludedFromTotals(sourceCategory?.name)) continue;
+      if (isExcludedFromTotals(sourceCategory?.name, sourceCategory?.excludedFromTotals)) continue;
       const investment = translateCategoryName(sourceCategory?.name) === "Investimentos" &&
         cashMovementCategory(transaction.bankDescription || transaction.description || "", transaction.kind) !== "Salário";
       if (transaction.kind !== "expense" && !(investment && transaction.kind === "income")) continue;

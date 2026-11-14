@@ -125,4 +125,52 @@ describe("sincronização financeira com SQLite real", () => {
     expect(summary.categories.find((category) => category.name === "Investimentos"))
       .toMatchObject({ calculation: "net-investment-flow", totals: [{ year: date.getUTCFullYear(), amountCents: 20000, applicationsCents: 50000, withdrawalsCents: 30000 }] });
   });
+
+  it("aplica o ano completo à lista, contagem e agregados", async () => {
+    const category = await prisma.financeCategory.create({ data: { userId, name: "Compras — Teste do período" } });
+    for (const [occurredAt, amountCents] of [
+      ["2024-12-31T23:59:59.999Z", 100], ["2025-01-01T00:00:00.000Z", 200],
+      ["2025-12-31T23:59:59.999Z", 300], ["2026-01-01T00:00:00.000Z", 400],
+    ] as const) {
+      await prisma.financeTransaction.create({ data: { userId, categoryId: category.id,
+        description: "Teste de período", kind: "expense", amountCents, occurredAt: new Date(occurredAt) } });
+    }
+    const result = await finance.listTransactions(userId, { year: "2025", month: "2026-01", categoryId: category.id });
+    expect(result.total).toBe(2);
+    expect(result.totalAmountCents).toBe(500);
+    expect(result.totalExpenseAmountCents).toBe(500);
+    expect(result.items.map((row) => row.amountCents).sort()).toEqual([200, 300]);
+  });
+
+  it("preserva repasses excluídos no histórico sem afetar receitas, despesas ou gráficos", async () => {
+    const category = await prisma.financeCategory.create({ data: { userId, name: "Clínica — Pai", excludedFromTotals: true } });
+    const before = await finance.getOverview(userId, month);
+    const beforeList = await finance.listTransactions(userId, { month: "all" });
+    const examples = [
+      { id: "clinic-in", description: "Transferência Recebida|LAURA DE SOUZA SIERRO", type: "CREDIT", kind: "income" },
+      { id: "clinic-out", description: "Pagamento efetuado|J L PEREIRA JUNIOR", type: "DEBIT", kind: "expense" },
+    ];
+    for (const example of examples) {
+      const row = await prisma.financeTransaction.create({ data: { userId, source: "pluggy", description: example.description,
+        bankDescription: example.description, amountCents: 170000, kind: example.kind, occurredAt: date, pluggyTransactionId: example.id } });
+      await finance.updateTransaction(userId, row.id, { categoryId: category.id });
+    }
+    client.fetchAllTransactions.mockResolvedValue(examples.map((example) => ({
+      id: `${example.id}-next`, description: example.description, date, amount: 1700, type: example.type, category: "Transfers",
+    })));
+    await service.syncUserConnections(userId, true);
+    const after = await finance.getOverview(userId, month);
+    expect(after.totals).toEqual(before.totals);
+    expect(after.recentTransactions.some((row) => row.categoryId === category.id)).toBe(false);
+    const afterList = await finance.listTransactions(userId, { month: "all" });
+    expect(afterList.total).toBe(beforeList.total + 4);
+    expect(afterList.totalAmountCents).toBe(beforeList.totalAmountCents);
+    expect(afterList.totalExpenseAmountCents).toBe(beforeList.totalExpenseAmountCents);
+    const clinic = await finance.listTransactions(userId, { month: "all", categoryId: category.id });
+    expect(clinic.total).toBe(4);
+    expect(clinic.totalAmountCents).toBe(0);
+    const annual = await finance.getAnnualCategorySummary(userId, date.getUTCFullYear(), date.getUTCFullYear());
+    expect(annual.categories.some((item) => item.id === category.id)).toBe(false);
+    expect((await finance.listCategories(userId)).find((item) => item.id === category.id)?.excludedFromTotals).toBe(true);
+  });
 });

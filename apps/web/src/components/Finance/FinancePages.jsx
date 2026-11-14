@@ -602,7 +602,8 @@ const emptyForm = () => ({
 export function FinanceTransactions() {
   const router = useRouter();
   const [month, setMonth] = useState("");
-  const [allTime, setAllTime] = useState(false);
+  const [period, setPeriod] = useState("month");
+  const [year, setYear] = useState(String(new Date().getFullYear()));
   const [kind, setKind] = useState("all");
   const [categoryId, setCategoryId] = useState("");
   const [filtersInitialized, setFiltersInitialized] = useState(false);
@@ -639,10 +640,11 @@ export function FinanceTransactions() {
         return;
       }
       const params = new URLSearchParams({
-        month: allTime ? "all" : month,
         page: String(page),
         limit: "20",
       });
+      if (period === "year") params.set("year", year);
+      else params.set("month", period === "all" ? "all" : month);
       if (kind !== "all") params.set("kind", kind);
       if (categoryId) params.set("categoryId", categoryId);
       if (search.trim()) params.set("search", search.trim());
@@ -684,16 +686,33 @@ export function FinanceTransactions() {
     } catch {
       setStatus("error");
     }
-  }, [filtersInitialized, month, allTime, page, kind, categoryId, search, router]);
+  }, [filtersInitialized, month, period, year, page, kind, categoryId, search, router]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    setMonth(params.get("month") ?? currentMonth());
-    setAllTime(params.get("period") === "all");
+    const initialMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(params.get("month") ?? "") ? params.get("month") : currentMonth();
+    setMonth(initialMonth);
+    const initialYear = params.get("year");
+    setYear(/^\d{4}$/.test(initialYear ?? "") && Number(initialYear) >= 2000 && Number(initialYear) <= new Date().getFullYear()
+      ? initialYear : initialMonth.slice(0, 4));
+    setPeriod(params.get("period") === "all" || params.get("month") === "all" ? "all"
+      : params.get("period") === "year" || params.has("year") ? "year" : "month");
     setKind(params.get("kind") ?? "all");
     setCategoryId(params.get("categoryId") ?? "");
     setFiltersInitialized(true);
   }, []);
+
+  useEffect(() => {
+    if (!filtersInitialized) return;
+    const params = new URLSearchParams(window.location.search);
+    params.set("period", period);
+    if (period === "month") params.set("month", month); else params.delete("month");
+    if (period === "year") params.set("year", year); else params.delete("year");
+    if (categoryId) params.set("categoryId", categoryId); else params.delete("categoryId");
+    if (kind !== "all") params.set("kind", kind); else params.delete("kind");
+    if (search.trim()) params.set("search", search.trim()); else params.delete("search");
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}?${params}${window.location.hash}`);
+  }, [filtersInitialized, period, month, year, categoryId, kind, search]);
 
   useEffect(() => {
     if (filtersInitialized) load();
@@ -818,8 +837,24 @@ export function FinanceTransactions() {
 
       <section className={styles.panel}>
         <div className={styles.filters}>
-          {allTime ? (
+          <select aria-label="Período" value={period} onChange={(event) => {
+            setPage(1);
+            setPeriod(event.target.value);
+          }}>
+            <option value="month">Mês</option>
+            <option value="year">Ano</option>
+            <option value="all">Tudo</option>
+          </select>
+          {period === "all" ? (
             <span className={styles.allPeriodLabel}>Todo o período</span>
+          ) : period === "year" ? (
+            <select aria-label="Ano das movimentações" value={year} onChange={(event) => {
+              setPage(1);
+              setYear(event.target.value);
+            }}>
+              {Array.from({ length: new Date().getFullYear() - 1999 }, (_, index) => String(new Date().getFullYear() - index))
+                .map((value) => <option key={value} value={value}>{value}</option>)}
+            </select>
           ) : (
             <MonthPicker
               month={month}
@@ -829,16 +864,6 @@ export function FinanceTransactions() {
               }}
             />
           )}
-          <button
-            className={styles.periodToggle}
-            type="button"
-            onClick={() => {
-              setPage(1);
-              setAllTime((value) => !value);
-            }}
-          >
-            {allTime ? "Filtrar por mês" : "Ver todo o período"}
-          </button>
           <input
             aria-label="Buscar lançamento"
             type="search"
@@ -930,7 +955,7 @@ export function FinanceTransactions() {
                     <strong>
                       {categories.find((item) => item.id === categoryId)?.name ??
                         (categoryId === "uncategorized" ? "Sem categoria" : "Categoria")}
-                      {allTime ? " · Todo o período" : ` · ${monthLabel(month)}`}
+                      {period === "all" ? " · Todo o período" : period === "year" ? ` · ${year}` : ` · ${monthLabel(month)}`}
                     </strong>
                     {categories.find((item) => item.id === categoryId)?.excludedFromTotals && (
                       <small>Esta categoria não entra nos totais gerais.</small>

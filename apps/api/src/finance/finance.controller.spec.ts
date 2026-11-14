@@ -78,6 +78,7 @@ describe("FinanceController", () => {
     });
     expect(financeService.listTransactions).toHaveBeenCalledWith("admin-1", {
       month: undefined,
+      year: undefined,
       kind: undefined,
       categoryId: undefined,
       search: undefined,
