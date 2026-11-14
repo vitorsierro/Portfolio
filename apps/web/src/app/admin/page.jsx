@@ -7,6 +7,13 @@ import styles from '../../styles/Admin.module.css';
 // junto das ferramentas — o gerenciamento em si vive em /admin/posts.
 const DESTINATIONS = [
   {
+    key: 'coolify',
+    name: 'Coolify',
+    description: 'Saúde dos serviços, uso de recursos e últimos deploys da VPS.',
+    href: '/admin/coolify',
+    embedded: true,
+  },
+  {
     key: 'ai-memory',
     name: 'ai-memory',
     description: 'Acompanhar memórias, sessões e saúde da wiki dos agentes.',

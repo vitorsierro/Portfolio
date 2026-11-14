@@ -1,5 +1,32 @@
 # Operação pelo Coolify
 
+## Monitor no /admin
+
+`/admin/coolify` apresenta a saúde dos serviços, CPU, memória, versões instaladas,
+últimas verificações automáticas e deploys. Há também um atalho para o painel
+completo. Enquanto o painel usa loopback, o atalho exige o túnel SSH descrito
+abaixo e o login próprio do Coolify.
+
+O monitor usa a autenticação do site e só oferece leitura. Um timer do host
+coleta metadados a cada minuto com o token restrito já usado pelo deploy e grava
+`/var/lib/portfolio-status/coolify.json`. A API recebe essa pasta em um bind mount
+somente de leitura e retorna campos permitidos. Nenhum token, configuração,
+variável de ambiente ou log bruto do Coolify é enviado ao navegador. Coletas
+com mais de três minutos são sinalizadas como desatualizadas.
+
+Instalação do coletor no host, após publicar o código:
+
+```bash
+install -m 644 /opt/portfolio/infra/coolify/portfolio-coolify-status.{service,timer} /etc/systemd/system/
+systemctl daemon-reload
+systemctl start portfolio-coolify-status.service
+systemctl enable --now portfolio-coolify-status.timer
+```
+
+Preparar a pasta/coleta inicial antes do primeiro deploy que usa o novo mount.
+Para um futuro domínio HTTPS, `COOLIFY_PANEL_URL` na API muda o destino do
+atalho. O monitor não precisa abrir uma porta adicional no host.
+
 Os nove serviços da VPS estão na aplicação **VPS - servicos**, projeto **VPS Portfolio**. O site continua na Vercel. O Compose raw conserva os volumes `infra_api_data`, `infra_hermes_data`, os certificados e os diretórios do ai-memory. Não executar `down -v` nem iniciar o Compose legado em paralelo.
 
 O painel está restrito ao loopback. Neste computador:

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { AiMemoryModule } from './ai-memory/ai-memory.module';
+import { CoolifyModule } from './coolify/coolify.module';
 import { EnseadaModule } from './enseada/enseada.module';
 import { PortfolioModule } from './portfolio/portfolio.module';
 import { PostsModule } from './posts/posts.module';
@@ -15,6 +16,7 @@ import { ThreadsModule } from './threads/threads.module';
     PrismaModule,
     AuthModule,
     AiMemoryModule,
+    CoolifyModule,
     PostsModule,
     PortfolioModule,
     EnseadaModule,
