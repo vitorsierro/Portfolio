@@ -2,6 +2,29 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { CategoryPieChart } from "./CategoryPieChart";
 
+beforeEach(() => localStorage.clear());
+
+test("hides categories, recalculates shares and restores the saved selection", () => {
+  const categories = [
+    { id: "home", name: "Moradia", totals: [{ amountCents: 30000 }] },
+    { id: "food", name: "Alimentação", totals: [{ amountCents: 10000 }] },
+  ];
+  const view = render(<CategoryPieChart categories={categories} />);
+  fireEvent.click(screen.getByText(/Categorias no gráfico/));
+  fireEvent.click(screen.getByRole("checkbox", { name: "Moradia" }));
+  expect(screen.getByRole("img", { name: /Total: R\$\s*100,00/ })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Alimentação.*100%/ })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /Moradia.*300/ })).not.toBeInTheDocument();
+  view.unmount();
+  render(<CategoryPieChart categories={categories} />);
+  expect(screen.getByRole("img", { name: /Total: R\$\s*100,00/ })).toBeInTheDocument();
+  fireEvent.click(screen.getByText(/Categorias no gráfico/));
+  fireEvent.click(screen.getByRole("checkbox", { name: "Alimentação" }));
+  expect(screen.getByText(/Todas as categorias estão ocultas/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Mostrar todas" }));
+  expect(screen.getByRole("img", { name: /Total: R\$\s*400,00/ })).toBeInTheDocument();
+});
+
 test("distributes expenses proportionally without net investments or excluded categories", () => {
   render(<CategoryPieChart categories={[
     { id: "home", name: "Moradia", totals: [{ amountCents: 30000 }] },
