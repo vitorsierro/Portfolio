@@ -4,7 +4,7 @@ O ai-memory está fora desta alteração: container, publicação de porta e int
 
 As imagens locais de Excalidraw e colaboração preservam os assets/código publicados, mas usam nginx e Node suportados. O sidecar instala socat no build e roda sem root. O Hermes usa base oficial por digest, com correções Python pontuais; seu init s6 precisa ser PID 1 e abandona root antes de executar o gateway. Não adicionar `init: true` ao Hermes.
 
-A API passa a executar como `node`. O deploy corrige a propriedade do volume antes de iniciá-la. O banco e o volume do Hermes recebem backup antes de serem alterados; o snapshot do Hermes pausa e retoma seus serviços para evitar cópia inconsistente.
+A API passa a executar como `node`. O deploy corrige a propriedade do volume antes de iniciá-la. O banco e o volume do Hermes recebem backup antes de serem alterados; o snapshot do Hermes pausa e retoma seus serviços para evitar cópia inconsistente. Ele só é repetido quando a imagem do Hermes muda, retém as duas cópias completas mais recentes e publica o arquivo final apenas após concluir a gravação.
 
 O logout invalida também access tokens ainda não expirados. Tokens antigos sem identificador de sessão serão rejeitados; o frontend pode renovar pelo refresh cookie. O login é limitado por IP e por conta no processo da API, independentemente da grafia da rota. Se houver múltiplas réplicas, migrar o estado de limitação para armazenamento compartilhado. O proxy confiável da API é um único hop (nginx); não publicar a porta da API diretamente.
 
