@@ -111,4 +111,18 @@ describe("sincronização financeira com SQLite real", () => {
     await finance.updateTransaction(userId, row.id, { categoryId: null });
     expect(await prisma.financeCategoryRule.count({ where: { userId } })).toBe(0);
   });
+
+  it("importa resgates e salário na categoria correta e calcula investimento líquido", async () => {
+    client.fetchAllTransactions.mockResolvedValue([
+      { id: "net-application", date, description: "Aplicação RDB", amount: -500, type: "DEBIT", category: "Investments" },
+      { id: "net-redemption", date, description: "Resgate RDB", amount: 300, type: "CREDIT", category: "Other" },
+      { id: "payroll-not-investment", date, description: "Salário SMR PARTICIPACOES E INVESTIMENTOS SA", amount: 2000, type: "CREDIT", category: "Investments" },
+    ]);
+    await service.syncUserConnections(userId, true);
+    const salary = await prisma.financeTransaction.findFirstOrThrow({ where: { pluggyTransactionId: "payroll-not-investment" }, include: { category: true } });
+    expect(salary.category?.name).toBe("Salário");
+    const summary = await finance.getAnnualCategorySummary(userId, date.getUTCFullYear(), date.getUTCFullYear());
+    expect(summary.categories.find((category) => category.name === "Investimentos"))
+      .toMatchObject({ calculation: "net-investment-flow", totals: [{ year: date.getUTCFullYear(), amountCents: 20000, applicationsCents: 50000, withdrawalsCents: 30000 }] });
+  });
 });

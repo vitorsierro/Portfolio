@@ -1,3 +1,5 @@
+import { cashMovementCategory } from "./investment-movements";
+
 type CategoryInput = {
   description: string;
   kind: string;
@@ -28,6 +30,8 @@ const GOODS: Record<string, string> = {
 // assigned a purpose from their name or amount alone. Manual overrides are
 // enforced by the caller's conditional database update.
 export function inferFinanceCategory(input: CategoryInput): string | null {
+  const cashCategory = cashMovementCategory(input.description, input.kind);
+  if (cashCategory) return cashCategory;
   if (input.kind !== "expense") return null;
   const description = normalize(input.description);
   const category = normalize(input.category ?? "");

@@ -7,6 +7,7 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { translateCategoryName } from "./category-localization";
 import { categoryRuleKey } from "./category-learning";
+import { cashMovementCategory } from "./investment-movements";
 
 const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -453,13 +454,14 @@ export class FinanceService {
       where: {
         userId,
         ownTransfer: false,
-        kind: "expense",
         occurredAt: {
           gte: new Date(Date.UTC(fromYear, 0, 1)),
           lt: new Date(Date.UTC(toYear + 1, 0, 1)),
         },
       },
       select: {
+        description: true,
+        bankDescription: true,
         kind: true,
         amountCents: true,
         occurredAt: true,
@@ -469,12 +471,15 @@ export class FinanceService {
 
     const grouped = new Map<
       string,
-      { id: string; name: string; color: string; amounts: Map<number, number> }
+      { id: string; name: string; color: string; amounts: Map<number, number>;
+        investment: boolean; applications: Map<number, number>; withdrawals: Map<number, number> }
     >();
     for (const transaction of transactions) {
-      if (transaction.kind !== "expense") continue;
       const sourceCategory = transaction.category;
       if (isExcludedFromTotals(sourceCategory?.name)) continue;
+      const investment = translateCategoryName(sourceCategory?.name) === "Investimentos" &&
+        cashMovementCategory(transaction.bankDescription || transaction.description || "", transaction.kind) !== "Salário";
+      if (transaction.kind !== "expense" && !(investment && transaction.kind === "income")) continue;
       const id = sourceCategory?.id ?? "uncategorized";
       const category = grouped.get(id) ?? {
         id,
@@ -483,12 +488,19 @@ export class FinanceService {
           : "Sem categoria",
         color: sourceCategory?.color ?? "#a3b7ad",
         amounts: new Map<number, number>(),
+        investment,
+        applications: new Map<number, number>(),
+        withdrawals: new Map<number, number>(),
       };
       const year = transaction.occurredAt.getUTCFullYear();
       category.amounts.set(
         year,
-        (category.amounts.get(year) ?? 0) + transaction.amountCents,
+        (category.amounts.get(year) ?? 0) + (transaction.kind === "income" ? -1 : 1) * transaction.amountCents,
       );
+      if (investment) {
+        const movements = transaction.kind === "income" ? category.withdrawals : category.applications;
+        movements.set(year, (movements.get(year) ?? 0) + transaction.amountCents);
+      }
       grouped.set(id, category);
     }
 
@@ -497,9 +509,12 @@ export class FinanceService {
       toYear,
       years,
       categories: Array.from(grouped.values())
-        .map(({ amounts, ...category }) => ({
+        .map(({ amounts, investment, applications, withdrawals, ...category }) => ({
           ...category,
-          totals: years.map((year) => ({ year, amountCents: amounts.get(year) ?? 0 })),
+          ...(investment ? { calculation: "net-investment-flow" } : {}),
+          totals: years.map((year) => ({ year, amountCents: amounts.get(year) ?? 0,
+            ...(investment ? { applicationsCents: applications.get(year) ?? 0, withdrawalsCents: withdrawals.get(year) ?? 0 } : {}),
+          })),
         }))
         .sort(
           (left, right) =>
