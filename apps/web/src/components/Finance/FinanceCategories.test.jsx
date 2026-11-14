@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { FinanceCategories } from "./FinanceCategories";
 import { authFetch, ensureSession } from "../../lib/auth";
@@ -45,13 +45,29 @@ test("shows annual category spending and links to all transactions for a categor
 
   expect(await screen.findByRole("img", { name: /Gastos por categoria/ })).toBeInTheDocument();
   expect(screen.getAllByText("Moradia").length).toBeGreaterThan(0);
-  expect(screen.getByText("Lixo")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Ver todos os lançamentos de Lixo" })).toBeInTheDocument();
   expect(screen.getByText("Excluída dos totais e gráficos gerais")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Ver todos os lançamentos de Moradia" })).toHaveAttribute(
     "href",
     "/admin/finance/transactions?categoryId=housing&period=all",
   );
   expect(screen.getAllByText(/R\$\s*1\.000,00/).length).toBeGreaterThan(0);
+});
+
+test("oculta categorias somente na lista e salva a preferência", async () => {
+  const view = render(<FinanceCategories />);
+  await screen.findByRole("link", { name: "Ver todos os lançamentos de Moradia" });
+  fireEvent.click(screen.getByText("Categorias visíveis na lista"));
+  fireEvent.click(within(screen.getByRole("region", { name: "Categorias", exact: true })).getByRole("checkbox", { name: "Moradia" }));
+  expect(screen.queryByRole("link", { name: "Ver todos os lançamentos de Moradia" })).not.toBeInTheDocument();
+  expect(screen.getByRole("img", { name: /Distribuição dos gastos/ })).toBeInTheDocument();
+  view.unmount();
+  render(<FinanceCategories />);
+  await screen.findByRole("link", { name: "Ver todos os lançamentos de Lixo" });
+  expect(screen.queryByRole("link", { name: "Ver todos os lançamentos de Moradia" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByText("Categorias visíveis na lista"));
+  fireEvent.click(screen.getByRole("button", { name: "Mostrar todas as categorias da lista" }));
+  expect(screen.getByRole("link", { name: "Ver todos os lançamentos de Moradia" })).toBeInTheDocument();
 });
 
 test("refreshes the annual comparison when its year range changes", async () => {

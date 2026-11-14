@@ -10,7 +10,7 @@ describe("categorias pessoais", () => {
     ["Pagamento efetuado|PREF MUN GUARUJA", 28399, "Housing", "Moradia — IPTU"],
     ["COND EDIF RESID ITAPARICA III", 62626, "Housing", "Moradia — Condomínio"],
     ["Débito automático DA ELEKTRO 00001074", 24509, "Utilities", "Moradia — Eletricidade"],
-    ["Pix TELEFONICA BRASIL S.A.", 4000, "Telecommunications", "Moradia — Internet e telefonia"],
+    ["Pix TELEFONICA BRASIL S.A.", 4000, "Telecommunications", "Outros"],
     ["Dm*Hostingercomb 4/12", 10718, "School", "Assinaturas — Software, hospedagem e IA"],
     ["Openai *Chatgpt Subscr", 10340, "Digital services", "Assinaturas — Software, hospedagem e IA"],
     ["Anthropic* Claude Sub", 11416, "Digital services", "Assinaturas — Software, hospedagem e IA"],

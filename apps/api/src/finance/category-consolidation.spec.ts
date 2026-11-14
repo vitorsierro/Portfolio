@@ -4,6 +4,9 @@ import { translateCategoryName } from "./category-localization";
 
 describe("consolidação das categorias", () => {
   it.each([
+    ["Moradia — Internet e telefonia", "Outros"],
+    ["Compras — Brinquedos", "Compras — Outros"],
+    ["Educação", "Educação — Cursos"],
     ["Compras — Suplementos", "Compras — Supermercado"],
     ["Compras — Farmácia e saúde", "Compras — Supermercado"],
     ["Transporte — Ônibus e metrô", "Transporte"],
