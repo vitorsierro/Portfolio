@@ -33,6 +33,7 @@ const GOODS: Record<string, string> = {
 function inferCategory(input: CategoryInput): string | null {
   const cashCategory = cashMovementCategory(input.description, input.kind);
   if (cashCategory) return cashCategory;
+  if (/^(nubank ultravioleta|baile da asa|estorno de uber nupay)$/.test(normalize(input.description))) return "Compras — Outros";
   if (input.kind !== "expense") return null;
   const description = normalize(input.description);
   const category = normalize(input.category ?? "");

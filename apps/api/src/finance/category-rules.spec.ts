@@ -3,6 +3,8 @@ import { translateCategoryName } from "./category-localization";
 
 describe("categorias pessoais", () => {
   it.each([
+    ["Nubank Ultravioleta", 4900, null, "Compras — Outros"],
+    ["Baile da Asa", 25000, null, "Compras — Outros"],
     ["Pagamento efetuado|BANCO IBI S A", 20000, "Transfers", "Cartões — Pagamento de fatura"],
     ["Pix enviado Luciana Sousa dos Santos Vilhanueva", 120000, null, "Moradia — Financiamento"],
     ["Pix enviado Luciana Sousa dos Santos Vilhanueva", 240000, null, null],
@@ -37,5 +39,9 @@ describe("categorias pessoais", () => {
 
   it("não trata estornos ou entradas como gastos de assinatura", () => {
     expect(inferFinanceCategory({ description: "IOF de volta de Openai *Chatgpt Subscr", amountCents: 362, kind: "income" })).toBeNull();
+  });
+  it("classifica os estornos solicitados sem alterar sua direção", () => {
+    expect(inferFinanceCategory({ description: "Estorno de Uber - NuPay", amountCents: 892, kind: "income" })).toBe("Compras — Outros");
+    expect(inferFinanceCategory({ description: "Baile da Asa", amountCents: 1000, kind: "income" })).toBe("Compras — Outros");
   });
 });
