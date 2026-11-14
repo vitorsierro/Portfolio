@@ -14,6 +14,7 @@ import { isOwnPix } from "./own-transfer";
 import { inferFinanceCategory } from "./category-rules";
 import { findLearnedCategory } from "./category-learning";
 import { findPixAccountRule } from "./pix-account-rule";
+import { canonicalFinanceCategory } from "./category-consolidation";
 
 export const PLUGGY_CLIENT_FACTORY = Symbol("PLUGGY_CLIENT_FACTORY");
 type PluggyClientApi = Pick<
@@ -230,7 +231,7 @@ export class PluggyService {
           const kind = transaction.type === "CREDIT" ? "income" : "expense";
           const inferredCategory = inferFinanceCategory({ ...transaction, kind, amountCents });
           const categoryName = inferredCategory ?? (rawCategoryName
-            ? translateCategoryName(rawCategoryName).slice(0, 60)
+            ? canonicalFinanceCategory(translateCategoryName(rawCategoryName)).slice(0, 60)
             : null);
           const learnedId = findLearnedCategory(learnedRules, transaction.description ?? "", kind, amountCents);
           let accountRule = !learnedId && !inferredCategory && account.type === "BANK"

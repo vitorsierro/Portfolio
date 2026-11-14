@@ -8,6 +8,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { translateCategoryName } from "./category-localization";
 import { categoryRuleKey } from "./category-learning";
 import { cashMovementCategory } from "./investment-movements";
+import { canonicalFinanceCategory } from "./category-consolidation";
 
 const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -40,7 +41,7 @@ function localizeTransactionCategory<T extends { category?: { name: string } | n
     ...transaction,
     category: {
       ...transaction.category,
-      name: translateCategoryName(transaction.category.name),
+      name: canonicalFinanceCategory(translateCategoryName(transaction.category.name)),
     },
   };
 }
@@ -91,7 +92,7 @@ export class FinanceService {
       if (item.kind !== "expense" || !item.category) continue;
       const currentCategory = categoryMap.get(item.category.id) ?? {
         id: item.category.id,
-        name: translateCategoryName(item.category.name),
+        name: canonicalFinanceCategory(translateCategoryName(item.category.name)),
         color: item.category.color,
         amountCents: 0,
         count: 0,
@@ -438,7 +439,7 @@ export class FinanceService {
     });
     return categories.map((category) => ({
       ...category,
-      name: translateCategoryName(category.name),
+      name: canonicalFinanceCategory(translateCategoryName(category.name)),
       excludedFromTotals: isExcludedFromTotals(category.name, category.excludedFromTotals),
     }));
   }
@@ -484,14 +485,14 @@ export class FinanceService {
     for (const transaction of transactions) {
       const sourceCategory = transaction.category;
       if (isExcludedFromTotals(sourceCategory?.name, sourceCategory?.excludedFromTotals)) continue;
-      const investment = translateCategoryName(sourceCategory?.name) === "Investimentos" &&
+      const investment = canonicalFinanceCategory(translateCategoryName(sourceCategory?.name)) === "Investimentos" &&
         cashMovementCategory(transaction.bankDescription || transaction.description || "", transaction.kind) !== "Salário";
       if (transaction.kind !== "expense" && !(investment && transaction.kind === "income")) continue;
       const id = sourceCategory?.id ?? "uncategorized";
       const category = grouped.get(id) ?? {
         id,
         name: sourceCategory
-          ? translateCategoryName(sourceCategory.name)
+          ? canonicalFinanceCategory(translateCategoryName(sourceCategory.name))
           : "Sem categoria",
         color: sourceCategory?.color ?? "#a3b7ad",
         amounts: new Map<number, number>(),
@@ -540,7 +541,7 @@ export class FinanceService {
     return this.prisma.financeCategory.create({
       data: {
         userId,
-        name: translateCategoryName(data.name),
+        name: canonicalFinanceCategory(translateCategoryName(data.name)),
         color: data.color ?? "#16a34a",
         icon: data.icon ?? "circle",
       },

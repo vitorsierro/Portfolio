@@ -41,6 +41,15 @@ o sistema para outros titulares, ela deve se tornar configuração por usuário.
 
 ## Categorias e aprendizado
 
+`category-consolidation.ts` contém os destinos das categorias aposentadas pelo
+titular. A importação e as operações do livro financeiro usam os destinos
+consolidados para não recriar categorias removidas. Transporte e Saúde passam
+a agrupar os subtipos indicados; farmácia/suplementos entram em Supermercado;
+Delivery/Idiomas entram em Assinaturas; hospedagem/software/IA ficam juntos.
+A consolidação move lançamentos e as duas classes de regra antes de apagar
+a categoria antiga, sem excluir transações. Tipos de ativos cadastrados
+manualmente na página Investimentos não são alterados por esses redirecionamentos.
+
 `FinancePixAccountRule` permite uma regra explicitamente autorizada por usuário,
 nome da conta e direção. Nesta instalação, o titular confirmou que Pix do Itaú
 em ambas as direções, ainda em Outros, são movimentações do salário entre suas
