@@ -1,4 +1,5 @@
 import { cashMovementCategory } from "./investment-movements";
+import { canonicalFinanceCategory } from "./category-consolidation";
 
 type CategoryInput = {
   description: string;
@@ -29,7 +30,7 @@ const GOODS: Record<string, string> = {
 // Rules specific to this personal installation. Unknown Pix recipients are not
 // assigned a purpose from their name or amount alone. Manual overrides are
 // enforced by the caller's conditional database update.
-export function inferFinanceCategory(input: CategoryInput): string | null {
+function inferCategory(input: CategoryInput): string | null {
   const cashCategory = cashMovementCategory(input.description, input.kind);
   if (cashCategory) return cashCategory;
   if (input.kind !== "expense") return null;
@@ -84,4 +85,9 @@ export function inferFinanceCategory(input: CategoryInput): string | null {
   if (category === "travel" || category === "airport and airlines" ||
       /\b(tripcom|trip com|bookingcom|booking|decolar)\b/.test(description)) return "Viagens";
   return GOODS[category] ?? null;
+}
+
+export function inferFinanceCategory(input: CategoryInput): string | null {
+  const category = inferCategory(input);
+  return category ? canonicalFinanceCategory(category) : null;
 }

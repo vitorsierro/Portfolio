@@ -199,4 +199,23 @@ describe("sincronização financeira com SQLite real", () => {
     expect(await load("other-account-pix")).toMatchObject({ ownTransfer: false });
     expect((await load("other-account-pix")).categoryId).not.toBe(salary.id);
   });
+
+  it("importa novos lançamentos diretamente nas categorias consolidadas", async () => {
+    const cases = [
+      ["supplements", "Ec *Maxtitanium 4/6", "Transfers", "Compras — Supermercado"],
+      ["pharmacy", "Drogaria Sao Paulo", "Pharmacy", "Compras — Supermercado"],
+      ["ride", "Uber* Trip", "Taxi and ride-hailing", "Transporte"],
+      ["dentist", "Dentista", "Dentist", "Saúde"],
+      ["hosting", "Hostinger.Com", "Digital services", "Assinaturas — Software, hospedagem e IA"],
+      ["language", "Praktika.Ai", "School", "Assinaturas"],
+    ];
+    client.fetchAllTransactions.mockImplementation(async (id: string) => id === "item-0" ? cases.map(([key, description, category]) => ({
+      id: `consolidated-${key}`, description, category, type: "DEBIT", amount: 10, date,
+    })) : []);
+    await service.syncUserConnections(userId, true);
+    for (const [key, , , category] of cases) {
+      const row = await prisma.financeTransaction.findFirstOrThrow({ where: { pluggyTransactionId: `consolidated-${key}` }, include: { category: true } });
+      expect(row.category?.name).toBe(category);
+    }
+  });
 });
