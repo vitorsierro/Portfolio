@@ -51,14 +51,24 @@ export function FinanceCategories() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [collapsed, setCollapsed] = useState({ annual: false, pie: false, categories: false });
+  const [hiddenCategories, setHiddenCategories] = useState([]);
   const loadVersion = useRef(0);
 
   useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("finance:category-list:hidden") ?? "[]");
+      if (Array.isArray(saved)) setHiddenCategories(saved.filter((id) => typeof id === "string"));
+    } catch { /* Preferência opcional. */ }
     try {
       const saved = JSON.parse(localStorage.getItem("finance:categories:collapsed") ?? "null");
       if (saved) setCollapsed({ annual: saved.annual === true, pie: saved.pie === true, categories: saved.categories === true });
     } catch { /* The page remains usable if storage is unavailable. */ }
   }, []);
+
+  function updateHiddenCategories(next) {
+    setHiddenCategories(next);
+    try { localStorage.setItem("finance:category-list:hidden", JSON.stringify(next)); } catch { /* Preferência opcional. */ }
+  }
 
   function togglePanel(panel) {
     const next = { ...collapsed, [panel]: !collapsed[panel] };
@@ -264,9 +274,19 @@ export function FinanceCategories() {
 
       <CollapsiblePanel id="managed-categories" title="Categorias" description="Filtre o histórico completo de uma categoria."
         collapsed={collapsed.categories} onToggle={() => togglePanel("categories")}>
+          <details className={styles.pieVisibility}>
+            <summary>Categorias visíveis na lista</summary>
+            <p>Desmarque para ocultar somente nesta lista. Sua seleção fica salva neste navegador.</p>
+            <button type="button" className={styles.secondaryButton} disabled={!hiddenCategories.length} onClick={() => updateHiddenCategories([])}>Mostrar todas as categorias da lista</button>
+            <div className={styles.pieVisibilityOptions}>
+              {[...categories, ...(summaryCategories.some((category) => category.id === "uncategorized") ? [{ id: "uncategorized", name: "Sem categoria" }] : [])].map((category) => (
+                <label key={category.id}><input type="checkbox" checked={!hiddenCategories.includes(category.id)} onChange={(event) => updateHiddenCategories(event.target.checked ? hiddenCategories.filter((id) => id !== category.id) : [...hiddenCategories, category.id])} /><span>{category.name}</span></label>
+              ))}
+            </div>
+          </details>
           {categories.length ? (
             <div className={styles.managedCategoryList}>
-              {categoriesWithTotals.map((category) => {
+              {categoriesWithTotals.filter((category) => !hiddenCategories.includes(category.id)).map((category) => {
                 const total = category.totals.reduce((sum, item) => sum + item.amountCents, 0);
                 return (
                   <article className={styles.managedCategory} key={category.id}>
@@ -285,7 +305,7 @@ export function FinanceCategories() {
                   </article>
                 );
               })}
-              {summaryCategories.find((category) => category.id === "uncategorized") && (
+              {!hiddenCategories.includes("uncategorized") && summaryCategories.find((category) => category.id === "uncategorized") && (
                 <article className={styles.managedCategory}>
                   <span className={styles.categoryDot} style={{ background: "#a3b7ad" }} />
                   <div><strong>Sem categoria</strong></div>
