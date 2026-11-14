@@ -863,6 +863,7 @@
 .annualBarTrack { height: 10px; border-radius: 999px; background: #eef2ef; overflow: hidden; }
 .annualBar { display: block; height: 100%; min-width: 0; border-radius: inherit; transition: width .25s ease; }
 .annualBarValue { text-align: right; color: #4d6256; font-variant-numeric: tabular-nums; }
+.investmentFlowNote { margin: 0 0 12px; color: #65776b; font-size: 12px; line-height: 1.5; }
 .categoryManagerGrid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(230px, .75fr); gap: 16px; align-items: start; }
 .managedCategoryList { display: grid; }
 .managedCategory {

@@ -41,6 +41,16 @@ o sistema para outros titulares, ela deve se tornar configuração por usuário.
 
 ## Categorias e aprendizado
 
+O gráfico anual de `Investimentos` mostra fluxo líquido: aplicações/compras
+menos resgates e vendas recebidos, no ano de cada lançamento. A API também
+retorna `applicationsCents` e `withdrawalsCents` por ano e a identificação
+`net-investment-flow`. Valores negativos não são zerados no gráfico: indicam
+mais retiradas que aportes no período, não prejuízo nem saldo atual da carteira.
+As demais categorias continuam somando somente despesas. Resgates de RDB,
+fundos, aplicações automáticas e recebimentos de investimentos têm regras
+explícitas; cashback não é tratado como resgate de investimento. Salários
+continuam sendo salários mesmo quando a empresa possui “Investimentos” no nome.
+
 `category-rules.ts` separa os gastos de moradia, assinaturas, compras,
 alimentação e transporte. O Pix para Luciana Sousa dos Santos Vilhanueva só
 é financiamento quando é uma saída de exatamente R$ 1.200. Outros valores

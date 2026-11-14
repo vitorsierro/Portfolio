@@ -176,9 +176,27 @@ describe("FinanceService", () => {
     });
     expect(prisma.financeTransaction.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ userId: "admin-1", kind: "expense" }),
+        where: expect.objectContaining({ userId: "admin-1", ownTransfer: false }),
       }),
     );
+  });
+
+  it("deduz resgates e vendas, preserva valores negativos e não deduz salário", async () => {
+    const { service, prisma } = makeService();
+    const category = { id: "invest", name: "Investimentos", color: "#16a34a" };
+    const occurredAt = new Date("2025-06-01T12:00:00Z");
+    prisma.financeTransaction.findMany.mockResolvedValue([
+      { description: "Aplicação RDB", kind: "expense", amountCents: 10000, occurredAt, category },
+      { description: "Resgate RDB", kind: "income", amountCents: 12000, occurredAt, category },
+      { description: "Venda de ações", kind: "income", amountCents: 3000, occurredAt, category },
+      { description: "Salário SMR PARTICIPACOES E INVESTIMENTOS SA", kind: "income", amountCents: 999999, occurredAt, category },
+      { description: "Resgate de Cashback", kind: "income", amountCents: 2000, occurredAt, category: { id: "other", name: "Outros", color: "#000000" } },
+    ] as never);
+    const result = await service.getAnnualCategorySummary("admin-1", 2025, 2025);
+    expect(result.categories).toEqual([{
+      id: "invest", name: "Investimentos", color: "#16a34a", calculation: "net-investment-flow",
+      totals: [{ year: 2025, amountCents: -5000, applicationsCents: 10000, withdrawalsCents: 15000 }],
+    }]);
   });
 
   it("lists all periods for a category while excluding Lixo from the expense total", async () => {

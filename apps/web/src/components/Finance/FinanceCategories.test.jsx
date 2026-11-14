@@ -64,3 +64,16 @@ test("refreshes the annual comparison when its year range changes", async () => 
     ),
   );
 });
+
+test("shows negative net investment flow with a visible bar and explanation", async () => {
+  authFetch.mockImplementation(async (url) => ({ status: 200, ok: true,
+    json: async () => url.includes("annual-summary") ? { years: [2025], categories: [{
+      id: "invest", name: "Investimentos", color: "#16a34a", calculation: "net-investment-flow",
+      totals: [{ year: 2025, amountCents: -5000, applicationsCents: 10000, withdrawalsCents: 15000 }],
+    }] } : categoryData,
+  }));
+  render(<FinanceCategories />);
+  expect(await screen.findByText(/Aplicações menos resgates e vendas/)).toBeInTheDocument();
+  expect(screen.getAllByText(/-R\$\s*50,00/).length).toBeGreaterThan(0);
+  expect(screen.getByTitle(/aplicações R\$\s*100,00, resgates e vendas R\$\s*150,00/)).toHaveStyle({ width: "100%" });
+});

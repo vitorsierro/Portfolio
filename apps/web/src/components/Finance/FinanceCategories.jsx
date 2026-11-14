@@ -75,7 +75,7 @@ export function FinanceCategories() {
   const summaryCategories = useMemo(() => summary.categories ?? [], [summary.categories]);
   const maxAnnualAmount = Math.max(
     1,
-    ...summaryCategories.flatMap((category) => category.totals.map((item) => item.amountCents)),
+    ...summaryCategories.flatMap((category) => category.totals.map((item) => Math.abs(item.amountCents))),
   );
   const categoriesWithTotals = useMemo(
     () => categories.map((category) => ({
@@ -168,6 +168,9 @@ export function FinanceCategories() {
                     <strong>{category.name}</strong>
                     <strong>{money(rangeTotal)}</strong>
                   </div>
+                  {category.calculation === "net-investment-flow" && (
+                    <p className={styles.investmentFlowNote}>Aplicações menos resgates e vendas recebidos. Negativo indica mais retiradas no período; este valor não é o saldo da carteira.</p>
+                  )}
                   {category.totals.map((item, index) => (
                     <div className={styles.annualBarRow} key={item.year}>
                       <span>{item.year}</span>
@@ -175,10 +178,12 @@ export function FinanceCategories() {
                         <span
                           className={styles.annualBar}
                           style={{
-                            width: `${Math.max(0, (item.amountCents / maxAnnualAmount) * 100)}%`,
+                            width: `${(Math.abs(item.amountCents) / maxAnnualAmount) * 100}%`,
                             backgroundColor: yearColors[index % yearColors.length],
                           }}
-                          title={`${category.name} — ${item.year}: ${money(item.amountCents)}`}
+                          title={category.calculation === "net-investment-flow"
+                            ? `${item.year}: aplicações ${money(item.applicationsCents)}, resgates e vendas ${money(item.withdrawalsCents)}, líquido ${money(item.amountCents)}`
+                            : `${category.name} — ${item.year}: ${money(item.amountCents)}`}
                         />
                       </div>
                       <span className={styles.annualBarValue}>{money(item.amountCents)}</span>
