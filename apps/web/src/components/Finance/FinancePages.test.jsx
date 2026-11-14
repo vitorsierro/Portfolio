@@ -610,3 +610,22 @@ test("loads the all-time view for a category", async () => {
   expect(screen.getByText("Todo o período")).toBeInTheDocument();
   expect(authFetch).toHaveBeenCalledWith(expect.stringContaining("month=all"));
 });
+
+test("switches month, year and all history while preserving category and search filters", async () => {
+  window.history.replaceState({}, "", "/admin/finance/transactions?month=2025-06&categoryId=housing");
+  render(<FinanceTransactions />);
+  await screen.findByText("Mercado");
+  fireEvent.change(screen.getByRole("combobox", { name: "Período" }), { target: { value: "year" } });
+  expect(await screen.findByRole("combobox", { name: "Ano das movimentações" })).toHaveValue("2025");
+  fireEvent.change(screen.getByRole("searchbox", { name: "Buscar lançamento" }), { target: { value: "clinica" } });
+  await waitFor(() => expect(authFetch).toHaveBeenCalledWith(expect.stringMatching(/transactions\?.*year=2025.*categoryId=housing.*search=clinica/)));
+  expect(new URLSearchParams(window.location.search).get("period")).toBe("year");
+  fireEvent.change(screen.getByRole("combobox", { name: "Ano das movimentações" }), { target: { value: "2024" } });
+  await waitFor(() => expect(authFetch).toHaveBeenCalledWith(expect.stringMatching(/transactions\?.*year=2024/)));
+  fireEvent.change(screen.getByRole("combobox", { name: "Período" }), { target: { value: "all" } });
+  await waitFor(() => expect(authFetch).toHaveBeenCalledWith(expect.stringMatching(/transactions\?.*month=all.*categoryId=housing/)));
+  expect(screen.getByText("Todo o período")).toBeInTheDocument();
+  fireEvent.change(screen.getByRole("combobox", { name: "Período" }), { target: { value: "month" } });
+  expect(await screen.findByRole("button", { name: "Mês anterior" })).toBeInTheDocument();
+  await waitFor(() => expect(authFetch).toHaveBeenCalledWith(expect.stringMatching(/transactions\?.*month=2025-06/)));
+});

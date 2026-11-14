@@ -41,6 +41,19 @@ o sistema para outros titulares, ela deve se tornar configuração por usuário.
 
 ## Categorias e aprendizado
 
+Movimentações permite selecionar Mês (filtro mensal original), Ano (de 1º de
+janeiro até antes de 1º de janeiro seguinte) ou Tudo (sem limite de data).
+O período e os filtros de categoria, tipo e busca são preservados na URL.
+A API mantém `month=YYYY-MM` e `month=all` e aceita `year=YYYY`, que tem
+prioridade quando enviado. A paginação e todos os agregados usam o mesmo intervalo.
+
+Categorias com `excludedFromTotals=true` permanecem no histórico e nos filtros,
+mas suas entradas e saídas não entram no resumo mensal, nos agregados da lista
+ou no gráfico anual. O campo é salvo no banco, sem depender do nome da categoria;
+as regras históricas de Lixo e pagamento de fatura continuam funcionando.
+`Clínica — Pai` usa essa configuração para repasses recebidos e pagos em nome
+de terceiro. O aprendizado continua restrito ao destinatário, direção e valor.
+
 O gráfico anual de `Investimentos` mostra fluxo líquido: aplicações/compras
 menos resgates e vendas recebidos, no ano de cada lançamento. A API também
 retorna `applicationsCents` e `withdrawalsCents` por ano e a identificação

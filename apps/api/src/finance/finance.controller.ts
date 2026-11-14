@@ -83,6 +83,7 @@ export class FinanceController {
     @Query()
     query: {
       month?: string;
+      year?: string;
       kind?: string;
       categoryId?: string;
       search?: string;
@@ -94,6 +95,7 @@ export class FinanceController {
     const pluggySyncUnavailable = await this.syncPluggyOrFlag(userId);
     const result = await this.finance.listTransactions(userId, {
       month: query.month,
+      year: query.year,
       kind: query.kind,
       categoryId: query.categoryId,
       search: query.search,
