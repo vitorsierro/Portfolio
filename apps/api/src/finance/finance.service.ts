@@ -457,7 +457,11 @@ export class FinanceService {
       throw new BadRequestException("Intervalo de anos inválido");
     }
 
-    const years = Array.from({ length: toYear - fromYear + 1 }, (_, index) => fromYear + index);
+    const history = await this.prisma.financeTransaction.findMany({
+      where: { userId }, select: { occurredAt: true },
+    });
+    const availableYears = [...new Set(history.map((row) => row.occurredAt.getUTCFullYear()))].sort((a, b) => a - b);
+    const years = availableYears.filter((year) => year >= fromYear && year <= toYear);
     const transactions = await this.prisma.financeTransaction.findMany({
       where: {
         userId,
@@ -515,6 +519,7 @@ export class FinanceService {
     return {
       fromYear,
       toYear,
+      availableYears,
       years,
       categories: Array.from(grouped.values())
         .map(({ amounts, investment, applications, withdrawals, ...category }) => ({

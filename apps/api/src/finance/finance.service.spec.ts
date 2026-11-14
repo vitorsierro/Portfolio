@@ -160,7 +160,8 @@ describe("FinanceService", () => {
     ).resolves.toEqual({
       fromYear: 2024,
       toYear: 2026,
-      years: [2024, 2025, 2026],
+      availableYears: [2024, 2025],
+      years: [2024, 2025],
       categories: [
         {
           id: "food",
@@ -169,7 +170,6 @@ describe("FinanceService", () => {
           totals: [
             { year: 2024, amountCents: 5000 },
             { year: 2025, amountCents: 7000 },
-            { year: 2026, amountCents: 0 },
           ],
         },
       ],

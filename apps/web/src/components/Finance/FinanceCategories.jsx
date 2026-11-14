@@ -1,17 +1,32 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authFetch, ensureSession } from "../../lib/auth";
 import { ROUTER_LOGIN } from "../../constants";
 import styles from "../../styles/Finance.module.css";
+import { CategoryPieChart } from "./CategoryPieChart";
 
 const money = (cents = 0) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(cents / 100);
-const currentYear = new Date().getFullYear();
-const yearChoices = Array.from({ length: currentYear - 1999 }, (_, index) => currentYear - index);
 const yearColors = ["#157a57", "#4c86d9", "#a16ec1", "#df8a42", "#b54e4e", "#4f9a9a", "#76849b", "#b49a39", "#527a38", "#875b4b"];
+
+function CollapsiblePanel({ id, title, description, children, collapsed, onToggle }) {
+  return (
+    <section className={styles.panel} aria-labelledby={`${id}-title`}>
+      <div className={`${styles.panelHeading} ${styles.collapsibleHeading}`}>
+        <h2 id={`${id}-title`}>{title}</h2>
+        <button type="button" className={styles.collapseButton} aria-expanded={!collapsed} aria-controls={`${id}-content`}
+          aria-label={`${collapsed ? "Expandir" : "Minimizar"} ${title}`} onClick={onToggle}>
+          <span aria-hidden="true">{collapsed ? "+" : "−"}</span> {collapsed ? "Expandir" : "Minimizar"}
+        </button>
+        <p>{description}</p>
+      </div>
+      <div id={`${id}-content`} hidden={collapsed}>{children}</div>
+    </section>
+  );
+}
 
 function Navigation() {
   return (
@@ -26,8 +41,8 @@ function Navigation() {
 
 export function FinanceCategories() {
   const router = useRouter();
-  const [fromYear, setFromYear] = useState(Math.max(2020, currentYear - 4));
-  const [toYear, setToYear] = useState(currentYear);
+  const [fromYear, setFromYear] = useState(null);
+  const [toYear, setToYear] = useState(null);
   const [categories, setCategories] = useState([]);
   const [summary, setSummary] = useState({ years: [], categories: [] });
   const [name, setName] = useState("");
@@ -35,8 +50,24 @@ export function FinanceCategories() {
   const [status, setStatus] = useState("loading");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [collapsed, setCollapsed] = useState({ annual: false, pie: false, categories: false });
+  const loadVersion = useRef(0);
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("finance:categories:collapsed") ?? "null");
+      if (saved) setCollapsed({ annual: saved.annual === true, pie: saved.pie === true, categories: saved.categories === true });
+    } catch { /* The page remains usable if storage is unavailable. */ }
+  }, []);
+
+  function togglePanel(panel) {
+    const next = { ...collapsed, [panel]: !collapsed[panel] };
+    setCollapsed(next);
+    try { localStorage.setItem("finance:categories:collapsed", JSON.stringify(next)); } catch { /* Optional preference. */ }
+  }
 
   const load = useCallback(async () => {
+    const version = ++loadVersion.current;
     setStatus("loading");
     try {
       const authenticated = await ensureSession();
@@ -44,9 +75,13 @@ export function FinanceCategories() {
         router.replace(ROUTER_LOGIN);
         return;
       }
+      const params = new URLSearchParams();
+      if (fromYear !== null) params.set("fromYear", String(fromYear));
+      if (toYear !== null) params.set("toYear", String(toYear));
+      const query = params.toString();
       const [categoryResponse, summaryResponse] = await Promise.all([
         authFetch("/admin/finance/categories"),
-        authFetch(`/admin/finance/categories/annual-summary?fromYear=${fromYear}&toYear=${toYear}`),
+        authFetch(`/admin/finance/categories/annual-summary${query ? `?${query}` : ""}`),
       ]);
       if (categoryResponse.status === 401 || summaryResponse.status === 401) {
         router.replace(ROUTER_LOGIN);
@@ -60,19 +95,26 @@ export function FinanceCategories() {
         categoryResponse.json(),
         summaryResponse.json(),
       ]);
+      if (version !== loadVersion.current) return;
       setCategories(Array.isArray(categoryData) ? categoryData : []);
       setSummary(summaryData);
       setStatus("ready");
     } catch {
-      setStatus("error");
+      if (version === loadVersion.current) setStatus("error");
     }
   }, [fromYear, toYear, router]);
 
   useEffect(() => {
     load();
+    return () => { loadVersion.current += 1; };
   }, [load]);
 
   const summaryCategories = useMemo(() => summary.categories ?? [], [summary.categories]);
+  const availableYears = useMemo(() => [...(summary.availableYears ?? summary.years ?? [])].sort((a, b) => a - b), [summary.availableYears, summary.years]);
+  const yearChoices = [...availableYears].reverse();
+  const visibleYears = (summary.years ?? []).filter((year) => availableYears.includes(year));
+  const displayFromYear = fromYear ?? visibleYears[0] ?? "";
+  const displayToYear = toYear ?? visibleYears.at(-1) ?? "";
   const maxAnnualAmount = Math.max(
     1,
     ...summaryCategories.flatMap((category) => category.totals.map((item) => Math.abs(item.amountCents))),
@@ -124,33 +166,48 @@ export function FinanceCategories() {
             Compare as despesas por categoria ano a ano e abra todos os lançamentos de cada uma.
           </p>
         </div>
+      </div>
+
+      <section className={styles.panel} aria-labelledby="new-category-title">
+        <div className={styles.panelHeading}><div><h2 id="new-category-title">Nova categoria</h2><p>Crie uma categoria para organizar os lançamentos.</p></div></div>
+        <form className={`${styles.categoryManagerForm} ${styles.categoryQuickForm}`} onSubmit={addCategory}>
+          <label htmlFor="managed-category-name">Nome
+            <input id="managed-category-name" value={name} onChange={(event) => setName(event.target.value)} maxLength={60} required placeholder="Ex.: Moradia — Reparos" />
+          </label>
+          <label htmlFor="managed-category-color">Cor
+            <input id="managed-category-color" className={styles.colorInput} type="color" value={color} onChange={(event) => setColor(event.target.value)} aria-label="Cor da categoria" />
+          </label>
+          <button className={styles.primaryButton} type="submit" disabled={saving}>{saving ? "Criando…" : "Criar categoria"}</button>
+          {message && <p className={styles.formMessage} role="status">{message}</p>}
+        </form>
+      </section>
+
+      <div className={styles.chartPeriodToolbar}>
+        <span>Período dos gráficos</span>
         <div className={styles.yearRange}>
           <label>
             De
-            <select aria-label="Ano inicial" value={fromYear} onChange={(event) => {
+            <select aria-label="Ano inicial" value={displayFromYear} disabled={!availableYears.length} onChange={(event) => {
               const selectedYear = Number(event.target.value);
               setFromYear(selectedYear);
-              if (selectedYear > toYear) setToYear(selectedYear);
+              if (selectedYear > displayToYear) setToYear(selectedYear);
             }}>
+              {!availableYears.length && <option value="">Sem dados</option>}
               {yearChoices.map((year) => <option key={year} value={year}>{year}</option>)}
             </select>
           </label>
           <label>
             Até
-            <select aria-label="Ano final" value={toYear} onChange={(event) => setToYear(Number(event.target.value))}>
-              {yearChoices.filter((year) => year >= fromYear).map((year) => <option key={year} value={year}>{year}</option>)}
+            <select aria-label="Ano final" value={displayToYear} disabled={!availableYears.length} onChange={(event) => setToYear(Number(event.target.value))}>
+              {!availableYears.length && <option value="">Sem dados</option>}
+              {yearChoices.filter((year) => year >= displayFromYear).map((year) => <option key={year} value={year}>{year}</option>)}
             </select>
           </label>
         </div>
       </div>
 
-      <section className={styles.panel} aria-labelledby="annual-category-title">
-        <div className={styles.panelHeading}>
-          <div>
-            <h2 id="annual-category-title">Gastos anuais por categoria</h2>
-            <p>Despesas registradas entre {fromYear} e {toYear}; lançamentos em “Lixo” ficam fora dos totais.</p>
-          </div>
-        </div>
+      <CollapsiblePanel id="annual-category" title="Gastos anuais por categoria" collapsed={collapsed.annual} onToggle={() => togglePanel("annual")}
+        description={visibleYears.length ? `Dados de ${displayFromYear} a ${displayToYear}. Categorias excluídas não entram nos totais.` : "O comparativo usa apenas os anos com transações."}>
         {status === "loading" ? (
           <div className={styles.loading}>Carregando categorias…</div>
         ) : status === "error" ? (
@@ -159,7 +216,7 @@ export function FinanceCategories() {
             <button type="button" onClick={load}>Tentar novamente</button>
           </div>
         ) : summaryCategories.length ? (
-          <div className={styles.annualChart} role="img" aria-label={`Gastos por categoria de ${fromYear} a ${toYear}`}>
+          <div className={styles.annualChart} role="img" aria-label={`Gastos por categoria de ${displayFromYear} a ${displayToYear}`}>
             {summaryCategories.map((category) => {
               const rangeTotal = category.totals.reduce((total, item) => total + item.amountCents, 0);
               return (
@@ -171,7 +228,7 @@ export function FinanceCategories() {
                   {category.calculation === "net-investment-flow" && (
                     <p className={styles.investmentFlowNote}>Aplicações menos resgates e vendas recebidos. Negativo indica mais retiradas no período; este valor não é o saldo da carteira.</p>
                   )}
-                  {category.totals.map((item, index) => (
+                  {category.totals.filter((item) => visibleYears.includes(item.year)).map((item, index) => (
                     <div className={styles.annualBarRow} key={item.year}>
                       <span>{item.year}</span>
                       <div className={styles.annualBarTrack}>
@@ -196,16 +253,17 @@ export function FinanceCategories() {
         ) : (
           <div className={styles.emptyState}>Sem despesas categorizadas neste intervalo.</div>
         )}
-      </section>
+      </CollapsiblePanel>
 
-      <section className={styles.categoryManagerGrid}>
-        <div className={styles.panel}>
-          <div className={styles.panelHeading}>
-            <div>
-              <h2>Categorias</h2>
-              <p>Filtre o histórico completo de uma categoria.</p>
-            </div>
-          </div>
+      <CollapsiblePanel id="category-pie" title="Gráfico de pizza por categoria" collapsed={collapsed.pie} onToggle={() => togglePanel("pie")}
+        description="Participação nos gastos do período selecionado. Investimentos líquidos e categorias excluídas ficam fora desta distribuição.">
+        {status === "loading" ? <div className={styles.loading}>Carregando gráfico…</div>
+          : status === "error" ? <div className={styles.error}>Não foi possível carregar o gráfico.</div>
+            : <CategoryPieChart categories={summaryCategories} />}
+      </CollapsiblePanel>
+
+      <CollapsiblePanel id="managed-categories" title="Categorias" description="Filtre o histórico completo de uma categoria."
+        collapsed={collapsed.categories} onToggle={() => togglePanel("categories")}>
           {categories.length ? (
             <div className={styles.managedCategoryList}>
               {categoriesWithTotals.map((category) => {
@@ -241,41 +299,7 @@ export function FinanceCategories() {
           ) : (
             <div className={styles.emptyState}>Ainda não há categorias cadastradas.</div>
           )}
-        </div>
-
-        <div className={styles.panel}>
-          <div className={styles.panelHeading}>
-            <div>
-              <h2>Nova categoria</h2>
-              <p>Crie uma categoria para organizar os lançamentos.</p>
-            </div>
-          </div>
-          <form className={styles.categoryManagerForm} onSubmit={addCategory}>
-            <label htmlFor="managed-category-name">Nome</label>
-            <input
-              id="managed-category-name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              maxLength={60}
-              required
-              placeholder="Ex.: Moradia"
-            />
-            <label htmlFor="managed-category-color">Cor</label>
-            <input
-              id="managed-category-color"
-              className={styles.colorInput}
-              type="color"
-              value={color}
-              onChange={(event) => setColor(event.target.value)}
-              aria-label="Cor da categoria"
-            />
-            <button className={styles.primaryButton} type="submit" disabled={saving}>
-              {saving ? "Criando…" : "Criar categoria"}
-            </button>
-            {message && <p className={styles.formMessage} role="status">{message}</p>}
-          </form>
-        </div>
-      </section>
+      </CollapsiblePanel>
     </main>
   );
 }

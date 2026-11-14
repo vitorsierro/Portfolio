@@ -864,6 +864,33 @@
 .annualBar { display: block; height: 100%; min-width: 0; border-radius: inherit; transition: width .25s ease; }
 .annualBarValue { text-align: right; color: #4d6256; font-variant-numeric: tabular-nums; }
 .investmentFlowNote { margin: 0 0 12px; color: #65776b; font-size: 12px; line-height: 1.5; }
+.chartPeriodToolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 18px 0; color: #52675c; font-size: 12px; font-weight: 600; }
+.collapsibleHeading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; }
+.collapsibleHeading h2 { margin: 0; }
+.collapsibleHeading p { grid-column: 1 / -1; margin: 0; }
+.collapseButton { display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0; border: 1px solid #dfe8e3; border-radius: 8px; background: #fff; color: #3d6650; padding: 8px 10px; font-size: 11px; cursor: pointer; }
+.collapseButton:hover { background: #f2f7f4; }
+.collapseButton:focus-visible, .pieLegend button:focus-visible { outline: 2px solid #16815a; outline-offset: 3px; }
+.categoryQuickForm { grid-template-columns: minmax(180px, 1fr) 90px auto; align-items: end; }
+.categoryQuickForm label { display: grid; gap: 8px; }
+.categoryQuickForm .primaryButton { margin-top: 0; }
+.categoryQuickForm .formMessage { grid-column: 1 / -1; }
+.pieLayout { display: grid; grid-template-columns: minmax(230px, 300px) minmax(0, 1fr); align-items: start; gap: 30px; }
+.pieFigure { min-width: 0; }
+.pieFigure svg { display: block; width: 100%; max-width: 300px; margin: 0 auto; }
+.pieSlice { transition: opacity .15s ease; }
+.pieDetail { display: grid; gap: 5px; text-align: center; min-height: 86px; color: #52675c; font-size: 12px; }
+.pieDetail strong { font-size: 23px; color: #244c37; }
+.pieDetail small { color: #728178; }
+.pieTotal { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid #e5ece7; padding-top: 12px; color: #52675c; font-size: 12px; }
+.pieTotal strong { color: #244c37; white-space: nowrap; }
+.pieLegend { list-style: none; padding: 0 8px 0 0; margin: 0; max-height: 440px; overflow-y: auto; }
+.pieLegend li + li { border-top: 1px solid #edf1ee; }
+.pieLegend button { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; padding: 11px 8px; border: 0; border-radius: 6px; background: transparent; color: #315141; text-align: left; font: inherit; font-size: 12px; cursor: pointer; }
+.pieLegend button:hover, .pieLegend button[aria-pressed="true"] { background: #f0f6f2; }
+.pieLegendName { overflow-wrap: anywhere; }
+.pieLegendAmount { display: grid; gap: 4px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pieLegendAmount small { color: #728178; font-size: 10px; }
 .categoryManagerGrid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(230px, .75fr); gap: 16px; align-items: start; }
 .managedCategoryList { display: grid; }
 .managedCategory {
@@ -905,6 +932,12 @@
 }
 .allPeriodLabel { color: #476153; font-size: 12px; font-weight: 600; padding: 8px 4px; }
 @media (max-width: 640px) {
+  .categoryQuickForm { grid-template-columns: 72px minmax(0, 1fr); }
+  .categoryQuickForm label:first-child { grid-column: 1 / -1; }
+  .chartPeriodToolbar { flex-wrap: wrap; }
+  .pieLayout { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .pieLegend { max-height: 360px; }
+  .collapseButton { padding: 8px; }
   .categoryManagerGrid { grid-template-columns: 1fr; }
   .managedCategory { grid-template-columns: 10px minmax(0, 1fr) auto; }
   .managedCategoryTotal { grid-column: 2; }
