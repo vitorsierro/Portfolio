@@ -30,6 +30,7 @@ jobs:
           node-version: 22
           cache: yarn
       - run: yarn install --frozen-lockfile
+      - run: python3 infra/coolify/check-compose.py
       - run: node infra/audit-dependencies.cjs
       - run: node --test infra/audit-dependencies.test.cjs infra/tool-sockets/proxy.test.cjs
       - run: npm audit --omit=dev

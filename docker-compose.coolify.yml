@@ -147,10 +147,7 @@ services:
   hermes-proxy:
     image: infra-hermes-proxy
     labels: *coolify-labels
-    build:
-      context: ./infra/hermes
-      args:
-        HERMES_BASE_IMAGE: ${HERMES_BASE_IMAGE:-nousresearch/hermes-agent@sha256:276d44685c65c0cb2a25f190b63c65c8906f9dc76486fb1c05ae71b5826bda08}-proxy
+    build: ./infra/hermes-proxy
     read_only: true
     mem_limit: 64m
     pids_limit: 64
