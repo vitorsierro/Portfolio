@@ -1,0 +1,9 @@
+[Unit]
+Description=Exporta status sanitizado do Coolify para o admin
+After=docker.service
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/portfolio/infra/coolify/export-status.py
+TimeoutStartSec=90
+UMask=0077
+Nice=10

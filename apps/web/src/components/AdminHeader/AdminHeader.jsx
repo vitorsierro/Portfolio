@@ -13,6 +13,7 @@ const NAV = [
   { href: "/admin/threads", label: "Threads" },
   { href: "/admin/enseada", label: "Enseada" },
   { href: "/admin/ai-memory", label: "ai-memory" },
+  { href: "/admin/coolify", label: "Coolify" },
   { href: "/admin/finance", label: "Finanças" },
 ];
 

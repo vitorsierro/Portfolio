@@ -61,6 +61,12 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - api_data:/data
+      - type: bind
+        source: /var/lib/portfolio-status
+        target: /run/portfolio-status
+        read_only: true
+        bind:
+          create_host_path: false
     networks: [backend, memory]
 
   excalidraw:

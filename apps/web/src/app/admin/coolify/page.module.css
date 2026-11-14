@@ -1,0 +1,29 @@
+.summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; }
+.metric,.panel,.connection { border:1px solid var(--color-border); border-radius:var(--radius-lg); background:var(--color-surface); padding:1.25rem; }
+.metric { display:grid; gap:.4rem; align-content:start; }
+.metric strong { font-size:1.65rem; color:var(--color-accent-strong); }
+.metric strong small { font-size:1rem; font-weight:400; }
+.metric span,.muted,.stats dt,.schedule dt { color:var(--color-text-muted); font-size:.85rem; }
+.metric .timestamp { font-size:1rem; line-height:1.8; }
+.panel { display:grid; gap:1rem; min-width:0; }
+.panel h2 { font-size:1.2rem; color:var(--color-accent-strong); }
+.services { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.service { padding:1rem; border:1px solid var(--color-border); border-radius:var(--radius-md); display:grid; gap:.85rem; min-width:0; }
+.serviceHeader { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.5rem; }
+.serviceHeader h3 { font-size:1rem; overflow-wrap:anywhere; }
+.healthy,.attention { padding:.2rem .55rem; font-size:.75rem; border-radius:999px; }
+.healthy { color:var(--color-accent-strong); background:rgba(31,92,74,.12); }
+.attention,.warning { color:var(--color-text); background:rgba(199,140,42,.14); }
+.warning { padding:1rem; border-radius:var(--radius-md); border:1px solid var(--color-border); }
+.stats,.schedule { display:flex; gap:1rem; justify-content:space-between; flex-wrap:wrap; }
+.stats dd,.schedule dd { margin:0; font-size:.85rem; overflow-wrap:anywhere; }
+.versions { display:flex; gap:1.5rem; flex-wrap:wrap; }
+.versions strong { margin-left:.4rem; color:var(--color-accent-strong); }
+.connection summary { cursor:pointer; font-weight:600; color:var(--color-accent-strong); }
+.connection p { margin:.75rem 0; color:var(--color-text-muted); }
+.connection code { display:block; overflow-wrap:anywhere; font-size:.8rem; }
+.tableScroll { overflow-x:auto; }
+.table { width:100%; border-collapse:collapse; text-align:left; font-size:.85rem; }
+.table th,.table td { padding:.75rem .5rem; border-bottom:1px solid var(--color-border); white-space:nowrap; }
+.table th { color:var(--color-text-muted); font-weight:500; }
+@media(max-width:640px) { .summary,.services { grid-template-columns:1fr; } }
