@@ -13,6 +13,7 @@ import { translateCategoryName } from "./category-localization";
 import { isOwnPix } from "./own-transfer";
 import { inferFinanceCategory } from "./category-rules";
 import { findLearnedCategory } from "./category-learning";
+import { findPixAccountRule } from "./pix-account-rule";
 
 export const PLUGGY_CLIENT_FACTORY = Symbol("PLUGGY_CLIENT_FACTORY");
 type PluggyClientApi = Pick<
@@ -163,6 +164,7 @@ export class PluggyService {
     const learnedRules = await this.prisma.financeCategoryRule.findMany({
       where: { userId }, orderBy: { updatedAt: "desc" },
     });
+    const pixAccountRules = await this.prisma.financePixAccountRule.findMany({ where: { userId } });
     const dateTo = now.toISOString().slice(0, 10);
     const dateFromDate = new Date(now);
     dateFromDate.setUTCMonth(dateFromDate.getUTCMonth() - OPEN_FINANCE_HISTORY_MONTHS);
@@ -226,11 +228,28 @@ export class PluggyService {
 
           const rawCategoryName = transaction.category?.trim().slice(0, 60);
           const kind = transaction.type === "CREDIT" ? "income" : "expense";
-          const categoryName = inferFinanceCategory({ ...transaction, kind, amountCents }) ?? (rawCategoryName
+          const inferredCategory = inferFinanceCategory({ ...transaction, kind, amountCents });
+          const categoryName = inferredCategory ?? (rawCategoryName
             ? translateCategoryName(rawCategoryName).slice(0, 60)
             : null);
           const learnedId = findLearnedCategory(learnedRules, transaction.description ?? "", kind, amountCents);
-          const category = learnedId ? { id: learnedId } : categoryName
+          let accountRule = !learnedId && !inferredCategory && account.type === "BANK"
+            ? findPixAccountRule(pixAccountRules, account.name, kind, transaction) : null;
+          let protectedCategoryId: string | null = null;
+          if (accountRule) {
+            const saved = await this.prisma.financeTransaction.findUnique({
+              where: { userId_pluggyTransactionId: { userId, pluggyTransactionId: transaction.id } },
+              select: { categoryId: true, categoryEdited: true, category: { select: { name: true } } },
+            });
+            // Account-wide rules only fill unclassified history. Specific
+            // merchant rules, known purposes and manual edits take precedence.
+            if (saved && (saved.categoryEdited || (saved.category &&
+              !["Outros", "Salário"].includes(translateCategoryName(saved.category.name))))) {
+              protectedCategoryId = saved.categoryId;
+              accountRule = null;
+            }
+          }
+          const category = learnedId ? { id: learnedId } : protectedCategoryId ? { id: protectedCategoryId } : accountRule ? { id: accountRule.categoryId } : categoryName
             ? await this.prisma.financeCategory.upsert({
                 where: { userId_name: { userId, name: categoryName } },
                 create: { userId, name: categoryName },
@@ -267,7 +286,8 @@ export class PluggyService {
           } = transactionData;
           await this.prisma.financeTransaction.upsert({
             where,
-            create: { ...transactionData, categoryId: importedCategoryId },
+            create: { ...transactionData, categoryId: importedCategoryId,
+              ownTransfer: isOwnPix(transaction) || (accountRule?.ownTransfer ?? false) },
             update: refreshData,
           });
 
@@ -298,6 +318,12 @@ export class PluggyService {
             },
             data: { categoryId: importedCategoryId },
           });
+          if (accountRule?.ownTransfer) {
+            await this.prisma.financeTransaction.updateMany({
+              where: { userId, pluggyTransactionId: transaction.id, categoryEdited: false, categoryId: accountRule.categoryId },
+              data: { ownTransfer: true },
+            });
+          }
           importedTransactions += 1;
         }
       }

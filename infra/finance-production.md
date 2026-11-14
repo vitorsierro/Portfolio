@@ -41,6 +41,16 @@ o sistema para outros titulares, ela deve se tornar configuração por usuário.
 
 ## Categorias e aprendizado
 
+`FinancePixAccountRule` permite uma regra explicitamente autorizada por usuário,
+nome da conta e direção. Nesta instalação, o titular confirmou que Pix do Itaú
+em ambas as direções, ainda em Outros, são movimentações do salário entre suas
+contas: recebem Salário e continuam fora dos totais como transferências próprias.
+A regra vale para qualquer valor e somente contas bancárias. Pagamentos salariais
+originais, sem Pix, continuam sendo renda; regras de estabelecimento, finalidades
+identificadas e classificações já ajustadas têm prioridade. A marcação de
+transferência própria na sincronização é condicional à categoria e ao campo de
+edição manual no momento da escrita, para proteger alterações concorrentes.
+
 Movimentações permite selecionar Mês (filtro mensal original), Ano (de 1º de
 janeiro até antes de 1º de janeiro seguinte) ou Tudo (sem limite de data).
 O período e os filtros de categoria, tipo e busca são preservados na URL.

@@ -22,6 +22,7 @@ model Admin {
   pluggyConnections   PluggyConnection[]
   savedThreads        SavedThread[]
   financeCategoryRules FinanceCategoryRule[]
+  financePixAccountRules FinancePixAccountRule[]
 }
 
 // One row per signed-in browser. Holds BOTH credentials for that browser:
@@ -219,6 +220,7 @@ model FinanceCategory {
   createdAt    DateTime             @default(now())
   transactions FinanceTransaction[]
   rules        FinanceCategoryRule[]
+  pixAccountRules FinancePixAccountRule[]
 
   @@unique([userId, name])
 }
@@ -265,6 +267,21 @@ model FinanceCategoryRule {
 
   @@unique([userId, merchantKey, kind, amountCents])
   @@index([userId, kind])
+}
+
+model FinancePixAccountRule {
+  id          String          @id @default(cuid())
+  userId      String
+  user        Admin           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    FinanceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  accountName String
+  kind        String
+  ownTransfer Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([userId, accountName, kind])
 }
 
 model FinanceInvestment {

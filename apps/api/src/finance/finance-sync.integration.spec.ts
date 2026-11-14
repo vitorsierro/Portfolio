@@ -173,4 +173,30 @@ describe("sincronização financeira com SQLite real", () => {
     expect(annual.categories.some((item) => item.id === category.id)).toBe(false);
     expect((await finance.listCategories(userId)).find((item) => item.id === category.id)?.excludedFromTotals).toBe(true);
   });
+
+  it("aplica regra de Pix do Itaú sem alterar categorias ajustadas ou duplicar salário", async () => {
+    const salary = await prisma.financeCategory.upsert({ where: { userId_name: { userId, name: "Salário" } }, create: { userId, name: "Salário" }, update: {} });
+    const protectedCategory = await prisma.financeCategory.create({ data: { userId, name: "Moradia — Compra do imóvel" } });
+    for (const kind of ["income", "expense"]) await prisma.financePixAccountRule.create({ data: { userId, accountName: "itau", kind, categoryId: salary.id, ownTransfer: true } });
+    for (const [id, categoryEdited] of [["protected-manual-pix", true], ["protected-known-pix", false]] as const) {
+      await prisma.financeTransaction.create({ data: { userId, source: "pluggy", pluggyTransactionId: id, description: "Pix enviado Pix enviado", amountCents: 12345, kind: "expense", occurredAt: date, categoryId: protectedCategory.id, categoryEdited } });
+    }
+    client.fetchAccounts.mockImplementation(async (id: string) => ({ results: [{ id, type: "BANK", name: id === "item-0" ? "Itaú" : "Outra conta", currencyCode: "BRL" }] }));
+    client.fetchAllTransactions.mockImplementation(async (id: string) => id === "item-0" ? [
+      { id: "new-itau-income", description: "Pix recebido Pix recebido", type: "CREDIT", amount: 987.65, date },
+      { id: "new-itau-expense", description: "Pix enviado Pix enviado", type: "DEBIT", amount: 789, date },
+      { id: "protected-manual-pix", description: "Pix enviado Pix enviado", type: "DEBIT", amount: 123.45, date },
+      { id: "protected-known-pix", description: "Pix enviado Pix enviado", type: "DEBIT", amount: 123.45, date },
+      { id: "real-payroll-itau", description: "Salário SMR PARTICIPACOES E INVESTIMENTOS SA", type: "CREDIT", amount: 5000, date },
+    ] : id === "item-1" ? [{ id: "other-account-pix", description: "Pix recebido Pix recebido", type: "CREDIT", amount: 123, date }] : []);
+    await new PluggyService(prisma as never, () => client as never).syncUserConnections(userId, true);
+    const load = (pluggyTransactionId: string) => prisma.financeTransaction.findFirstOrThrow({ where: { userId, pluggyTransactionId } });
+    expect(await load("new-itau-income")).toMatchObject({ categoryId: salary.id, ownTransfer: true, kind: "income" });
+    expect(await load("new-itau-expense")).toMatchObject({ categoryId: salary.id, ownTransfer: true, kind: "expense" });
+    expect(await load("protected-manual-pix")).toMatchObject({ categoryId: protectedCategory.id, ownTransfer: false });
+    expect(await load("protected-known-pix")).toMatchObject({ categoryId: protectedCategory.id, ownTransfer: false });
+    expect(await load("real-payroll-itau")).toMatchObject({ categoryId: salary.id, ownTransfer: false });
+    expect(await load("other-account-pix")).toMatchObject({ ownTransfer: false });
+    expect((await load("other-account-pix")).categoryId).not.toBe(salary.id);
+  });
 });
