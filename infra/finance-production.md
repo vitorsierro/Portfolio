@@ -159,6 +159,20 @@ O acesso começa com inspeção e backup. Permissão no grupo Docker dá control
 amplo do host; para apenas analisar, prefira uma cópia exportada do banco ou
 uma conta limitada à leitura dos backups.
 
+## Visualização das categorias
+
+Os filtros anuais e as linhas do gráfico usam somente anos com movimentações
+no histórico do usuário. Anos vazios não geram linhas; nenhum lançamento é
+apagado por esse filtro. A API informa esses anos em `availableYears`.
+
+O gráfico de pizza distribui os gastos positivos do período e exclui categorias
+fora dos totais e investimentos calculados por aplicações menos resgates.
+O resultado líquido de investimentos continua no gráfico anual.
+
+O formulário de nova categoria aparece primeiro. Os painéis anual, pizza e
+lista de categorias podem ser minimizados separadamente; a preferência fica
+salva no navegador em `finance:categories:collapsed`.
+
 ## Aplicação e revisão
 
 O deploy padrão já executa backup e migrations. Esta mudança acrescenta a
