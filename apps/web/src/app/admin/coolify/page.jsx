@@ -76,8 +76,9 @@ export default function CoolifyPage() {
           <div className={styles.services}>
             {services.map((service) => {
               const ok = service.state === 'running' && service.health === 'healthy';
+              const version = service.version || (service.name === 'hermes' ? updates?.hermesVersion : service.name === 'ai-memory' ? updates?.memoryVersion : null);
               return <article key={service.name} className={styles.service}>
-                <div className={styles.serviceHeader}><h3>{service.name}</h3><span className={ok ? styles.healthy : styles.attention}>{ok ? 'Saudável' : service.health === 'unhealthy' ? 'Com falha' : service.state === 'running' ? 'Verificando' : 'Parado'}</span></div>
+                <div className={styles.serviceHeader}><h3>{service.name}</h3><span className={ok ? styles.healthy : styles.attention}>{ok ? 'Saudável' : service.health === 'unhealthy' ? 'Com falha' : service.state === 'running' ? 'Verificando' : 'Parado'}{version && ` · v${version}`}</span></div>
                 <dl className={styles.stats}><div><dt>CPU</dt><dd>{service.cpu || '—'}</dd></div><div><dt>Memória / limite</dt><dd>{service.memory || '—'}</dd></div><div><dt>Reinícios</dt><dd>{service.restarts}</dd></div></dl>
                 <p className={styles.muted}>Último início: {date(service.startedAt)}</p>
               </article>;
