@@ -8,9 +8,12 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 docker volume inspect infra_hermes_data >/dev/null 2>&1 || exit 0
 # Não pausar um agente nem repetir snapshots de vários GB em deploys só da API.
 TARGET_IMAGE="$("${COMPOSE[@]}" config --images hermes)"
-TARGET_ID="$(docker image inspect "$TARGET_IMAGE" --format '{{.Id}}')"
+TARGET_CONTENT="$(docker image inspect "$TARGET_IMAGE" --format '{{json .RootFS}} {{json .Config}}')"
 CURRENT_ID="$(docker inspect infra-hermes-1 --format '{{.Image}}' 2>/dev/null || true)"
-if [ "$TARGET_ID" = "$CURRENT_ID" ]; then
+CURRENT_CONTENT="$(docker image inspect "$CURRENT_ID" --format '{{json .RootFS}} {{json .Config}}' 2>/dev/null || true)"
+# BuildKit renova o digest de provenance até em builds 100% em cache.
+# Comparar filesystem/configuração evita confundir metadata com migração.
+if [ -n "$CURRENT_CONTENT" ] && [ "$TARGET_CONTENT" = "$CURRENT_CONTENT" ]; then
   echo "Imagem do Hermes inalterada — snapshot anterior preservado."
   exit 0
 fi
