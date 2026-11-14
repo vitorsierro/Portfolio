@@ -1,0 +1,5 @@
+# Dependências opcionais de voz. Reinstale para o Python da imagem após upgrades.
+# PyAV 19 removeu metadata_errors, ainda usado pelo faster-whisper 1.2.1.
+edge-tts==7.3.1
+faster-whisper==1.2.1
+av==18.0.0
