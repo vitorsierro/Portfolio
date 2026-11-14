@@ -17,6 +17,7 @@ describe('AuthService', () => {
     matchesRefreshHash: jest.fn(),
     hasExceededMaxAge: jest.fn(),
     rotateToken: jest.fn(),
+    consumeRefreshToken: jest.fn(),
     revokeById: jest.fn(),
   };
 
@@ -97,6 +98,7 @@ describe('AuthService', () => {
     sessions.matchesRefreshHash.mockReturnValue(true);
     sessions.hasExceededMaxAge.mockReturnValue(false);
     sessions.rotateToken.mockResolvedValue(aSession);
+    sessions.consumeRefreshToken.mockResolvedValue(true);
     prisma.admin.findUnique.mockResolvedValue({ id: 'a1', email: 'a@b.c' });
     jwt.signAsync.mockResolvedValue('token');
 

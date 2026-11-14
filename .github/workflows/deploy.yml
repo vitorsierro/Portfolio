@@ -1,5 +1,8 @@
 name: Deploy na VPS
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -30,12 +33,13 @@ jobs:
     name: Verificar antes de subir
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: 22
           cache: yarn
       - run: yarn install --frozen-lockfile
+      - run: node infra/audit-dependencies.cjs
       - run: yarn workspace api prisma:generate
       - run: yarn lint
       - run: yarn workspace api test
@@ -46,6 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: producao
     steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
       # Um segredo ausente chega como string vazia, e cada passo falha de um
       # jeito diferente e obscuro: o ssh-action diz "missing server host" só
       # depois de baixar o binário, e o healthcheck gasta 100s tentando
@@ -77,11 +82,12 @@ jobs:
           echo "Todos os segredos obrigatorios estao presentes."
 
       - name: Enviar o deploy por SSH
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          fingerprint: SHA256:ey0QyxTMa1/7Sr0yr1z2/Hr/ABYcxLmmWQgQY6+ZkU0
           # Build de imagem na VPS leva alguns minutos; o default de 10s
           # derrubaria a conexão no meio.
           command_timeout: 20m
@@ -89,9 +95,9 @@ jobs:
             set -euo pipefail
             cd /opt/portfolio
             git fetch --all
-            git reset --hard origin/main
+            git reset --hard ${{ github.sha }}
             chmod +x infra/*.sh
-            ./infra/deploy.sh
+            DEPLOY_COMMIT=${{ github.sha }} ./infra/deploy.sh
 
       - name: Confirmar que a API respondeu
         # Um deploy que "passou" mas deixou o serviço fora do ar é o pior
@@ -122,7 +128,5 @@ jobs:
             echo "ADMIN_EMAIL/PASSWORD não configurados — pulando o contrato."
             exit 0
           fi
-          curl -fsSL -o verify-auth.sh \
-            "https://raw.githubusercontent.com/${{ github.repository }}/main/infra/verify-auth.sh"
           ORIGIN="https://${{ secrets.WEB_HOST }}" \
-            bash verify-auth.sh "https://${{ secrets.API_HOST }}" "$ADMIN_EMAIL" "$ADMIN_PASSWORD"
+            bash infra/verify-auth.sh "https://${{ secrets.API_HOST }}" "$ADMIN_EMAIL" "$ADMIN_PASSWORD"

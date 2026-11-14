@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { SessionService } from './session.service';
 
@@ -77,6 +78,9 @@ export class AuthService {
       throw new UnauthorizedException('Admin not found');
     }
 
+    if (!(await this.sessions.consumeRefreshToken(session.id, refreshToken))) {
+      throw new UnauthorizedException('Refresh token already used');
+    }
     const rotated = await this.sessions.rotateToken(session.id);
     return this.issueFor(admin.id, admin.email, rotated);
   }
@@ -103,7 +107,7 @@ export class AuthService {
     email: string,
     session: { id: string; token: string; expiresAt: Date },
   ): Promise<AuthResult> {
-    const accessToken = await this.jwt.signAsync({ sub: adminId, email }, {
+    const accessToken = await this.jwt.signAsync({ sub: adminId, email, sid: session.id }, {
       secret: process.env.JWT_ACCESS_SECRET,
       expiresIn: process.env.ACCESS_TOKEN_TTL || '15m',
     } as JwtSignOptions);
@@ -112,6 +116,7 @@ export class AuthService {
       { sub: adminId, sid: session.id },
       {
         secret: process.env.JWT_REFRESH_SECRET,
+        jwtid: randomUUID(),
         expiresIn: process.env.REFRESH_TOKEN_TTL || '7d',
       } as JwtSignOptions,
     );

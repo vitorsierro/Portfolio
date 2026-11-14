@@ -1,6 +1,7 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { SessionService } from './session.service';
 
 function contextWith(headers: Record<string, string>): ExecutionContext {
   const req = { headers };
@@ -11,7 +12,8 @@ function contextWith(headers: Record<string, string>): ExecutionContext {
 
 describe('JwtAuthGuard', () => {
   const jwt = { verifyAsync: jest.fn() } as unknown as JwtService;
-  const guard = new JwtAuthGuard(jwt);
+  const sessions = { findById: jest.fn() };
+  const guard = new JwtAuthGuard(jwt, sessions as unknown as SessionService);
 
   beforeEach(() => jest.clearAllMocks());
 
@@ -25,7 +27,9 @@ describe('JwtAuthGuard', () => {
     (jwt.verifyAsync as jest.Mock).mockResolvedValue({
       sub: 'a1',
       email: 'a@b.c',
+      sid: 's1',
     });
+    sessions.findById.mockResolvedValue({ adminId: 'a1', expiresAt: new Date(Date.now() + 60000) });
     const ctx = contextWith({ authorization: 'Bearer good-token' });
 
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
@@ -37,5 +41,12 @@ describe('JwtAuthGuard', () => {
     await expect(
       guard.canActivate(contextWith({ authorization: 'Bearer bad' })),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('rejects a valid JWT after its session has been revoked', async () => {
+    (jwt.verifyAsync as jest.Mock).mockResolvedValue({ sub: 'a1', sid: 's1' });
+    sessions.findById.mockResolvedValue(null);
+    await expect(guard.canActivate(contextWith({ authorization: 'Bearer stolen' })))
+      .rejects.toBeInstanceOf(UnauthorizedException);
   });
 });

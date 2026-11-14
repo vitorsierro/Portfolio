@@ -107,8 +107,9 @@ Três coisas que só quebram no GitHub Actions porque à mão você roda como ro
 - **`/var/backups/portfolio` precisa existir e ser do `deploy`.** O `backup-db.sh`
   faz `mkdir -p` ali, mas `/var/backups` é do root. Sem backup o `deploy.sh`
   aborta de propósito, então o deploy inteiro para. O `provision.sh` já cria.
-- **O `deploy` não está no grupo `sudo`** — de propósito, para limitar o estrago
-  se a chave do CI vazar. Tarefa de root é pelo console do painel da Hostinger.
+- **O `deploy` não está no grupo `sudo`, mas pertence ao grupo `docker`**, que
+  concede poder equivalente a root. A chave do CI deve ser protegida como
+  uma credencial administrativa. Tarefa de host é pelo console da Hostinger.
 
 E `API_URL` / `NEXT_PUBLIC_API_URL` são variáveis da **Vercel**: nenhum workflow
 as lê. Cadastradas nos secrets do Actions elas não fazem nada.

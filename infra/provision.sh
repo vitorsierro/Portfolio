@@ -47,8 +47,8 @@ else
   echo "Docker já instalado: $(docker --version)"
 fi
 
-# Deploy como root daria ao GitHub Actions poder total sobre a máquina. Um
-# usuário dedicado limita o estrago se a chave vazar.
+# O grupo docker concede poder equivalente a root. A chave de deploy deve
+# receber a mesma proteção de uma chave de root, mesmo sem acesso a sudo.
 log "Criando o usuário de deploy: $DEPLOY_USER"
 if ! id -u "$DEPLOY_USER" >/dev/null 2>&1; then
   adduser --disabled-password --gecos "" "$DEPLOY_USER"
