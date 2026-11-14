@@ -2,6 +2,9 @@
   "name": "vitor-sierro-portfolio",
   "version": "1.0.0",
   "private": true,
+  "resolutions": {
+    "postcss": "^8.5.23"
+  },
   "workspaces": [
     "apps/*"
   ],

@@ -14,6 +14,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { OriginCheckGuard } from './origin-check.guard';
 import { SessionService } from './session.service';
+import { LoginRateLimitGuard } from './login-rate-limit.guard';
 
 const REFRESH_COOKIE = 'refresh_token';
 const REFRESH_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -35,6 +36,7 @@ export class AuthController {
   ) {}
 
   @Post('login')
+  @UseGuards(LoginRateLimitGuard, OriginCheckGuard)
   @HttpCode(200)
   async login(
     @Body() dto: LoginDto,

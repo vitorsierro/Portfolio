@@ -22,6 +22,7 @@ ENV NODE_ENV=production
 # openssl: required by Prisma's query engine.
 # sqlite:  used by backup-db.sh (sqlite3 .backup).
 RUN apk add --no-cache openssl sqlite
+RUN mkdir -p /data && chown node:node /data
 
 # Copy node_modules wholesale rather than reinstalling with --production:
 # the start command runs `prisma migrate deploy`, and the Prisma CLI is a
@@ -47,4 +48,5 @@ VOLUME /data
 EXPOSE 3001
 
 WORKDIR /app/apps/api
+USER node
 CMD ["sh", "-c", "../../node_modules/.bin/prisma migrate deploy && node dist/main.js"]

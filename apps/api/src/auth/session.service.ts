@@ -65,6 +65,14 @@ export class SessionService {
     return this.prisma.session.findUnique({ where: { id } });
   }
 
+  async consumeRefreshToken(id: string, token: string): Promise<boolean> {
+    const result = await this.prisma.session.updateMany({
+      where: { id, refreshTokenHash: this.hash(token), expiresAt: { gt: new Date() } },
+      data: { refreshTokenHash: null },
+    });
+    return result.count === 1;
+  }
+
   // Records the hash of the refresh token currently valid for this session.
   async setRefreshHash(id: string, refreshToken: string): Promise<void> {
     await this.prisma.session.update({

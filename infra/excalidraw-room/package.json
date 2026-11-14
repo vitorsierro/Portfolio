@@ -1,0 +1,11 @@
+{
+  "name": "portfolio-excalidraw-room",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "debug": "^4.4.3",
+    "dotenv": "^17.4.2",
+    "express": "^4.22.0",
+    "socket.io": "^4.8.1"
+  }
+}

@@ -27,7 +27,11 @@ echo "==> Commit atual: ${COMMIT_ANTERIOR}"
 # Quando chamado pelo Actions o código já veio via reset --hard; aqui o pull
 # cobre o uso manual e é inofensivo se já estiver atualizado.
 echo "==> Buscando código novo"
-git pull --ff-only || echo "    (já atualizado ou repositório em modo detached)"
+if [ -n "${DEPLOY_COMMIT:-}" ]; then
+  test "$(git rev-parse HEAD)" = "$DEPLOY_COMMIT" || { echo "Commit inesperado" >&2; exit 1; }
+else
+  git pull --ff-only
+fi
 
 # A config do nginx entra por bind mount, então o container que está no ar já
 # enxerga os arquivos novos ANTES de qualquer restart. Isso permite validar
@@ -59,7 +63,12 @@ fi
 
 echo "==> Rebuild e restart"
 # As migrations rodam no start do container da API (prisma migrate deploy).
-$COMPOSE up -d --build
+$COMPOSE build --pull
+"${REPO_DIR}/infra/backup-hermes.sh"
+# Migração de propriedade do volume legado antes de iniciar a API sem root.
+$COMPOSE run --rm --no-deps --user 0 --cap-add CHOWN --cap-add DAC_OVERRIDE \
+  --entrypoint sh api -c 'chown -R 1000:1000 /data'
+$COMPOSE up -d
 
 # ARMADILHA: uma mudança SÓ em infra/nginx/ (bind mount) não faz o Compose
 # recriar o container — ele compara a definição do serviço no compose file,

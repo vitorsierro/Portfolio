@@ -18,7 +18,8 @@ services:
     networks: [draw]
 
   hermes:
-    image: ${HERMES_IMAGE:-nousresearch/hermes-agent:latest}
+    build: ./hermes
+    image: ${HERMES_IMAGE:-portfolio-hermes:security}
     restart: unless-stopped
     command: [gateway, run]
     environment:
@@ -38,9 +39,8 @@ services:
     networks: [hermes]
 
   hermes-proxy:
-    image: alpine:3.20
+    build: ./hermes-proxy
     restart: unless-stopped
-    command: sh -c "apk add --no-cache socat && exec socat TCP-LISTEN:9120,fork,reuseaddr TCP:127.0.0.1:9119"
     network_mode: "service:hermes"
     depends_on: [hermes]
 

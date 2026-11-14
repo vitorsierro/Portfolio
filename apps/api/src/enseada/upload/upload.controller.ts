@@ -16,7 +16,9 @@ export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', {
+    limits: { fileSize: 10 * 1024 * 1024, files: 1, fields: 0, parts: 1, fieldNameSize: 100 },
+  }))
   upload(
     @UploadedFile() file: Express.Multer.File,
     @Query('folder') folder = 'geral',

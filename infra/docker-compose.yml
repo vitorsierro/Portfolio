@@ -16,6 +16,11 @@
 
 services:
   api:
+    init: true
+    mem_limit: 768m
+    pids_limit: 128
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
     build:
       context: ..
       dockerfile: apps/api/Dockerfile
@@ -44,7 +49,10 @@ services:
     networks: [backend]
 
   excalidraw:
-    image: excalidraw/excalidraw:latest
+    build: ./excalidraw
+    mem_limit: 128m
+    pids_limit: 64
+    security_opt: [no-new-privileges:true]
     restart: unless-stopped
     networks: [draw]
 
@@ -53,12 +61,26 @@ services:
   # you build the frontend yourself with VITE_APP_WS_SERVER_URL set. Solo
   # drawing works regardless.
   excalidraw-room:
-    image: excalidraw/excalidraw-room:latest
+    build: ./excalidraw-room
+    init: true
+    read_only: true
+    mem_limit: 256m
+    pids_limit: 64
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
     restart: unless-stopped
     networks: [draw]
 
   hermes:
-    image: ${HERMES_IMAGE:-nousresearch/hermes-agent:latest}
+    # s6-overlay precisa ser PID 1; `init: true` desativaria o dashboard.
+    mem_limit: 3g
+    pids_limit: 256
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+    # O init oficial s6 precisa ajustar o volume e depois abandona root.
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETUID, SETGID, KILL]
+    build: ./hermes
+    image: ${HERMES_IMAGE:-portfolio-hermes:security}
     restart: unless-stopped
     # `gateway run` é o modo servidor — o entrypoint da imagem é o próprio
     # binário. O `setup` é interativo e não roda aqui: a configuração inicial é
@@ -106,13 +128,20 @@ services:
   # Hoje só o nginx está nessa rede — não adicione mais nada a ela sem revisar
   # este comentário.
   hermes-proxy:
-    image: alpine:3.20
+    build: ./hermes-proxy
+    read_only: true
+    mem_limit: 64m
+    pids_limit: 64
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
     restart: unless-stopped
-    command: sh -c "apk add --no-cache socat && exec socat TCP-LISTEN:9120,fork,reuseaddr TCP:127.0.0.1:9119"
     network_mode: "service:hermes"
     depends_on: [hermes]
 
   nginx:
+    mem_limit: 256m
+    pids_limit: 128
+    security_opt: [no-new-privileges:true]
     image: nginx:alpine
     restart: unless-stopped
     ports:
@@ -137,6 +166,9 @@ services:
 
   # Renews certs twice a day; nginx reloads them via its own timer below.
   certbot:
+    mem_limit: 256m
+    pids_limit: 64
+    security_opt: [no-new-privileges:true]
     image: certbot/certbot:latest
     restart: unless-stopped
     volumes:
