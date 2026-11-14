@@ -50,5 +50,5 @@ echo "Backup gravado: ${DESTINO}.gz"
 # ATENÇÃO: isto grava no MESMO disco do banco. Um backup que morre junto com o
 # servidor não é backup. Configure a cópia off-site (rclone/S3/Backblaze) aqui.
 
-find "$BACKUP_DIR" -name 'prod-*.db.gz' -mtime "+${RETENTION_DAYS}" -delete
+find "$BACKUP_DIR" -maxdepth 1 -type f -name 'prod-*.db.gz' -mtime "+${RETENTION_DAYS}" -delete
 echo "Removidos backups com mais de ${RETENTION_DAYS} dias"
