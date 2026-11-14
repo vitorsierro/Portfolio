@@ -89,16 +89,18 @@ export class AuthService {
     if (!refreshToken) {
       return;
     }
+    let payload: RefreshPayload;
     try {
-      const payload = await this.jwt.verifyAsync<RefreshPayload>(refreshToken, {
+      payload = await this.jwt.verifyAsync<RefreshPayload>(refreshToken, {
         secret: process.env.JWT_REFRESH_SECRET,
       });
-      if (payload.sid) {
-        // Ends only this browser's session; other devices stay signed in.
-        await this.sessions.revokeById(payload.sid);
-      }
     } catch {
       // Token already invalid — nothing to revoke.
+      return;
+    }
+    if (payload.sid) {
+      // Erros de banco não podem ser confundidos com token já inválido.
+      await this.sessions.revokeById(payload.sid);
     }
   }
 

@@ -21,7 +21,7 @@ env:
 
 jobs:
   seguranca:
-    name: Dependências sem vulnerabilidades altas ou críticas
+    name: Auditoria de dependências
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
@@ -31,6 +31,7 @@ jobs:
           cache: yarn
       - run: yarn install --frozen-lockfile
       - run: node infra/audit-dependencies.cjs
+      - run: node --test infra/audit-dependencies.test.cjs infra/tool-sockets/proxy.test.cjs
       - run: npm audit --omit=dev
         working-directory: infra/excalidraw-room
 

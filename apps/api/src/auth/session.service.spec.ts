@@ -47,6 +47,7 @@ describe('SessionService', () => {
 
     await expect(service.verify('some-token')).resolves.toEqual({
       adminId: 'admin1',
+      sessionId: 's1',
     });
   });
 
@@ -125,7 +126,7 @@ describe('SessionService', () => {
   });
 
   it('revoking is idempotent', async () => {
-    prisma.session.delete.mockRejectedValue(new Error('not found'));
+    prisma.session.delete.mockRejectedValue({ code: 'P2025' });
 
     await expect(service.revokeById('gone')).resolves.toBeUndefined();
     await expect(service.revokeByToken('gone')).resolves.toBeUndefined();
@@ -133,5 +134,10 @@ describe('SessionService', () => {
     prisma.session.delete.mockClear();
     await service.revokeByToken(undefined);
     expect(prisma.session.delete).not.toHaveBeenCalled();
+  });
+
+  it('não informa logout bem sucedido quando o banco falha', async () => {
+    prisma.session.delete.mockRejectedValue(new Error('database unavailable'));
+    await expect(service.revokeById('s1')).rejects.toThrow('database unavailable');
   });
 });

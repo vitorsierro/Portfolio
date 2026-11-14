@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { createHash, randomBytes } from 'crypto';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
+import { EventEmitter } from 'node:events';
+import { Observable, shareReplay } from 'rxjs';
 import { PrismaService } from '../prisma/prisma.service';
 
 // Sliding 7-day expiry, capped at 30 days from creation — even a session used
@@ -25,6 +27,8 @@ export interface IssuedSession {
 // new login or refresh silently logged everything else out.
 @Injectable()
 export class SessionService {
+  private readonly revocations = new EventEmitter();
+  private readonly socketWatches = new Map<string, Observable<{ type: string; data: string }>>();
   constructor(private readonly prisma: PrismaService) {}
 
   async create(adminId: string): Promise<IssuedSession> {
@@ -39,7 +43,7 @@ export class SessionService {
   }
 
   // Used by the nginx forward-auth check (GET /auth/verify).
-  async verify(token: string | undefined): Promise<{ adminId: string } | null> {
+  async verify(token: string | undefined): Promise<{ adminId: string; sessionId: string } | null> {
     if (!token) {
       return null;
     }
@@ -58,7 +62,59 @@ export class SessionService {
       });
     }
 
-    return { adminId: session.adminId };
+    return { adminId: session.adminId, sessionId: session.id };
+  }
+
+  socketTicket(id: string): string {
+    const secret = process.env.JWT_ACCESS_SECRET;
+    if (!secret) throw new UnauthorizedException();
+    return `${id}.${createHmac('sha256', secret).update(`tool-socket-watch:${id}`).digest('hex')}`;
+  }
+
+  watchSocketSession(ticket: string): Observable<{ type: string; data: string }> {
+    const [id, signature, extra] = ticket.split('.');
+    if (!id || !/^[a-zA-Z0-9_-]{1,128}$/.test(id) || !signature || !/^[a-f0-9]{64}$/.test(signature) || extra) {
+      throw new UnauthorizedException();
+    }
+    const expected = this.socketTicket(id).split('.')[1];
+    if (!timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) throw new UnauthorizedException();
+    const existing = this.socketWatches.get(id);
+    if (existing) return existing;
+
+    const watch = new Observable<{ type: string; data: string }>((subscriber) => {
+      let checking = false;
+      let ready = false;
+      const revoke = () => {
+        subscriber.next({ type: 'revoked', data: 'revoked' });
+        subscriber.complete();
+      };
+      // Assinar antes de consultar o banco evita a corrida com o logout.
+      this.revocations.on(id, revoke);
+      const check = async () => {
+        if (checking || subscriber.closed) return;
+        checking = true;
+        try {
+          const session = await this.findById(id);
+          if (subscriber.closed) return;
+          if (!session || session.expiresAt <= new Date()) return revoke();
+          subscriber.next({ type: ready ? 'heartbeat' : 'ready', data: 'active' });
+          ready = true;
+        } catch (error) {
+          subscriber.error(error);
+        } finally { checking = false; }
+      };
+      void check();
+      // Também cobre expiração e revogação feita diretamente no banco.
+      const timer = setInterval(() => { void check(); }, 500);
+      timer.unref();
+      return () => {
+        clearInterval(timer);
+        this.revocations.off(id, revoke);
+        this.socketWatches.delete(id);
+      };
+    }).pipe(shareReplay({ bufferSize: 1, refCount: true }));
+    this.socketWatches.set(id, watch);
+    return watch;
   }
 
   findById(id: string) {
@@ -105,18 +161,28 @@ export class SessionService {
   }
 
   async revokeById(id: string): Promise<void> {
-    await this.prisma.session
-      .delete({ where: { id } })
-      .catch(() => undefined); // already gone — logout is idempotent
+    try {
+      await this.prisma.session.delete({ where: { id } });
+    } catch (error) {
+      if (!this.isMissingRow(error)) throw error;
+    }
+    this.revocations.emit(id);
   }
 
   async revokeByToken(token: string | undefined): Promise<void> {
     if (!token) {
       return;
     }
-    await this.prisma.session
-      .delete({ where: { tokenHash: this.hash(token) } })
-      .catch(() => undefined);
+    try {
+      const session = await this.prisma.session.delete({ where: { tokenHash: this.hash(token) } });
+      if (session) this.revocations.emit(session.id);
+    } catch (error) {
+      if (!this.isMissingRow(error)) throw error;
+    }
+  }
+
+  private isMissingRow(error: unknown): boolean {
+    return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2025';
   }
 
   private newToken(): string {

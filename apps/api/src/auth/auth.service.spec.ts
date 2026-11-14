@@ -147,4 +147,10 @@ describe('AuthService', () => {
 
     expect(sessions.revokeById).toHaveBeenCalledWith('s1');
   });
+
+  it('logout propaga erro de revogação em vez de informar sucesso', async () => {
+    jwt.verifyAsync.mockResolvedValue({ sub: 'a1', sid: 's1' });
+    sessions.revokeById.mockRejectedValueOnce(new Error('database unavailable'));
+    await expect(service.logout('valid-refresh')).rejects.toThrow('database unavailable');
+  });
 });
