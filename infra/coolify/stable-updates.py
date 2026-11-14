@@ -123,6 +123,7 @@ def main(check=False):
     history=history.get('deployments',[]) if isinstance(history,dict) else history
     previous=next((d for d in history if d.get('status')=='finished' and re.fullmatch(r'[0-9a-f]{40}',d.get('commit',''))),None)
     if not previous: raise RuntimeError('Nenhum commit validado disponível para atualização')
+    original_containers={name:run('docker','inspect',name,'--format','{{.Id}}') for name in ['ai-memory','infra-hermes-1']}
     backups={}
     if 'AI_MEMORY_IMAGE' in changed:
         backups['memory']=snapshot('ai-memory','ai-memory',MEMORY_DATA)
@@ -145,8 +146,9 @@ def main(check=False):
             healthy()
         except Exception:
             print('Atualização falhou. Restaurando imagens e dados anteriores.',flush=True)
-            if 'memory' in backups: restore(MEMORY_DATA,backups['memory'],'ai-memory')
-            if 'hermes' in backups:
+            if 'memory' in backups and run('docker','inspect','ai-memory','--format','{{.Id}}')!=original_containers['ai-memory']:
+                restore(MEMORY_DATA,backups['memory'],'ai-memory')
+            if 'hermes' in backups and run('docker','inspect','infra-hermes-1','--format','{{.Id}}')!=original_containers['infra-hermes-1']:
                 run('docker','stop','infra-hermes-proxy-1')
                 restore(HERMES_DATA,backups['hermes'],'infra-hermes-1')
             update_env(config,{key:old[key] for key in targets})
