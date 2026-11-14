@@ -16,6 +16,17 @@ def request(config, path, method='GET'):
     with urllib.request.urlopen(req, timeout=60) as response:
         return json.load(response)
 
+def wait_healthy(config):
+    for _ in range(50):
+        ids=subprocess.check_output(['docker','ps','-aq','--filter','label=coolify.applicationUuid='+config['uuid']],text=True).split()
+        if len(ids)>=9:
+            containers=json.loads(subprocess.check_output(['docker','inspect',*ids],text=True))
+            if all(c['State'].get('Health',{}).get('Status')=='healthy' for c in containers):
+                print('Todos os serviços gerenciados estão saudáveis.',flush=True)
+                return
+        time.sleep(3)
+    raise RuntimeError('Um serviço não ficou saudável após o deploy. Consulte o Coolify.')
+
 def deploy(config):
     result = request(config, 'deploy?uuid=' + config['uuid'] + '&force=true', 'POST')
     entries = result.get('deployments', [])
@@ -31,8 +42,9 @@ def deploy(config):
             print('Estado: ' + str(status), flush=True)
             previous = status
         if status == 'finished':
+            wait_healthy(config)
             return deployment
-        if status in ('failed', 'cancelled', 'canceled'):
+        if isinstance(status, str) and status.startswith(('failed', 'cancel')):
             raise RuntimeError('Deploy recusado ou malsucedido. Consulte o log no Coolify: ' + deployment)
         time.sleep(5)
     raise TimeoutError('Coolify não terminou o deploy em 25 minutos: ' + deployment)
@@ -44,6 +56,7 @@ if __name__ == '__main__':
         repo = Path(__file__).resolve().parents[2]
         subprocess.run(['bash', str(repo / 'infra/backup-db.sh')], check=True)
         deploy(config)
+        subprocess.run(['docker','exec','-i','infra-api-1','node'],input=(repo/'infra/coolify/verify-runtime.cjs').read_bytes(),check=True)
     except Exception as error:
         # Não imprimir respostas HTTP, cabeçalhos ou valores do ambiente.
         print('Falha ao publicar pelo Coolify: ' + str(error), file=sys.stderr)

@@ -1,8 +1,8 @@
 # Hostinger KVM2 stack: API + self-hosted tools behind one login.
 #
-# Only nginx publishes ports. Every other service is reachable solely on the
-# internal Docker network, so the tools can't be hit directly, bypassing the
-# forward-auth check.
+# Nginx publica 80/443. O ai-memory conserva sua porta autenticada legada; os
+# demais serviços ficam nas redes privadas, sem desviar do
+# login único. O fechamento da porta legada exige migrar os clientes.
 #
 # NETWORK SEGMENTATION — one network per zone, nginx bridging them.
 # A single shared network would let Hermes talk straight to api:3001, which
@@ -23,6 +23,12 @@ x-coolify-labels: &coolify-labels
 
 services:
   api:
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/portfolio').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
     image: infra-api
     labels: *coolify-labels
     init: true
@@ -58,6 +64,12 @@ services:
     networks: [backend, memory]
 
   excalidraw:
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
     image: infra-excalidraw
     labels: *coolify-labels
     build: ./infra/excalidraw
@@ -72,6 +84,12 @@ services:
   # you build the frontend yourself with VITE_APP_WS_SERVER_URL set. Solo
   # drawing works regardless.
   excalidraw-room:
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
     image: infra-excalidraw-room
     labels: *coolify-labels
     build: ./infra/excalidraw-room
@@ -85,6 +103,12 @@ services:
     networks: [draw]
 
   hermes:
+    healthcheck:
+      test: ["CMD", "/opt/hermes/.venv/bin/python", "-c", "import urllib.request; assert urllib.request.urlopen('http://127.0.0.1:9119/',timeout=3).status==200"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
     labels: *coolify-labels
     # s6-overlay precisa ser PID 1; `init: true` desativaria o dashboard.
     mem_limit: 3g
@@ -145,6 +169,12 @@ services:
   # Nginx e tool-sockets são as pontes autorizadas. O gateway de sockets
   # autentica novamente e só aceita dois destinos fixos.
   hermes-proxy:
+    healthcheck:
+      test: ["CMD-SHELL", "socat -u /dev/null TCP:127.0.0.1:9120,connect-timeout=3"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
     image: infra-hermes-proxy
     labels: *coolify-labels
     build: ./infra/hermes-proxy
@@ -160,6 +190,12 @@ services:
   # Única ponte adicional entre zonas: encaminha apenas upgrades autenticados
   # para dois destinos fixos e encerra os canais quando a sessão é revogada.
   tool-sockets:
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
     image: infra-tool-sockets
     labels: *coolify-labels
     build: ./infra/tool-sockets
@@ -174,6 +210,12 @@ services:
     depends_on: [api, excalidraw-room, hermes-proxy]
 
   nginx:
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
     labels: *coolify-labels
     mem_limit: 256m
     pids_limit: 128
@@ -202,6 +244,12 @@ services:
 
   # Renews certs twice a day; nginx reloads them via its own timer below.
   certbot:
+    healthcheck:
+      test: ["CMD-SHELL", "test -s /etc/letsencrypt/live/api.vitorsierro.com/fullchain.pem"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
     labels: *coolify-labels
     mem_limit: 256m
     pids_limit: 64
