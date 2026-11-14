@@ -11,6 +11,10 @@ COMPOSE="docker compose -f ${REPO_DIR}/infra/docker-compose.yml --env-file ${REP
 
 cd "$REPO_DIR"
 
+if [ -f /home/deploy/.config/portfolio-coolify.json ]; then
+  exec python3 "${REPO_DIR}/infra/coolify/deploy.py"
+fi
+
 if [ ! -f "${REPO_DIR}/infra/.env" ]; then
   echo "ERRO: infra/.env não existe. Copie de infra/.env.example e preencha." >&2
   exit 1
