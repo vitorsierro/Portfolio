@@ -37,7 +37,8 @@ function inferCategory(input: CategoryInput): string | null {
   const description = normalize(input.description);
   const category = normalize(input.category ?? "");
   const receiver = normalize(input.paymentData?.receiver?.name ?? "");
-  if (/^pagamento (de |da )?fatura\b/.test(description) || category === "credit card payment") {
+  if (/^pagamento (de |da )?fatura\b/.test(description) || category === "credit card payment" ||
+      /^pagamento efetuado banco ibi s a\b/.test(description)) {
     return "Cartões — Pagamento de fatura";
   }
   if (input.amountCents === 120000 && /\bpix\b/.test(description) &&

@@ -3,6 +3,7 @@ import { translateCategoryName } from "./category-localization";
 
 describe("categorias pessoais", () => {
   it.each([
+    ["Pagamento efetuado|BANCO IBI S A", 20000, "Transfers", "Cartões — Pagamento de fatura"],
     ["Pix enviado Luciana Sousa dos Santos Vilhanueva", 120000, null, "Moradia — Financiamento"],
     ["Pix enviado Luciana Sousa dos Santos Vilhanueva", 240000, null, null],
     ["Pix enviado Outra Luciana", 120000, null, null],
