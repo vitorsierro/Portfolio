@@ -8,12 +8,13 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 docker volume inspect infra_hermes_data >/dev/null 2>&1 || exit 0
 # Não pausar um agente nem repetir snapshots de vários GB em deploys só da API.
 TARGET_IMAGE="$("${COMPOSE[@]}" config --images hermes)"
-TARGET_CONTENT="$(docker image inspect "$TARGET_IMAGE" --format '{{json .RootFS}} {{json .Config}}')"
-CURRENT_ID="$(docker inspect infra-hermes-1 --format '{{.Image}}' 2>/dev/null || true)"
-CURRENT_CONTENT="$(docker image inspect "$CURRENT_ID" --format '{{json .RootFS}} {{json .Config}}' 2>/dev/null || true)"
+PLATFORM="$(docker version --format '{{.Server.Os}}/{{.Server.Arch}}')"
+TARGET_ID="$(docker image inspect --platform "$PLATFORM" "$TARGET_IMAGE" --format '{{.Id}}')"
+CURRENT_ID="$(docker inspect infra-hermes-1 --format '{{.ImageManifestDescriptor.Digest}}' 2>/dev/null || true)"
 # BuildKit renova o digest de provenance até em builds 100% em cache.
-# Comparar filesystem/configuração evita confundir metadata com migração.
-if [ -n "$CURRENT_CONTENT" ] && [ "$TARGET_CONTENT" = "$CURRENT_CONTENT" ]; then
+# Comparar a mesma variante de plataforma evita confundir índice/config ID
+# com o manifesto executável selecionado pelo daemon (Docker 29+).
+if [ -n "$CURRENT_ID" ] && [ "$TARGET_ID" = "$CURRENT_ID" ]; then
   echo "Imagem do Hermes inalterada — snapshot anterior preservado."
   exit 0
 fi
