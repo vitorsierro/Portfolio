@@ -875,6 +875,12 @@
 .categoryQuickForm label { display: grid; gap: 8px; }
 .categoryQuickForm .primaryButton { margin-top: 0; }
 .categoryQuickForm .formMessage { grid-column: 1 / -1; }
+.pieVisibility { margin-bottom: 24px; padding: 14px; border: 1px solid #dce5df; border-radius: 12px; }
+.pieVisibility summary { cursor: pointer; font-weight: 600; }
+.pieVisibility p { font-size: 13px; line-height: 1.5; }
+.pieVisibilityOptions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 12px; max-height: 300px; overflow-y: auto; margin-top: 16px; }
+.pieVisibilityOptions label { display: flex; gap: 10px; align-items: center; font-size: 14px; cursor: pointer; }
+.pieVisibilityOptions input { flex-shrink: 0; width: 18px; height: 18px; accent-color: #176b4b; }
 .pieLayout { display: grid; grid-template-columns: minmax(230px, 300px) minmax(0, 1fr); align-items: start; gap: 30px; }
 .pieFigure { min-width: 0; }
 .pieFigure svg { display: block; width: 100%; max-width: 300px; margin: 0 auto; }
