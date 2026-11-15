@@ -3,7 +3,9 @@
 A imagem precisa de `libopus0` para decodificar e reproduzir áudio. Instalar apenas
 no container perde a correção na próxima recriação; mantenha a dependência no Dockerfile.
 
-As dependências opcionais Python ficam em `/opt/data/lazy-packages`. Após trocar
+As dependências de voz são instaladas no Python da imagem usando
+`voice-requirements.txt`, para que o gateway as encontre antes da primeira fala.
+Instalações anteriores também podem ter cópias em `/opt/data/lazy-packages`. Após trocar
 a versão menor do Python, reinstale as dependências de `voice-requirements.txt`
 com o `uv` e o interpretador da nova imagem, usando `--target /opt/data/lazy-packages
 --reinstall`. Wheels do Python 3.13 não funcionam no Python 3.14, mesmo que o
