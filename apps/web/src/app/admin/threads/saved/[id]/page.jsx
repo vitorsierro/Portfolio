@@ -71,6 +71,7 @@ export default function SavedThreadReaderPage() {
                 </span>
                 <div>
                   <p className={styles.postText}>{post.text}</p>
+                  {post.originalText && <details><summary>Ver original</summary><p className={styles.postText} dir="auto">{post.originalText}</p></details>}
                   {post.mediaUrls?.length > 0 && (
                     <div className={styles.postMedia}>
                       {post.mediaUrls.map((url) => (

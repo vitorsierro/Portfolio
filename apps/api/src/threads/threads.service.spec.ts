@@ -1,5 +1,6 @@
 import { BadGatewayException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ThreadsService } from './threads.service';
+jest.mock('./thread-translation', () => ({ translateThread: jest.fn(async (thread) => thread) }));
 
 const threadHtml = `
   <div id="thread-detail">

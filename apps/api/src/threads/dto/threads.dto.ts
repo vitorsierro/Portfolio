@@ -13,6 +13,11 @@ import {
 } from 'class-validator';
 
 export class ThreadPostDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(30000)
+  originalText?: string;
+
   @IsString()
   @MinLength(1)
   @MaxLength(30000)
