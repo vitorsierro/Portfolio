@@ -98,6 +98,7 @@ export class ThreadsService {
       throw new BadRequestException(error instanceof Error ? error.message : 'Link inválido.');
     }
 
+    let imported: ImportedThread | null = null;
     const readerHtml = await fetchPublicHtml(normalized.readerUrl);
     if (readerHtml) {
       try {
@@ -105,7 +106,7 @@ export class ThreadsService {
         if (!thread.posts.length || thread.posts.length > MAX_IMPORTED_POSTS) {
           throw new Error('A thread não contém uma quantidade válida de posts.');
         }
-        return translateThread(thread);
+        imported = thread;
       } catch {
         // The thread-reader service may not recognize long-form X posts.
       }
@@ -118,12 +119,14 @@ export class ThreadsService {
     if (xHtml) {
       try {
         const post = parseXStatusHtml(xHtml, normalized);
-        if (post.posts.length && post.posts.length <= MAX_IMPORTED_POSTS) return translateThread(post);
+        if (post.posts.length && post.posts.length <= MAX_IMPORTED_POSTS &&
+            (!imported || post.posts.length >= imported.posts.length)) imported = post;
       } catch {
         // Report one actionable error after both supported sources have been tried.
       }
     }
 
+    if (imported) return translateThread(imported);
     throw new BadGatewayException('Não consegui extrair essa thread. Confira se o link é público e tente novamente.');
   }
 
