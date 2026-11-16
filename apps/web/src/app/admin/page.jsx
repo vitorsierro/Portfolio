@@ -7,6 +7,11 @@ import styles from '../../styles/Admin.module.css';
 // junto das ferramentas — o gerenciamento em si vive em /admin/posts.
 const DESTINATIONS = [
   {
+    key: 'news', name: 'Notícias',
+    description: 'Ler o texto disponível de matérias em uma página limpa, sem distrações.',
+    href: '/admin/news', embedded: true,
+  },
+  {
     key: 'coolify',
     name: 'Coolify',
     description: 'Saúde dos serviços, uso de recursos e últimos deploys da VPS.',
