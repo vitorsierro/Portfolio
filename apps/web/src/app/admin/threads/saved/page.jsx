@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styles from '../../../../styles/ThreadReader.module.css';
 import { threadRequest } from '../../../../lib/threadApi';
+import { readingType } from '../../../../lib/readings';
 
 function formatDate(value) {
   const date = new Date(value);
@@ -42,7 +43,7 @@ export default function SavedThreadsPage() {
       const data = await threadRequest('/admin/threads');
       setThreads(Array.isArray(data) ? data : []);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Não foi possível carregar as threads salvas.');
+      setError(cause instanceof Error ? cause.message : 'Não foi possível carregar as leituras salvas.');
     } finally {
       setLoading(false);
     }
@@ -146,11 +147,11 @@ export default function SavedThreadsPage() {
       <header className={styles.masthead}>
         <div>
           <p className={styles.kicker}>Arquivo pessoal · Gerenciar</p>
-          <h1 className={styles.title}>Sua biblioteca de threads.</h1>
-          <p className={styles.subtitle}>Leia, ajuste o título ou os posts e remova o que não quiser guardar.</p>
+          <h1 className={styles.title}>Sua biblioteca de leituras.</h1>
+          <p className={styles.subtitle}>Threads e notícias juntas. Leia, edite e organize o que você guardou.</p>
         </div>
         <div className={styles.mastheadActions}>
-          <Link className={styles.quietLink} href="/admin/threads">Importar uma thread →</Link>
+          <Link className={styles.quietLink} href="/admin/reader">Abrir nova leitura →</Link>
         </div>
       </header>
 
@@ -167,16 +168,16 @@ export default function SavedThreadsPage() {
             placeholder="Título, autor ou trecho…"
           />
         </label>
-        <p className={styles.smallNote}>{filteredThreads.length} de {threads.length} threads</p>
+        <p className={styles.smallNote}>{filteredThreads.length} de {threads.length} leituras</p>
       </div>
 
       {error && <p className={`${styles.message} ${styles.errorMessage}`} role="alert">{error}</p>}
       {loading && <p className={styles.loadingState}>Carregando biblioteca…</p>}
       {!loading && !threads.length && (
         <section className={styles.emptyState}>
-          <h2 className={styles.emptyTitle}>Ainda não há threads salvas.</h2>
-          <p>Importe um post do X e use o botão no fim da leitura para guardá-lo aqui.</p>
-          <Link className={styles.primaryButton} href="/admin/threads">Importar primeira thread</Link>
+          <h2 className={styles.emptyTitle}>Ainda não há leituras salvas.</h2>
+          <p>Abra uma thread ou notícia e salve para ler depois.</p>
+          <Link className={styles.primaryButton} href="/admin/reader">Abrir primeira leitura</Link>
         </section>
       )}
       {!loading && threads.length > 0 && !filteredThreads.length && (
@@ -190,8 +191,8 @@ export default function SavedThreadsPage() {
                 <div>
                   <h2 className={styles.savedCardTitle}>{thread.title}</h2>
                   <div className={styles.savedCardMeta}>
-                    <span>{thread.authorName || 'Autor do X'} {thread.authorHandle}</span>
-                    <span>{thread.postCount} posts</span>
+                    <span>{thread.authorName || new URL(thread.sourceUrl).hostname} {thread.authorHandle}</span>
+                    <span>{readingType(thread.sourceUrl) === 'news' ? 'Notícia' : `Thread · ${thread.postCount} posts`}</span>
                     <span>Salva em {formatDate(thread.updatedAt)}</span>
                   </div>
                 </div>
@@ -199,13 +200,13 @@ export default function SavedThreadsPage() {
               </div>
               <p className={styles.savedPreview}>{thread.preview}</p>
               <div className={styles.savedCardActions}>
-                <Link className={styles.cardLink} href={`/admin/threads/saved/${thread.id}`}>Ler thread</Link>
+                <Link className={styles.cardLink} href={`/admin/reader/saved/${thread.id}`}>Ler</Link>
                 <button className={styles.cardLink} type="button" onClick={(event) => editThread(thread.id, event)}>Editar</button>
                 <button className={styles.dangerButton} type="button" onClick={() => setDeletingId(thread.id)}>Excluir</button>
               </div>
               {deletingId === thread.id && (
                 <div className={styles.deleteConfirm} role="group" aria-label={`Confirmar exclusão de ${thread.title}`}>
-                  <span>Excluir esta thread da biblioteca?</span>
+                  <span>Excluir esta leitura da biblioteca?</span>
                   <span className={styles.savedCardActions}>
                     <button className={styles.dangerButton} type="button" onClick={() => deleteThread(thread.id)} disabled={busy}>Sim, excluir</button>
                     <button className={styles.secondaryButton} type="button" onClick={() => setDeletingId(null)} disabled={busy}>Cancelar</button>
@@ -221,7 +222,7 @@ export default function SavedThreadsPage() {
         <div className={styles.modalOverlay} onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) setEditing(null); }}>
           <form ref={dialogRef} className={styles.editDialog} role="dialog" aria-modal="true" aria-labelledby="edit-thread-title" onKeyDown={handleDialogKeyDown} onSubmit={saveEdit}>
             <header className={styles.modalHeader}>
-              <div><p className={styles.kicker}>Editar thread salva</p><h2 id="edit-thread-title">Revise o título e os posts.</h2></div>
+              <div><p className={styles.kicker}>Editar leitura salva</p><h2 id="edit-thread-title">Revise o título e o texto.</h2></div>
               <button className={styles.secondaryButton} type="button" onClick={() => setEditing(null)} disabled={busy} aria-label="Fechar edição">Fechar</button>
             </header>
             <div className={styles.modalBody}>
@@ -231,7 +232,7 @@ export default function SavedThreadsPage() {
               <div className={styles.editPosts}>
                 {editing.posts.map((post, index) => (
                   <label className={styles.editPost} key={`${index}-${post.text.slice(0, 24)}`}>
-                    <span className={styles.searchLabel}>Post {index + 1}</span>
+                    <span className={styles.searchLabel}>{readingType(editing.sourceUrl) === 'news' ? 'Trecho' : 'Post'} {index + 1}</span>
                     <textarea className={styles.postTextarea} required maxLength={30000} value={post.text} onChange={(event) => updatePost(index, event.target.value)} />
                   </label>
                 ))}

@@ -49,7 +49,6 @@ export class CreateThreadDto {
   @IsString()
   @MaxLength(2048)
   @IsUrl({ protocols: ['https'], require_protocol: true })
-  @Matches(/^https:\/\/(?:x\.com|twitter-thread\.com)\//i)
   sourceUrl!: string;
 
   @IsOptional()
