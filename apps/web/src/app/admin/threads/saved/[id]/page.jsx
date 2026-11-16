@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import styles from '../../../../../styles/ThreadReader.module.css';
 import { threadRequest } from '../../../../../lib/threadApi';
+import { readingType } from '../../../../../lib/readings';
 
 function formatDate(value) {
   if (!value) return '';
@@ -17,6 +18,7 @@ export default function SavedThreadReaderPage() {
   const [thread, setThread] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const isNews = thread && readingType(thread.sourceUrl) === 'news';
 
   useEffect(() => {
     let active = true;
@@ -41,34 +43,35 @@ export default function SavedThreadReaderPage() {
       <header className={styles.masthead}>
         <div>
           <p className={styles.kicker}>Biblioteca · Leitura</p>
-          <h1 className={styles.title}>Uma thread para ler com calma.</h1>
+          <h1 className={styles.title}>Seu espaço de leitura.</h1>
         </div>
         <div className={styles.mastheadActions}>
-          <Link className={styles.quietLink} href="/admin/threads/saved">← Gerenciar salvos</Link>
+          <Link className={styles.quietLink} href="/admin/reader/saved">← Gerenciar salvos</Link>
         </div>
       </header>
 
-      {loading && <p className={styles.loadingState}>Abrindo a thread…</p>}
+      {loading && <p className={styles.loadingState}>Abrindo a leitura…</p>}
       {error && <p className={`${styles.message} ${styles.errorMessage}`} role="alert">{error}</p>}
       {!loading && !error && thread && (
         <article className={styles.readArticle}>
           <header className={styles.threadHeader}>
-            <p className={styles.kicker}>{thread.posts.length} posts · Salva em {formatDate(thread.createdAt)}</p>
+            <p className={styles.kicker}>{isNews ? 'Notícia' : `Thread · ${thread.posts.length} posts`} · Salva em {formatDate(thread.createdAt)}</p>
             <h2 className={styles.readerTitle}>{thread.title}</h2>
             <div className={styles.threadMeta}>
-              <span className={styles.authorLine}>{thread.authorName || 'Autor do X'} {thread.authorHandle}</span>
+              <span className={styles.authorLine}>{thread.authorName || new URL(thread.sourceUrl).hostname} {thread.authorHandle}</span>
               <a className={styles.sourceLink} href={thread.sourceUrl} target="_blank" rel="noreferrer">
                 Ver origem ↗
               </a>
             </div>
+            {isNews && <p className={styles.formHint}>Texto disponibilizado pela fonte no momento da importação. Trechos restritos podem estar ausentes.</p>}
           </header>
 
           <div className={styles.readerBody}>
             {thread.posts.map((post, index) => (
-              <section className={styles.post} key={`${index}-${post.text.slice(0, 32)}`}>
-                <span className={styles.postIndex} aria-label={`Post ${index + 1}`}>
+              <section className={isNews ? undefined : styles.post} key={`${index}-${post.text.slice(0, 32)}`}>
+                {!isNews && <span className={styles.postIndex} aria-label={`Post ${index + 1}`}>
                   {String(index + 1).padStart(2, '0')}
-                </span>
+                </span>}
                 <div>
                   <p className={styles.postText}>{post.text}</p>
                   {post.originalText && <details><summary>Ver original</summary><p className={styles.postText} dir="auto">{post.originalText}</p></details>}
@@ -86,8 +89,8 @@ export default function SavedThreadReaderPage() {
           </div>
 
           <footer className={styles.readerFooter}>
-            <span className={styles.smallNote}>Fim da thread · {thread.posts.length} posts</span>
-            <Link className={styles.cardLink} href="/admin/threads/saved">Voltar à biblioteca</Link>
+            <span className={styles.smallNote}>Fim da leitura</span>
+            <Link className={styles.cardLink} href="/admin/reader/saved">Voltar à biblioteca</Link>
           </footer>
         </article>
       )}

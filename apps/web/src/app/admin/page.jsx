@@ -7,9 +7,9 @@ import styles from '../../styles/Admin.module.css';
 // junto das ferramentas — o gerenciamento em si vive em /admin/posts.
 const DESTINATIONS = [
   {
-    key: 'news', name: 'Notícias',
-    description: 'Ler o texto disponível de matérias em uma página limpa, sem distrações.',
-    href: '/admin/news', embedded: true,
+    key: 'reader', name: 'Leitor',
+    description: 'Reunir threads, ler notícias e guardar tudo na mesma biblioteca.',
+    href: '/admin/reader', embedded: true,
   },
   {
     key: 'coolify',
@@ -30,13 +30,6 @@ const DESTINATIONS = [
     name: 'Posts',
     description: 'Criar, buscar, publicar e editar os posts do blog.',
     href: '/admin/posts',
-    embedded: true,
-  },
-  {
-    key: 'threads',
-    name: 'Threads',
-    description: 'Importar, ler e organizar threads públicas do X para leitura posterior.',
-    href: '/admin/threads',
     embedded: true,
   },
   {

@@ -29,7 +29,7 @@ async function openEditor() {
   render(<SavedThreadsPage />);
   const editButton = await screen.findByRole('button', { name: 'Editar' });
   fireEvent.click(editButton);
-  await screen.findByRole('dialog', { name: 'Revise o título e os posts.' });
+  await screen.findByRole('dialog', { name: 'Revise o título e o texto.' });
   return { editButton };
 }
 
@@ -71,4 +71,15 @@ test('keeps keyboard focus inside the edit dialog when tabbing past its last con
   fireEvent.keyDown(saveButton, { key: 'Tab' });
 
   expect(closeButton).toHaveFocus();
+});
+
+test('shows existing threads and news together with canonical reading links', async () => {
+  const news = { ...thread, id: 'news-1', title: 'Minha notícia', sourceUrl: 'https://www.uol.com.br/teste.htm', authorHandle: '' };
+  threadRequest.mockResolvedValue([thread, news]);
+  render(<SavedThreadsPage />);
+  await screen.findByRole('heading', { name: 'Minha notícia' });
+  expect(screen.getByRole('heading', { name: 'Minha thread' })).toBeInTheDocument();
+  expect(screen.getByText('Notícia')).toBeInTheDocument();
+  expect(screen.getAllByRole('link', { name: 'Ler' }).map((link) => link.getAttribute('href')))
+    .toEqual(['/admin/reader/saved/saved-1', '/admin/reader/saved/news-1']);
 });
