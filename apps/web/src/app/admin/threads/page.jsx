@@ -145,6 +145,7 @@ export default function ThreadImportPage() {
           </div>
 
           <footer className={styles.saveFooter}>
+            {error && <p className={`${styles.message} ${styles.errorMessage}`} role="alert">{error}</p>}
             <p className={styles.endMark}>Fim da thread · {thread.posts.length} posts</p>
             <p className={styles.formHint}>Quer voltar a esta leitura depois? Salve na sua biblioteca privada.</p>
             <button className={styles.primaryButton} type="button" onClick={saveThread} disabled={busy || !thread.title.trim()}>
