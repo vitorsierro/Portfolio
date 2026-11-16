@@ -11,6 +11,7 @@ const NAV = [
   { href: "/admin", label: "Painel" },
   { href: "/admin/posts", label: "Posts" },
   { href: "/admin/threads", label: "Threads" },
+  { href: "/admin/news", label: "Notícias" },
   { href: "/admin/enseada", label: "Enseada" },
   { href: "/admin/ai-memory", label: "ai-memory" },
   { href: "/admin/coolify", label: "Coolify" },

@@ -9,6 +9,7 @@ import { PostsModule } from './posts/posts.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { FinanceModule } from './finance/finance.module';
 import { ThreadsModule } from './threads/threads.module';
+import { NewsModule } from './news/news.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ThreadsModule } from './threads/threads.module';
     EnseadaModule,
     FinanceModule,
     ThreadsModule,
+    NewsModule,
   ],
 })
 export class AppModule {}
