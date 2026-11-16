@@ -63,7 +63,7 @@ export default function ThreadImportPage() {
           <h1 className={styles.title}>Threads, sem a timeline.</h1>
           <p className={styles.subtitle}>
             Cole o link de um post para reunir a conversa numa leitura contínua. Revise e salve
-            quando chegar ao fim.
+            em português e salve quando chegar ao fim.
           </p>
         </div>
         <div className={styles.mastheadActions}>
@@ -88,15 +88,15 @@ export default function ThreadImportPage() {
                 autoComplete="url"
               />
               <button className={styles.primaryButton} type="submit" disabled={busy}>
-                {busy ? 'Carregando…' : 'Abrir thread'}
+                {busy ? 'Reunindo e traduzindo…' : 'Abrir e traduzir thread'}
               </button>
           </div>
           <p className={styles.formHint}>
             Aceita links de x.com, twitter.com e twitter-thread.com. A importação depende do
-            leitor público de threads estar acessível.
+            X ou leitor público estar acessível. Tradução automática pelo Google; o original é preservado.
           </p>
         </form>
-        {error && <p className={`${styles.message} ${styles.errorMessage}`} role="alert">{error}</p>}
+        {error && !thread && <p className={`${styles.message} ${styles.errorMessage}`} role="alert">{error}</p>}
       </section>
 
       {thread && (
@@ -131,6 +131,7 @@ export default function ThreadImportPage() {
                 </span>
                 <div>
                   <p className={styles.postText}>{post.text}</p>
+                  {post.originalText && <details><summary>Ver original</summary><p className={styles.postText} dir="auto">{post.originalText}</p></details>}
                   {post.mediaUrls?.length > 0 && (
                     <div className={styles.postMedia}>
                       {post.mediaUrls.map((url) => (
@@ -145,6 +146,7 @@ export default function ThreadImportPage() {
           </div>
 
           <footer className={styles.saveFooter}>
+            {error && <p className={`${styles.message} ${styles.errorMessage}`} role="alert">{error}</p>}
             <p className={styles.endMark}>Fim da thread · {thread.posts.length} posts</p>
             <p className={styles.formHint}>Quer voltar a esta leitura depois? Salve na sua biblioteca privada.</p>
             <button className={styles.primaryButton} type="button" onClick={saveThread} disabled={busy || !thread.title.trim()}>

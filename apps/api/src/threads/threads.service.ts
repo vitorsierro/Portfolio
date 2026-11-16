@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { normalizeThreadUrl, parseThreadHtml, parseXStatusHtml } from './thread-parser';
 import type { ImportedThread, ThreadPost } from './thread-parser';
 import type { CreateThreadDto, ThreadPostDto, UpdateThreadDto } from './dto/threads.dto';
+import { translateThread } from './thread-translation';
 
 const MAX_READER_HTML_BYTES = 2 * 1024 * 1024;
 const MAX_IMPORTED_POSTS = 100;
@@ -97,6 +98,7 @@ export class ThreadsService {
       throw new BadRequestException(error instanceof Error ? error.message : 'Link inválido.');
     }
 
+    let imported: ImportedThread | null = null;
     const readerHtml = await fetchPublicHtml(normalized.readerUrl);
     if (readerHtml) {
       try {
@@ -104,7 +106,7 @@ export class ThreadsService {
         if (!thread.posts.length || thread.posts.length > MAX_IMPORTED_POSTS) {
           throw new Error('A thread não contém uma quantidade válida de posts.');
         }
-        return thread;
+        imported = thread;
       } catch {
         // The thread-reader service may not recognize long-form X posts.
       }
@@ -117,12 +119,14 @@ export class ThreadsService {
     if (xHtml) {
       try {
         const post = parseXStatusHtml(xHtml, normalized);
-        if (post.posts.length && post.posts.length <= MAX_IMPORTED_POSTS) return post;
+        if (post.posts.length && post.posts.length <= MAX_IMPORTED_POSTS &&
+            (!imported || post.posts.length >= imported.posts.length)) imported = post;
       } catch {
         // Report one actionable error after both supported sources have been tried.
       }
     }
 
+    if (imported) return translateThread(imported);
     throw new BadGatewayException('Não consegui extrair essa thread. Confira se o link é público e tente novamente.');
   }
 
@@ -185,6 +189,7 @@ export class ThreadsService {
   private normalizePosts(posts: ThreadPostDto[]): ThreadPost[] {
     return posts.map((post) => ({
       text: post.text,
+      ...(post.originalText !== undefined ? { originalText: post.originalText } : {}),
       mediaUrls: (post.mediaUrls ?? []).filter((url) => {
         try {
           return new URL(url).hostname === 'pbs.twimg.com' && new URL(url).protocol === 'https:';

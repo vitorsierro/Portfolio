@@ -50,6 +50,7 @@ export function normalizeThreadUrl(input: string): NormalizedThreadUrl {
 export interface ThreadPost {
   text: string;
   mediaUrls: string[];
+  originalText?: string;
 }
 
 export interface ImportedThread {
@@ -270,6 +271,8 @@ export function parseXStatusHtml(
   const scripts = descendants(document as unknown as HtmlNode)
     .filter((node) => node.name === 'script')
     .map(textContent);
+  const conversation = parseXConversation(scripts, normalized);
+  if (conversation) return conversation;
   const targetMarker = `focalTweetId:"${normalized.tweetId}"`;
   const script = scripts.find((content) => findUnquotedToken(content, targetMarker) >= 0);
   const metadata = script ? findMetadataObject(script, normalized.tweetId) : null;
@@ -293,5 +296,73 @@ export function parseXStatusHtml(
     authorName: cleanText(authorName).slice(0, 200),
     authorHandle: `@${handle}`,
     posts: [{ text: postText, mediaUrls: [] }],
+  };
+}
+
+type JsonObject = Record<string, unknown>;
+function object(value: unknown): JsonObject {
+  return value && typeof value === 'object' ? value as JsonObject : {};
+}
+
+function parseXConversation(scripts: string[], normalized: NormalizedThreadUrl): ImportedThread | null {
+  const tweets = new Map<string, JsonObject>();
+  function visit(value: unknown) {
+    const node = object(value);
+    if (node.__typename === 'Tweet' && typeof node.rest_id === 'string') {
+      const previous = tweets.get(node.rest_id);
+      if (!previous || node.reply_to_results) tweets.set(node.rest_id, node);
+      return; // Quoted posts are not continuations of this thread.
+    }
+    for (const child of Object.values(node)) if (child && typeof child === 'object') visit(child);
+  }
+  for (const script of scripts) {
+    for (const match of script.matchAll(/value:("(?:\\.|[^"\\])*")/g)) {
+      try { visit(JSON.parse(JSON.parse(match[1]))); } catch { /* Other serialized values are not JSON responses. */ }
+    }
+  }
+  const focal = tweets.get(normalized.tweetId);
+  if (!focal) return null;
+  const user = (tweet: JsonObject) => object(object(object(tweet.core).user_results).result);
+  const handle = object(user(focal).core).screen_name;
+  if (typeof handle !== 'string' || !/^[A-Za-z0-9_]{1,15}$/.test(handle)) return null;
+  let rootId = normalized.tweetId;
+  const ancestors = new Set([rootId]);
+  while (true) {
+    const parentId = String(object(tweets.get(rootId)?.reply_to_results).rest_id);
+    const parent = tweets.get(parentId);
+    if (!parent || ancestors.has(parentId) || object(user(parent).core).screen_name !== handle) break;
+    rootId = parentId;
+    ancestors.add(rootId);
+  }
+  const included = new Set([rootId]);
+  // Include only connected replies by the original author, regardless of timeline ranking.
+  for (let pass = 0; pass < tweets.size; pass += 1) {
+    let added = false;
+    for (const [id, tweet] of tweets) {
+      if (!included.has(id) && object(user(tweet).core).screen_name === handle &&
+          included.has(String(object(tweet.reply_to_results).rest_id))) {
+        included.add(id); added = true;
+      }
+    }
+    if (!added) break;
+  }
+  const posts = [...included].sort((a, b) => BigInt(a) < BigInt(b) ? -1 : a === b ? 0 : 1)
+    .map((id): ThreadPost => {
+      const tweet = tweets.get(id)!;
+      const note = object(object(object(tweet.note_tweet).note_tweet_results).result);
+      const rawText = note.text ?? object(tweet.details).full_text ?? object(tweet.legacy).full_text;
+      const mediaUrls: string[] = [];
+      const media = tweet.media_entities2;
+      if (Array.isArray(media)) for (const item of media) {
+        const url = safeMediaUrl(String(object(item).media_url_https ?? ''));
+        if (url && !mediaUrls.includes(url)) mediaUrls.push(url);
+      }
+      return { text: typeof rawText === 'string' ? cleanText(rawText) : '', mediaUrls };
+    }).filter((post) => post.text || post.mediaUrls.length);
+  if (!posts.length || posts.length > 100) throw new Error('Quantidade de posts inválida.');
+  return {
+    title: posts[0].text.slice(0, 300), sourceUrl: `https://x.com/${handle}/status/${normalized.tweetId}`,
+    authorName: String(object(user(focal).core).name ?? '').slice(0, 200),
+    authorHandle: `@${handle}`, posts,
   };
 }

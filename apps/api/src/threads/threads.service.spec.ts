@@ -1,5 +1,6 @@
 import { BadGatewayException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ThreadsService } from './threads.service';
+jest.mock('./thread-translation', () => ({ translateThread: jest.fn(async (thread) => thread) }));
 
 const threadHtml = `
   <div id="thread-detail">
@@ -47,14 +48,31 @@ function makeService() {
 describe('ThreadsService', () => {
   afterEach(() => jest.restoreAllMocks());
 
-  it('imports a public X post by fetching only its normalized thread-reader URL', async () => {
+  it('keeps the reader thread when the X page does not provide a conversation', async () => {
     const { service } = makeService();
-    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue(
+    const fetchMock = jest.spyOn(global, 'fetch').mockImplementation(async () =>
       new Response(threadHtml, { status: 200, headers: { 'content-type': 'text/html' } }),
     );
     await expect(service.importThread('https://x.com/teste/status/2112184574721548387'))
       .resolves.toMatchObject({ title: 'Uma thread legível', authorHandle: '@teste', posts });
     expect(fetchMock).toHaveBeenCalledWith('https://twitter-thread.com/t/2112184574721548387', expect.objectContaining({ redirect: 'manual' }));
+  });
+
+  it('uses the complete X conversation when the reader only has the opening post', async () => {
+    const { service } = makeService();
+    const tweet = (id: string, parent?: string) => ({
+      __typename: 'Tweet', rest_id: id,
+      core: { user_results: { result: { core: { screen_name: 'teste', name: 'Teste' } } } },
+      details: { full_text: `Post ${id}` },
+      ...(parent ? { reply_to_results: { rest_id: parent } } : {}),
+    });
+    const data = [tweet('100'), tweet('200', '100'), tweet('300', '100')];
+    const html = `<script>result:{value:${JSON.stringify(JSON.stringify(data))}}</script>`;
+    jest.spyOn(global, 'fetch')
+      .mockResolvedValueOnce(new Response(threadHtml))
+      .mockResolvedValueOnce(new Response(html));
+    const result = await service.importThread('https://x.com/teste/status/100');
+    expect(result.posts.map((post) => post.text)).toEqual(['Post 100', 'Post 200', 'Post 300']);
   });
 
   it('falls back to the public X page for long-form posts missing from the thread reader', async () => {

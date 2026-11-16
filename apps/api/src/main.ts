@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import { configureBodyParsers } from './body-parsers';
 import { AppModule } from './app.module';
 import { isAllowedOrigin } from './auth/allowed-origins';
 
@@ -10,8 +11,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   // Um único proxy confiável: nginx sobrescreve o último hop com o IP real.
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
-  app.useBodyParser('json', { limit: '100kb', inflate: false });
-  app.useBodyParser('urlencoded', { limit: '100kb', inflate: false, extended: false });
+  configureBodyParsers(app);
 
   app.use(cookieParser());
 

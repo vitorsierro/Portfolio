@@ -1,4 +1,20 @@
-import { normalizeThreadUrl, parseThreadHtml } from './thread-parser';
+import { normalizeThreadUrl, parseThreadHtml, parseXStatusHtml } from './thread-parser';
+
+describe('X conversation extraction', () => {
+  it('collects connected author replies in chronological order, excluding other conversations and duplicates', () => {
+    const tweet = (id: string, parent?: string, handle = 'author') => ({
+      __typename: 'Tweet', rest_id: id,
+      core: { user_results: { result: { core: { screen_name: handle, name: 'Author' } } } },
+      details: { full_text: `Post ${id}` },
+      ...(parent ? { reply_to_results: { rest_id: parent } } : {}),
+    });
+    const data = { entries: [tweet('300', '100'), tweet('200', '100'), tweet('100'),
+      tweet('100'), tweet('400', '200'), tweet('500', '100', 'someone'), tweet('600', '999')] };
+    const html = `<script>result:{value:${JSON.stringify(JSON.stringify(data))}}</script>`;
+    const result = parseXStatusHtml(html, normalizeThreadUrl('https://x.com/author/status/100'));
+    expect(result.posts.map((post) => post.text)).toEqual(['Post 100', 'Post 200', 'Post 300', 'Post 400']);
+  });
+});
 
 describe('normalizeThreadUrl', () => {
   it('converts an X post URL to the supported thread-reader URL', () => {
